@@ -1,0 +1,10 @@
+<section v-if="block && block.type === 'text'" class="text-block">
+    <div class="container">
+        <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+            :class="{ 'animated': isElementInView('text-title-' + block.id), 'hidden': !isElementInView('text-title-' + block.id) }"
+            :id="'text-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+        <div class="text-content scroll-animate"
+             :class="{ 'animated': isElementInView('text-content-' + block.id), 'hidden': !isElementInView('text-content-' + block.id) }"
+             :id="'text-content-' + block.id" v-html="block.content"></div>
+    </div>
+</section>

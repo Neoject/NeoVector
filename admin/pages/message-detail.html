@@ -1,0 +1,47 @@
+<main class="admin-main">
+    <div class="container">
+        <section class="messages-section">
+            <div class="message-header">
+                <button class="btn btn-secondary" @click="changePage('messages')">
+                    ← Назад к сообщениям
+                </button>
+                <div class="message-field date">
+                    <label>Дата отправки:</label>
+                    <div class="message-value">{{ formatDate(selectedMessage.created_at) }}</div>
+                </div>
+            </div>
+            <div class="message-details">
+                <h1>Сообщение от <a :href="'mailto:' + selectedMessage.email">{{ selectedMessage.email }}</a></h1>
+
+                <div class="message-field">
+                    <label>Сообщение:</label>
+                    <div class="message-value message-text">
+                        {{ selectedMessage.message }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="message-replies" v-if="replies && replies.length > 0">
+                <h2>Ответы на сообщение ({{ replies.length }})</h2>
+                <div class="replies-list">
+                    <div class="reply-item" v-for="reply in replies" :key="reply.id">
+                        <div class="reply-header">
+                            <div class="reply-subject">
+                                <strong>{{ reply.subject }}</strong>
+                            </div>
+                            <div class="reply-date">{{ formatDate(reply.created_at) }}</div>
+                        </div>
+                        <div class="reply-message">{{ reply.message }}</div>
+                        <div class="reply-to">
+                            <strong>Ответил:</strong> {{ reply.username }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="message-footer">
+                <button class="btn btn-primary btn-reply" @click="changePage('message-reply')">Ответить</button>
+            </div>
+        </section>
+    </div>
+</main>

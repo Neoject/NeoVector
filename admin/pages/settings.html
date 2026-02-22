@@ -1,0 +1,29 @@
+<main class="admin-main">
+    <div class="container">
+        <section class="params">
+            <form class="main-params">
+                <div class="form-group">
+                    <label>Теги изображений товаров</label>
+                    <textarea v-model="imageMetaTags"></textarea>
+                </div>
+                <h2>Информация о самовывозе</h2>
+                <div class="form-group">
+                    <label>Адрес магазина</label>
+                    <input type="text" v-model="pickupAddress" placeholder="ул. Пушкина, д.228">
+                </div>
+                <div class="form-group">
+                    <label>Время работы</label>
+                    <input type="text" v-model="workHours" placeholder="Пн-Сб 9:00-21:00">
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="text" v-model="storePhone" placeholder="+375123456789">
+                </div>
+                <div style="display: flex; justify-content: flex-end">
+                    <span class="btn btn-primary" @click="saveParams">Сохранить</span>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+
