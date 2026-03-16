@@ -1,7 +1,7 @@
 /assets/
 /.env
-/config.php
 /package-lock.json
 /sitemap.xml
 /bad_ip.json
 /robots.txt
+/qodana.yaml

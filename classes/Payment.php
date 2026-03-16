@@ -1,6 +1,6 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 class Payment
 {
@@ -131,10 +131,12 @@ class Payment
 
         if ($httpCode === 200 || $httpCode === 201) {
             $result = json_decode($response, true);
+
             if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('Payment API JSON decode error', json_last_error_msg());
                 Service::sendError(500, 'Ошибка обработки ответа платежного шлюза');
             }
+
             Service::sendJson($result);
         } else {
             $errorResponse = json_decode($response, true);
@@ -145,6 +147,7 @@ class Payment
                     $errorMessage = $errorResponse['message'];
                 } elseif (isset($errorResponse['errors']) && is_array($errorResponse['errors'])) {
                     $errorMessages = [];
+
                     foreach ($errorResponse['errors'] as $error) {
                         if (is_string($error)) {
                             $errorMessages[] = $error;
@@ -152,6 +155,7 @@ class Payment
                             $errorMessages[] = $error['message'];
                         }
                     }
+
                     if (!empty($errorMessages)) {
                         $errorMessage = implode(', ', $errorMessages);
                     }

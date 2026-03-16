@@ -9,9 +9,11 @@ const NV = {
     },
     loadCart() {
         const savedCart = localStorage.getItem('cart');
+
         if (!savedCart) {
             return [];
         }
+
         try {
             const parsed = JSON.parse(savedCart);
             return Array.isArray(parsed) ? parsed : [];
@@ -65,6 +67,7 @@ const NV = {
             const response = await fetch(basePath + 'api.php?action=product_options', {
                 credentials: 'same-origin'
             });
+
             if (response.ok) {
                 const data = await response.json();
                 return Array.isArray(data) ? data : [];
@@ -81,10 +84,12 @@ const NV = {
             const response = await fetch(basePath + 'api.php?action=products', {
                 credentials: 'same-origin'
             });
+
             if (response.ok) {
                 const data = await response.json();
                 return Array.isArray(data) ? data : [];
             }
+
             return [];
         } catch (error) {
             console.error('Error loading products:', error);
@@ -93,25 +98,30 @@ const NV = {
     },
     normalizeMediaUrl(url) {
         if (!url) return '';
+
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
             return url;
         }
+
         const basePath = this.getBasePath ? this.getBasePath() : '/';
         return basePath + url;
     },
     getBasePath() {
         const path = window.location.pathname;
         const parts = path.split('/');
+
         if (parts.includes('aeternum')) {
             const index = parts.indexOf('aeternum');
             return '/' + parts.slice(1, index + 1).join('/') + '/';
         }
+
         return '/';
     },
     buildOptionKey(options) {
         if (!options || !Array.isArray(options) || options.length === 0) {
             return '';
         }
+
         return options
             .map(opt => `${opt.slug || opt.name}:${opt.value}`)
             .sort()
@@ -121,6 +131,7 @@ const NV = {
         if (!cartItems || !Array.isArray(cartItems)) {
             return 0;
         }
+
         return cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
     },
     getWishlistCount(wishlist) {
@@ -177,6 +188,7 @@ const NV = {
         try {
             const apiUrl = this.getApiUrl();
             const response = await fetch(apiUrl + '?action=me', { credentials: 'same-origin' });
+
             if (response.ok) {
                 const me = await response.json();
                 this.setAuth(me);
@@ -194,6 +206,7 @@ const NV = {
         try {
             const apiUrl = this.getApiUrl();
             const response = await fetch(apiUrl + '?action=user', { credentials: 'same-origin' });
+
             if (response.ok) {
                 const me = await response.json();
                 this.setAuth(me);
@@ -211,9 +224,11 @@ const NV = {
         try {
             const apiUrl = this.getApiUrl();
             const form = new FormData();
+
             form.append('action', 'login');
             form.append('username', username);
             form.append('password', password);
+
             if (remember) {
                 form.append('remember', '1');
             }
@@ -225,6 +240,7 @@ const NV = {
             });
 
             const data = await response.json();
+
             if (response.ok && data.success) {
                 const userInfo = await this.checkUserAuth();
                 this.setAuth(userInfo);
@@ -240,11 +256,14 @@ const NV = {
         try {
             const apiUrl = this.getApiUrl();
             const form = new FormData();
+
             form.append('action', 'logout');
+
             await fetch(apiUrl, { method: 'POST', body: form, credentials: 'same-origin' });
         } catch (e) {
             console.log('Logout error:', e);
         }
+
         document.querySelector('.overlay.active')?.classList.remove('active');
         this.clearAuth();
     },
@@ -355,16 +374,34 @@ const NV = {
                 const data = await response.json();
 
                 if (data.success) {
+                    this.title = data.title || '';
+                    this.description = data.description || '';
                     this.imageMetaTags = data.image_meta_tags || '';
                     this.pickupAddress = data.pickup_address ? 'Адрес магазина: ' + data.pickup_address : '';
                     this.workHours = data.work_hours ? 'Время работы: ' + data.work_hours : '';
                     this.storePhone = data.store_phone ? 'Мобильный телефон: ' + data.store_phone : '';
+                    this.deliveryBel = data.delivery_bel;
+                    this.deliveryRus = data.delivery_rus;
                 }
             }
         } catch (error) {
             console.error('Error loading params:', error);
         }
     },
+    notifyPolicyReject() {
+        Toastify({
+            text: "В случае несогласия оформить доставку товара не предоставится возможным.",
+            duration: 3000,
+            newWindow: true,
+            gravity: "bottom", // `top` or `bottom`
+            position: "center", // `left`, `center` or `right`
+            stopOnFocus: true, // Prevents dismissing of toast on hover
+            style: {
+                background: "var(--background)",
+            },
+            onClick: function(){} // Callback after click
+        }).showToast();
+    }
 };
 
 if (typeof window !== 'undefined') {

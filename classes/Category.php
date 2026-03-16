@@ -1,6 +1,6 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 use mysqli;
 use Exception;
@@ -48,7 +48,7 @@ class Category
         while ($row = $result->fetch_assoc()) {
             $categories[] = [
                 'id' => (int)$row['id'],
-                'slug' => $row['slug'],
+                'slug' => $row['name'],
                 'name' => $row['name'],
                 'sort_order' => (int)$row['sort_order']
             ];

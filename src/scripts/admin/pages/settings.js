@@ -6,6 +6,22 @@ NV.ready(function registerSettingsComponent() {
     NV.admin.component('settings-view', {
     template: '#settings-template',
     computed: {
+        title: {
+            get() {
+                return this.$root.title;
+            },
+            set (value) {
+                this.$root.title = value;
+            }
+        },
+        description: {
+            get() {
+                return this.$root.description;
+            },
+            set (value) {
+                this.$root.description = value;
+            }
+        },
         imageMetaTags: {
             get() {
                 return this.$root.imageMetaTags;
@@ -36,6 +52,22 @@ NV.ready(function registerSettingsComponent() {
             },
             set(value) {
                 this.$root.storePhone = value;
+            }
+        },
+        deliveryBel: {
+            get() {
+                return this.$root.deliveryBel;
+            },
+            set(value) {
+                this.$root.deliveryBel = value;
+            }
+        },
+        deliveryRus: {
+            get() {
+                return this.$root.deliveryRus;
+            },
+            set(value) {
+                this.$root.deliveryRus = value;
             }
         }
     },

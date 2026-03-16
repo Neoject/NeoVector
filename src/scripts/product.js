@@ -24,8 +24,8 @@ const Product = {
             productDragScrollInterval: null,
             products: [],
             contextMenuProduct: null,
-            productOptionTypes: [],
-            newOptionTypeName: '',
+            productOptions: [],
+            newOptionName: '',
             optionsLoading: false,
             optionsError: '',
             optionsSuccess: '',
@@ -767,21 +767,17 @@ const Product = {
                 if (response.ok) {
                     const data = await response.json();
                     const incoming = Array.isArray(data.types) ? data.types : [];
-                    this.productOptionTypes = incoming.length
-                        ? incoming.map(type => ({
+                    this.productOptions = incoming.map(type => ({
                             id: type.id || null,
                             name: type.name || '',
                             slug: type.slug || '',
                             values: Array.isArray(type.values) && type.values.length ? [...type.values] : ['']
-                        }))
-                        : this.getDefaultOptionTypes();
-                } else {
-                    this.productOptionTypes = this.getDefaultOptionTypes();
+                        }));
                 }
+
                 this.newOptionTypeName = '';
             } catch (error) {
                 alert(`Error loading product options: ${error}`);
-                this.productOptionTypes = this.getDefaultOptionTypes();
                 this.newOptionTypeName = '';
             }
         },
@@ -791,7 +787,7 @@ const Product = {
             this.optionsSuccess = '';
 
             try {
-                const preparedTypes = this.productOptionTypes.map(type => {
+                const preparedTypes = this.productOptions.map(type => {
                     const name = type.name ? type.name.trim() : '';
                     const values = Array.isArray(type.values)
                         ? type.values
@@ -803,12 +799,6 @@ const Product = {
                         values
                     };
                 }).filter(type => type.name && type.values.length);
-
-                if (!preparedTypes.length) {
-                    this.optionsError = 'Добавьте хотя бы один тип опций и его значения';
-                    this.optionsLoading = false;
-                    return;
-                }
 
                 const formData = new FormData();
                 formData.append('action', 'save_product_options');
@@ -846,7 +836,7 @@ const Product = {
                 this.optionsError = 'Введите название типа опций';
                 return;
             }
-            this.productOptionTypes.push({
+            this.productOptions.push({
                 id: null,
                 name,
                 slug: '',
@@ -856,49 +846,33 @@ const Product = {
             this.optionsError = '';
         },
         removeOptionType(index) {
-            this.productOptionTypes.splice(index, 1);
+            this.productOptions.splice(index, 1);
         },
         moveOptionTypeUp(typeIndex) {
-            if (typeIndex <= 0 || typeIndex >= this.productOptionTypes.length) {
+            if (typeIndex <= 0 || typeIndex >= this.productOptions.length) {
                 return;
             }
-            const temp = this.productOptionTypes[typeIndex];
-            this.productOptionTypes[typeIndex] = this.productOptionTypes[typeIndex - 1];
-            this.productOptionTypes[typeIndex - 1] = temp;
+            const temp = this.productOptions[typeIndex];
+            this.productOptions[typeIndex] = this.productOptions[typeIndex - 1];
+            this.productOptions[typeIndex - 1] = temp;
         },
         moveOptionTypeDown(typeIndex) {
-            if (typeIndex < 0 || typeIndex >= this.productOptionTypes.length - 1) {
+            if (typeIndex < 0 || typeIndex >= this.productOptions.length - 1) {
                 return;
             }
-            const temp = this.productOptionTypes[typeIndex];
-            this.productOptionTypes[typeIndex] = this.productOptionTypes[typeIndex + 1];
-            this.productOptionTypes[typeIndex + 1] = temp;
+            const temp = this.productOptions[typeIndex];
+            this.productOptions[typeIndex] = this.productOptions[typeIndex + 1];
+            this.productOptions[typeIndex + 1] = temp;
         },
         addOptionValue(typeIndex) {
-            if (!this.productOptionTypes[typeIndex]) {
+            if (!this.productOptions[typeIndex]) {
                 return;
             }
-            this.productOptionTypes[typeIndex].values.push('');
+            this.productOptions[typeIndex].values.push('');
         },
         removeOptionValue(typeIndex, valueIndex) {
-            const optionType = this.productOptionTypes[typeIndex];
+            const optionType = this.productOptions[typeIndex];
             optionType.values.splice(valueIndex, 1);
-        },
-        getDefaultOptionTypes() {
-            return [
-                {
-                    id: null,
-                    name: 'Размеры',
-                    slug: 'sizes',
-                    values: ['38', '40', '42', '44']
-                },
-                {
-                    id: null,
-                    name: 'Модели',
-                    slug: 'models',
-                    values: ['Apple', 'Samsung', 'Xiaomi', 'Honor']
-                }
-            ];
         },
         getProductName(url) {
             if (url === '/') {

@@ -1,6 +1,6 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 class Page extends Model
 {

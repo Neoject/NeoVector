@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'Tangerine';
-    src: url('src/fonts/Tangerine-Regular.ttf') format('truetype');
+    src: url('../fonts/Tangerine-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -8,50 +8,46 @@
 
 :root {
     /* Background colors */
-    --background: linear-gradient(135deg, #181818 0%, #2E2E2E 100%);
-    --background-dark: #181818;
-    --background-darker: #2E2E2E;
-    --background-min-dark: rgba(24, 24, 24, 0.5);
-    --background-min-light: rgba(103, 103, 103, 0.5);
-    --background-very-dark: #1a1a1a;
-    --background-extra-dark: #1c1c1c;
-    --background-gray: #333;
-    --background-gray-light: #444;
-    --background-gray-lighter: #555;
-    --background-gray-dark: #3E3E3E;
-    --background-gray-darker: #404040;
-    --background-light-gray: #f8f9fa;
+    --background: #ffffff;
+    --background-dark: #757575;
+    --background-darker: #ffffff;
+    --background-min-dark: #ffffff;
+    --background-min-light: #ffffff;
+    --background-very-dark: #ffffff;
+    --background-extra-dark: #ffffff;
+    --background-gray: #cacaca;
+    --background-gray-light: #ffffff;
+    --background-gray-lighter: #ffffff;
+    --background-gray-dark: #ffffff;
+    --background-gray-darker: #ffffff;
+    --background-light-gray: #ffffff;
+    --background-empty: #ffffff;
     
     /* Primary colors */
-    --primary: #FFEDB3;
-    --primary-alt: #FFEDB2;
-    --secondary: #FFE082;
+    --primary: #2c2c2c;
+    --primary-alt: #8e8e8e;
+    --secondary: #8e8e8e;
     
     /* Gold colors */
-    --header-gold: #d4af37;
-    --header-gold-highlight: #f5d67b;
-    --header-gold-shadow: #9a7415;
-    --gold: #FFD700;
-    --gold-hover: #ffefbe;
+    --header-gold: #8e8e8e;
+    --header-gold-highlight: #8e8e8e;
+    --header-gold-shadow: #8e8e8e;
+    --gold: #8e8e8e;
+    --gold-hover: #8e8e8e;
     
     /* Text colors */
-    --text-main: #ffffff;
-    --text-secondary: #b8b8b8;
-    --text-additional: #888;
-    --text-additional-light: #ccc;
-    --text-additional-dark: #666;
-    --text-dark: #2E2E2E;
-    --text-very-dark: #181818;
+    --text-main: #404040;
+    --text-secondary: #535353;
+    --text-additional: #636363;
+    --text-additional-light: #989898;
+    --text-additional-dark: #000000;
+    --text-dark: #afafaf;
+    --text-btn: #ffffff;
     --text-black: #000000;
-    --text-bfbfbf: #bfbfbf;
+    --text-bfbfbf: #000000;
     
     /* Header background */
-    --header-background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.06) 25%,
-        rgba(24, 24, 24, 0.75) 50%,
-        rgba(255, 255, 255, 0.06) 75%,
-        rgba(255, 255, 255, 0.12) 100%);
+    --header-background: #ffffff;
     
     /* Shadows */
     --shadow-regular: #1a1a1a -5px 8px 20px 3px;
@@ -131,8 +127,8 @@
     --bg-black-65: rgba(0, 0, 0, 0.65);
     --bg-black-70: rgba(0, 0, 0, 0.7);
     --bg-black-75: rgba(0, 0, 0, 0.75);
-    --bg-black-80: rgba(0, 0, 0, 0.8);
-    --bg-black-95: rgba(0, 0, 0, 0.95);
+    --bg-admin-btn: rgba(128, 128, 128, 0.8);
+    --bg-admin-additional: rgba(179, 179, 179, 0.95);
     --bg-primary-10: rgba(255, 237, 179, 0.1);
     --bg-primary-15: rgba(255, 237, 179, 0.15);
     --bg-primary-20: rgba(255, 237, 179, 0.2);

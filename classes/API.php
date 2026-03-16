@@ -1,9 +1,11 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
-use mysqli;
 use Exception;
+use NeoVector\Product\Product;
+use NeoVector\Product\ProductOption;
+use NeoVector\Product\ProductType;
 
 ob_start();
 
@@ -234,6 +236,9 @@ class API
                 case 'upload_background_image':
                     self::handleUploadBackgroundImage();
                     break;
+                case 'upload_logo':
+                    self::handleUploadLogo();
+                    break;
                 case 'create_order':
                     self::handleCreateOrder();
                     break;
@@ -271,10 +276,16 @@ class API
                     self::handleContactMessage();
                     break;
                 case 'product_options':
-                    Product::getProductOptions();
+                    ProductOption::getAll();
                     break;
                 case 'save_product_options':
-                    Product::saveProductOptions();
+                    ProductOption::save();
+                    break;
+                case 'product_types':
+                    ProductType::getAll();
+                    break;
+                case 'save_product_types':
+                    ProductType::save();
                     break;
                 case 'analytics':
                     self::handleAnalytics();
@@ -299,6 +310,9 @@ class API
                     break;
                 case 'get_params':
                     self::handleGetParams();
+                    break;
+                case 'visibility':
+                    Product::changeVisibility();
                     break;
                 default:
                     Service::sendError(404, 'Неправильный запрос');
@@ -756,6 +770,54 @@ class API
         }
 
         $url = $baseUrl . '/assets/backgrounds/' . $fileName;
+        Service::sendJson(['success' => true, 'url' => $url]);
+    }
+
+    private static function handleUploadLogo(): void
+    {
+        Auth::requireAuth();
+
+        if (!isset($_FILES['logo']) || ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            Service::sendError(400, 'Логотип не загружен');
+        }
+
+        $file = $_FILES['logo'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        $fileType = $file['type'] ?? '';
+
+        if (!in_array($fileType, $allowedTypes, true)) {
+            Service::sendError(400, 'Недопустимый тип файла. Разрешены JPEG, PNG, GIF, WebP и SVG.');
+        }
+
+        $fileSize = (int) ($file['size'] ?? 0);
+
+        if ($fileSize > 5 * 1024 * 1024) {
+            Service::sendError(400, 'Слишком большой файл. Максимум 5 МБ.');
+        }
+
+        $uploadDir = dirname(__DIR__) . '/assets/logo/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
+        $fileName = 'site_logo.' . $extension;
+        $filePath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+            Service::sendError(500, 'Не удалось сохранить логотип');
+        }
+
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+        $baseUrl = '';
+
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir;
+        }
+
+        $url = $baseUrl . '/assets/logo/' . $fileName;
         Service::sendJson(['success' => true, 'url' => $url]);
     }
 
@@ -1232,60 +1294,35 @@ class API
         ]);
     }
 
-    /**
-     * @param array $file
-     * @return string
-     * @throws Exception
-     */
-    private static function storeUploadedMedia(array $file): string
+    private static function formatNumber($number): int
     {
-        $assetsDir = dirname(__DIR__) . '/assets/';
-
-        if (!is_dir($assetsDir)) {
-            mkdir($assetsDir, 0755, true);
-        }
-
-        $fileType = (string) ($file['type'] ?? '');
-        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/ogg', 'video/m4v', 'video/avi', 'video/flv'];
-        $isVideo = strpos($fileType, 'video/');
-        $maxSize = $isVideo ? (256 * 1024 * 1024) : (64 * 1024 * 1024);
-
-        if (!in_array($fileType, $allowedTypes, true)) {
-            throw new Exception('Invalid file type. Only images and videos are allowed.');
-        }
-
-        if ((int) ($file['size'] ?? 0) > $maxSize) {
-            $sizeLimit = $isVideo ? '256MB' : '64MB';
-            throw new Exception('File too large. Maximum size is ' . $sizeLimit . '.');
-        }
-
-        $fileName = (string) ($file['name'] ?? 'upload');
-        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $newFileName = uniqid() . '_' . time() . ($fileExtension ? ('.' . $fileExtension) : '');
-        $uploadPath = $assetsDir . $newFileName;
-
-        if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            throw new Exception('Failed to upload file');
-        }
-
-        return 'assets/' . $newFileName;
+        $value = preg_replace('/[^0-9]/', '', $number);
+        return (int) $value;
     }
 
     private static function handleSaveParams(): void
     {
         Auth::requireAuth();
 
+        $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
+        $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
+        $description = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
         $imageMetaTags = isset($_POST['image_meta_tags']) ? trim((string) $_POST['image_meta_tags']) : '';
         $pickupAddress = isset($_POST['pickup_address']) ? trim((string) $_POST['pickup_address']) : '';
         $workHours = isset($_POST['work_hours']) ? trim((string) $_POST['work_hours']) : '';
         $storePhone = isset($_POST['store_phone']) ? trim((string) $_POST['store_phone']) : '';
+        $deliveryBel = isset($_POST['delivery_bel']) ? self::formatNumber(trim((string) $_POST['delivery_bel'])) : '';
+        $deliveryRus = isset($_POST['delivery_rus']) ? self::formatNumber(trim((string) $_POST['delivery_rus'])) : '';
 
         $createParamsTableSQL = "CREATE TABLE IF NOT EXISTS `params` (
             `id` INT AUTO_INCREMENT,
+            `title` VARCHAR(255) NOT NULL,
             `image_meta_tags` TEXT NOT NULL,
             `pickup_address` VARCHAR(255) NOT NULL,
             `work_hours` VARCHAR(255) NOT NULL,
             `store_phone` VARCHAR(255) NOT NULL,
+            `delivery_belarus` INT(255) NOT NULL,
+            `delivery_russia` INT(255) NOT NULL,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
@@ -1299,8 +1336,8 @@ class API
 
         if ($imageMetaTagsResult->num_rows > 0) {
             $updateStmt = $db->prepare("UPDATE params 
-                SET image_meta_tags = ?, pickup_address = ?, work_hours = ?, store_phone = ?");
-            $updateStmt->bind_param('ssss', $imageMetaTags, $pickupAddress, $workHours, $storePhone);
+                SET title = ?, description = ?, image_meta_tags = ?, pickup_address = ?, work_hours = ?, store_phone = ?, delivery_belarus = ?, delivery_russia = ?");
+            $updateStmt->bind_param('ssssssii', $title, $description, $imageMetaTags, $pickupAddress, $workHours, $storePhone, $deliveryBel, $deliveryRus);
 
             if ($updateStmt->execute()) {
                 $updateStmt->close();
@@ -1311,8 +1348,8 @@ class API
             $updateStmt->close();
             Service::sendError(500, $err ?: 'Failed to update params');
         } else {
-            $insertStmt = $db->prepare("INSERT INTO params (image_meta_tags, pickup_address, work_hours, store_phone) VALUES (?, ?, ?, ?)");
-            $insertStmt->bind_param('ssss', $imageMetaTags, $pickupAddress, $workHours, $storePhone);
+            $insertStmt = $db->prepare("INSERT INTO params (title, description, image_meta_tags, pickup_address, work_hours, store_phone, delivery_belarus, delivery_russia) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $insertStmt->bind_param('ssssssii', $title, $description, $imageMetaTags, $pickupAddress, $workHours, $storePhone, $deliveryBel, $deliveryRus);
 
             if ($insertStmt->execute()) {
                 $insertStmt->close();
@@ -1329,37 +1366,51 @@ class API
     {
         $createParamsTableSQL = "CREATE TABLE IF NOT EXISTS `params` (
             `id` INT AUTO_INCREMENT,
+            `title` VARCHAR(255) NOT NULL,
+            `description` TEXT NOT NULL,
             `image_meta_tags` TEXT NOT NULL,
             `pickup_address` VARCHAR(255) NOT NULL,
             `work_hours` VARCHAR(255) NOT NULL,
             `store_phone` VARCHAR(255) NOT NULL,
+            `delivery_belarus` INT(255) NOT NULL,
+            `delivery_russia` INT(255) NOT NULL,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
         Database::db()->query($createParamsTableSQL);
 
-        $stmt = Database::db()->prepare("SELECT image_meta_tags, pickup_address, work_hours, store_phone FROM params");
+        $stmt = Database::db()->prepare("SELECT * FROM params");
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
             $stmt->close();
+
             Service::sendJson([
                 'success' => true,
+                'title' => $row['title'],
+                'description' => $row['description'],
                 'image_meta_tags' => $row['image_meta_tags'],
                 'pickup_address' => $row['pickup_address'],
                 'work_hours' => $row['work_hours'],
-                'store_phone' => $row['store_phone']
+                'store_phone' => $row['store_phone'],
+                'delivery_bel' => $row['delivery_belarus'],
+                'delivery_rus' => $row['delivery_russia'],
             ]);
         } else {
             $stmt->close();
+
             Service::sendJson([
                 'success' => true,
+                'title' => '',
+                'description' => '',
                 'image_meta_tags' => '',
                 'pickup_address' => '',
                 'work_hours' => '',
-                'store_phone' => ''
+                'store_phone' => '',
+                'delivery_bel' => '',
+                'delivery_rus' => '',
             ]);
         }
     }

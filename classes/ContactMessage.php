@@ -1,6 +1,6 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 use mysqli;
 use Exception;
@@ -136,7 +136,6 @@ class ContactMessage extends API
 
         if ($mailSent) {
             Service::sendJson(['success' => true, 'message' => 'Сообщение успешно отправлено!']);
-            Log::write('message', $mailSent);
         }
 
         Service::sendError(500, 'Ошибка при отправке письма. Попробуйте позже.');

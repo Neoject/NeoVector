@@ -1,6 +1,6 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 use Throwable;
 
@@ -47,7 +47,7 @@ class Config
      * @param $default
      * @return array|mixed|string|null
      */
-    public static function get(string $key, $default = null)
+    public static function get(string $key, $default = null): mixed
     {
         $value = getenv($key);
 
@@ -58,6 +58,11 @@ class Config
         return $default;
     }
 
+    /**
+     * @param string $path
+     * @param string $homeUrl
+     * @return string
+     */
     public static function normalize_media_url(string $path, string $homeUrl): string
     {
         $path = trim($path);
@@ -80,6 +85,10 @@ class Config
         return $homeUrl . $path;
     }
 
+    /**
+     * @param string $path
+     * @return bool
+     */
     public static function is_video_file(string $path): bool
     {
         if (empty($path)) {
@@ -98,6 +107,10 @@ class Config
         return false;
     }
 
+    /**
+     * @param int $productId
+     * @return array|null
+     */
     public static function getProductData(int $productId): ?array
     {
         $product = null;
@@ -108,7 +121,7 @@ class Config
             try {
                 $db = Database::getInstance()->getConnection();
 
-                $stmt = $db->prepare('SELECT id, name, description, peculiarities, material, price, price_sale, category, image FROM products WHERE id = ? LIMIT 1');
+                $stmt = $db->prepare('SELECT id, name, description, peculiarities, material, price, price_sale, category, product_type_id, image FROM products WHERE id = ? LIMIT 1');
                 $stmt->bind_param('i', $productId);
                 $stmt->execute();
                 $res = $stmt->get_result();
@@ -151,37 +164,17 @@ class Config
                         'price' => (int)$row['price'],
                         'price_sale' => ($row['price_sale'] !== null) ? (int)$row['price_sale'] : null,
                         'category' => (string)$row['category'],
+                        'product_type_id' => isset($row['product_type_id']) ? (int)$row['product_type_id'] : null,
                         'image' => (string)$row['image'],
                         'additional_images' => $additionalImages,
                         'additional_videos' => $additionalVideos,
                     ];
                 }
             } catch (Throwable $e) {
-                self::log($e->getMessage());
+                Log::error('Product data error: ', $e->getMessage());
             }
         }
 
         return $product;
-    }
-
-    public static function log($err = [], $info = []): void
-    {
-        $data = [];
-
-        if ($err) {
-            $data['err'] = $err;
-        }
-
-        if ($info) {
-            $data['info'] = $info;
-        }
-
-        file_put_contents(
-            $_SERVER['DOCUMENT_ROOT'] . '/debug.log',
-            date('Y-m-d H:i:s') . " - REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD'] . "\n" .
-            "POST data: " . print_r($data, true) . "\n" .
-            "===================\n",
-            FILE_APPEND
-        );
     }
 }

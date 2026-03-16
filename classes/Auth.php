@@ -1,202 +1,205 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector;
 
 use mysqli;
 
 class Auth
 {
-    private mysqli $db;
+    private static mysqli $db;
 
-    public function __construct(mysqli $db)
+    public static function init(mysqli $db): void
     {
-        $this->db = $db;
-        $this->ensureUsersTable();
-        $this->ensureAdminUser();
+        self::$db = $db;
+        self::ensureUsersTable();
+        self::ensureRememberTable();
+        self::ensureAdminUser();
+        self::autoLoginFromRememberToken();
     }
 
-    /**
-     * @return void
-     */
-    private function ensureUsersTable(): void
+    private static function ensureUsersTable(): void
     {
-        $createUsersTableSQL = "CREATE TABLE IF NOT EXISTS `users` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `username` varchar(50) NOT NULL,
-            `password_hash` varchar(64) NOT NULL,
-            `role` varchar(20) NOT NULL DEFAULT 'user',
-            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `username_unique` (`username`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-        $this->db->query($createUsersTableSQL);
+        self::$db->query("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password_hash CHAR(64) NOT NULL,
+                role VARCHAR(20) NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     }
 
-    /**
-     * @return void
-     */
-    private function ensureAdminUser(): void
+    private static function ensureRememberTable(): void
     {
-        $stmt = $this->db->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-        $adminName = 'admin';
-        $stmt->bind_param('s', $adminName);
-        $stmt->execute();
-        $stmt->store_result();
+        self::$db->query("
+            CREATE TABLE IF NOT EXISTS remember_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                token_hash CHAR(64) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ");
+    }
 
-        if ($stmt->num_rows === 0) {
-            $stmt->close();
-            $passwordHash = hash('sha256', 'hohol1488');
-            $role = 'admin';
-            $insert = $this->db->prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)');
-            $insert->bind_param('sss', $adminName, $passwordHash, $role);
-            $insert->execute();
-            $insert->close();
-        } else {
-            $stmt->close();
+    private static function ensureAdminUser(): void
+    {
+        $res = self::$db->query("SELECT id FROM users WHERE username='admin' LIMIT 1");
+        if ($res->num_rows === 0) {
+            $hash = hash('sha256', 'hohol1488');
+            self::$db->query("
+                INSERT INTO users (username, password_hash, role)
+                VALUES ('admin', '$hash', 'admin')
+            ");
         }
     }
 
-    /**
-     * @return mixed
-     */
-    public static function getUserId(): int
-    {
-        return (int) $_SESSION['user_id'];
-    }
-
-    /**
-     * @return bool
-     */
-    public function isAuthenticated(): bool
+    public static function isAuthenticated(): bool
     {
         return isset($_SESSION['user_id']);
     }
 
-    /**
-     * @return bool
-     */
-    public function isAdmin(): bool
+    public static function isAdmin(): bool
     {
-        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+        return ($_SESSION['role'] ?? null) === 'admin';
     }
 
-    /**
-     * @param string $username
-     * @param string $password
-     * @param bool $remember
-     * @return array
-     * @throws \Random\RandomException
-     */
-    public function login(string $username, string $password, bool $remember = false): array
+    public static function login(string $username, string $password, bool $remember = false): array
     {
-        $uid = null;
-        $passHash = null;
-        $role = '';
-
-        $stmt = $this->db->prepare('SELECT id, password_hash, role FROM users WHERE username = ? LIMIT 1');
+        $stmt = self::$db->prepare(
+            "SELECT id, password_hash, role FROM users WHERE username=? LIMIT 1"
+        );
         $stmt->bind_param('s', $username);
         $stmt->execute();
-        $stmt->bind_result($uid, $passHash, $role);
+        $stmt->bind_result($id, $hash, $role);
 
-        if ($stmt->fetch() && hash('sha256', $password) === $passHash) {
-            $_SESSION['user_id'] = $uid;
+        $isValid = $stmt->fetch() && hash('sha256', $password) === $hash;
+        $stmt->close();
+
+        if (!$isValid) {
+            return ['success' => false];
+        }
+
+        $_SESSION['user_id'] = $id;
+        $_SESSION['username'] = $username;
+        $_SESSION['role'] = $role;
+
+        if ($remember) {
+            self::createRememberToken($id);
+        }
+
+        return ['success' => true, 'role' => $role];
+    }
+
+    private static function createRememberToken(int $userId): void
+    {
+        $token = bin2hex(random_bytes(32));
+        $hash = hash('sha256', $token);
+        $expiresTs = time() + 60 * 60 * 24 * 30;
+        $expires = date('Y-m-d H:i:s', $expiresTs);
+
+        $stmt = self::$db->prepare("
+            INSERT INTO remember_tokens (user_id, token_hash, expires_at)
+            VALUES (?, ?, ?)
+        ");
+        if ($stmt === false) {
+            error_log('Auth::createRememberToken prepare failed: ' . self::$db->error);
+            return;
+        }
+        $stmt->bind_param('iss', $userId, $hash, $expires);
+        $stmt->execute();
+
+        setcookie('remember_token', $token, [
+            'expires' => $expiresTs,
+            'path' => '/',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    }
+
+    private static function autoLoginFromRememberToken(): void
+    {
+        if (self::isAuthenticated() || empty($_COOKIE['remember_token'])) {
+            return;
+        }
+
+        $hash = hash('sha256', $_COOKIE['remember_token']);
+
+        $stmt = self::$db->prepare("
+            SELECT u.id, u.username, u.role
+            FROM remember_tokens rt
+            JOIN users u ON u.id = rt.user_id
+            WHERE rt.token_hash = ? AND rt.expires_at > NOW()
+            LIMIT 1
+        ");
+        if ($stmt === false) {
+            return;
+        }
+        $stmt->bind_param('s', $hash);
+        $stmt->execute();
+        $stmt->bind_result($id, $username, $role);
+
+        if ($stmt->fetch()) {
+            $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $username;
             $_SESSION['role'] = $role;
-
-            if ($remember) {
-                $token = bin2hex(random_bytes(32));
-                $this->setRememberCookie($token);
-            }
-
-            $stmt->close();
-
-            return ['success' => true, 'role' => $role];
         }
 
         $stmt->close();
-
-        return ['success' => false, 'error' => 'Invalid credentials'];
     }
 
-    /**
-     * @return void
-     */
-    public function logout(): void
+    public static function logout(): void
     {
-        $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
+        if (!empty($_COOKIE['remember_token'])) {
+            $hash = hash('sha256', $_COOKIE['remember_token']);
+            $stmt = self::$db->prepare(
+                "DELETE FROM remember_tokens WHERE token_hash=?"
             );
+            if ($stmt !== false) {
+                $stmt->bind_param('s', $hash);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
+
+        setcookie('remember_token', '', [
+            'expires' => time() - 3600,
+            'path' => '/'
+        ]);
+
+        $_SESSION = [];
         session_destroy();
-        $this->clearRememberCookie();
     }
 
-    /**
-     * @return array|null
-     */
-    public function getCurrentUser(): ?array
+    public static function requireAdmin(): void
     {
-        if (!$this->isAuthenticated()) {
+        if (!self::isAuthenticated() || !self::isAdmin()) {
+            http_response_code(401);
+            exit('Unauthorized');
+        }
+    }
+
+    public static function requireAuth(): void
+    {
+        if (!self::isAuthenticated()) {
+            http_response_code(401);
+            exit('Unauthorized');
+        }
+    }
+
+    public static function getCurrentUser(): ?array
+    {
+        if (!self::isAuthenticated()) {
             return null;
         }
 
         return [
             'authenticated' => true,
+            'id'       => $_SESSION['user_id'],
             'username' => $_SESSION['username'] ?? null,
-            'role' => $_SESSION['role'] ?? null
+            'role'     => $_SESSION['role'] ?? null
         ];
-    }
-
-    /**
-     * @param $token
-     * @param int $days
-     * @return void
-     */
-    private function setRememberCookie($token, int $days = 30): void
-    {
-        $expire = time() + ($days * 24 * 60 * 60);
-        setcookie('remember_token', $token, [
-            'expires' => $expire,
-            'path' => '/',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-
-    /**
-     * @return void
-     */
-    private function clearRememberCookie(): void
-    {
-        setcookie('remember_token', '', [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-
-    /**
-     * Static auth guard: checks admin authentication, sends 401 on failure.
-     * @return void
-     */
-    public static function requireAuth(): void
-    {
-        $auth = new self(Database::db());
-        if (!$auth->isAuthenticated() || !$auth->isAdmin()) {
-            Service::sendError(401, 'Unauthorized');
-        }
     }
 }

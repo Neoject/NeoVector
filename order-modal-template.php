@@ -33,7 +33,7 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                 <h4>Ваш заказ</h4>
                 <div class="order-items">
                     <div v-if="currentOrderProduct" class="order-item">
-                        <img :src="currentOrderProduct.image" :alt="currentOrderProduct.name" class="order-item-img"
+                        <img :src="currentOrderProduct.image.startsWith('/') ? currentOrderProduct.image : '/' + currentOrderProduct.image" :alt="currentOrderProduct.name" class="order-item-img"
                             loading="lazy" decoding="async">
                         <div class="order-item-details">
                             <h5>{{ currentOrderProduct.name }}</h5>
@@ -58,7 +58,7 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                     </div>
                     <div v-else v-for="item in cartItems" :key="`${item.id}-${item.optionKey || item.hand || ''}`"
                         class="order-item">
-                        <img :src="'/'+item.image" :alt="item.name" class="order-item-img" loading="lazy" decoding="async">
+                        <img :src="item.image.startsWith('/') ? item.image : '/' + item.image" :alt="item.name" class="order-item-img" loading="lazy" decoding="async">
                         <div class="order-item-details">
                             <div class="cart-item-title-content">
                                 <h5>{{ item.name }}</h5>
@@ -84,8 +84,21 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                     </div>
                 </div>
                 <div class="order-total">
-                    <span>Итого: {{ currentOrderProduct ? currentOrderProduct.price * currentOrderProduct.quantity :
-                        cartTotal }} руб.</span>
+                    <span>
+                        Итого:
+                        {{
+                            (currentOrderProduct ? currentOrderProduct.price * currentOrderProduct.quantity : cartTotal)
+                            +
+                            (orderForm.delivery_type === 'delivery'
+                                ? (
+                                    orderForm.delivery_city && orderForm.delivery_city.includes('Беларусь')
+                                        ? deliveryBel
+                                        : (orderForm.delivery_city ? deliveryRus : 0)
+                                )
+                                : 0
+                            )
+                        }} руб.
+                    </span>
                 </div>
             </div>
             <form @submit.prevent="submitOrder" class="order-form">
@@ -127,7 +140,7 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                             </div>
                         </label>
                         <label class="delivery-option">
-                            <input type="radio" v-model="orderForm.delivery_type" value="delivery" <?php echo $hasAutocomplete ? '@change="onDeliveryTypeChange"' : ''; ?>>
+                            <input type="radio" v-model="orderForm.delivery_type" value="delivery" <?php echo $hasAutocomplete ? '@change="onDeliveryTypeChange"' : ''; ?> :disabled="deliveryAvailable ? false : true">
                             <div class="delivery-option-content">
                                 <i class="fas fa-truck"></i>
                                 <div>
@@ -227,6 +240,17 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                             <input type="time" id="delivery_time" v-model="orderForm.delivery_time">
                         </div>
                     </div>
+                    <span>
+                        Стоимость доставки:
+                        <span id="delivery_price">
+                           {{
+                            orderForm.delivery_city ? orderForm.delivery_city.includes('Беларусь')
+                                ? deliveryBel
+                                : (orderForm.delivery_city ? deliveryRus : 0)
+                            : 0
+                        }}
+                        </span> руб.
+                    </span>
                 </div>
                 <div v-if="orderForm.delivery_type === 'pickup'" class="form-section pickup-details">
                     <h4>Информация о самовывозе</h4>
@@ -274,23 +298,29 @@ $policyUrl = rtrim($HOME_URL, '/') . '/policy';
                 </div>
                 <div class="form-section">
                     <div class="form-group checkbox-form">
-                        <input id="privacy-policy" type="checkbox" v-model="policy" @change="fieldErrors.policy = ''">
-                        <label class="checkbox-label" for="privacy-policy">
+                        <input id="privacy-policy-yes" type="checkbox" v-model="policyYes" @change="policyChange('yes')">
+                        <label class="checkbox-label" for="privacy-policy-yes">
                             Согласен с
                             <a href="<?php echo htmlspecialchars($policyUrl); ?>" target="_blank">политикой обработки
                                 персональных данных</a>
                         </label>
                         <div v-if="fieldErrors.policy" class="field-tooltip">{{ fieldErrors.policy }}</div>
                     </div>
+                    <div class="form-group checkbox-form">
+                        <input id="privacy-policy-no" type="checkbox" v-model="policyNo" @change="policyChange('no')">
+                        <label class="checkbox-label" for="privacy-policy-no">
+                            Не согласен с политикой обработки персональных данных
+                        </label>
+                    </div>
                 </div>
                 <div v-if="orderError" class="error-message">{{ orderError }}</div>
                 <div v-if="orderSuccess" class="success-message">{{ orderSuccess }}</div>
                 <div class="order-actions">
                     <button type="button" class="btn btn-secondary" @click="closeOrderModal">Отмена</button>
-                    <button v-if="orderForm.payment_type === 'online'" type="button" class="btn btn-primary" @click="handleOnlinePayment" :disabled="orderLoading || !policy">
+                    <button v-if="orderForm.payment_type === 'online'" type="button" class="btn btn-primary" @click="handleOnlinePayment" :disabled="orderLoading || (!policyYes && !policyNo)">
                         {{ orderLoading ? 'Оформляем заказ...' : 'Оформить заказ' }}
                     </button>
-                    <button v-else type="submit" class="btn btn-primary" :disabled="orderLoading || !policy">
+                    <button v-else type="submit" class="btn btn-primary" :disabled="orderLoading || (!policyYes && !policyNo)">
                         {{ orderLoading ? 'Оформляем заказ...' : 'Оформить заказ' }}
                     </button>
                 </div>

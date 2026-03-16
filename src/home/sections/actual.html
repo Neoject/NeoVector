@@ -23,7 +23,7 @@
                         <a v-for="(link, idx) in (Array.isArray(promo.links) ? promo.links : Object.values(promo.links || {}))"
                            :key="idx" :href="link.link" class="product-promo-item">
                             <div class="product-promo-image">
-                                <img v-if="link.data?.image" :src="link.data.image" :alt="link.title || link.name">
+                                <img v-if="link.data?.image" :src="'/' + link.data.image" :alt="link.title || link.name">
                                 <div v-else class="product-promo-placeholder">
                                     <i class="fas fa-image"></i>
                                 </div>

@@ -1,15 +1,11 @@
 <?php
 
-namespace NeoVision;
-
-use Exception;
-use Random\RandomException;
+namespace NeoVector;
 
 class User
 {
     /**
      * @return void
-     * @throws RandomException
      */
     public static function login(): void
     {
@@ -17,8 +13,7 @@ class User
         $password = $_POST['password'] ?? '';
         $remember = isset($_POST['remember']) && $_POST['remember'] == '1';
 
-        $auth = new Auth(Database::db());
-        $result = $auth->login($username, $password, $remember);
+        $result = Auth::login($username, $password, $remember);
 
         if ($result['success']) {
             Service::sendSuccess($result);
@@ -88,8 +83,7 @@ class User
      */
     public static function logout(): void
     {
-        $auth = new Auth(Database::db());
-        $auth->logout();
+        Auth::logout();
         Service::sendSuccess(['success' => true]);
     }
 
@@ -99,8 +93,7 @@ class User
      */
     public static function me(string $action): void
     {
-        $auth = new Auth(Database::db());
-        $user = $auth->getCurrentUser();
+        $user = Auth::getCurrentUser();
 
         if ($user && $action === 'me' && ($user['role'] ?? null) !== 'admin') {
             Service::sendJson(['authenticated' => false, 'error' => 'Admin access required']);
@@ -116,8 +109,7 @@ class User
     {
         Auth::requireAuth();
 
-        $auth = new Auth(Database::db());
-        $user = $auth->getCurrentUser();
+        $user = Auth::getCurrentUser();
 
         if (!$user) {
             Service::sendError(401, 'Not authenticated');
@@ -159,6 +151,7 @@ class User
         Auth::requireAuth();
 
         $userId = $_SESSION['user_id'] ?? null;
+
         if (!$userId) {
             Service::sendError(401, 'User ID not found');
         }
@@ -201,6 +194,7 @@ class User
 
         $err = $updateStmt->error;
         $updateStmt->close();
+
         Service::sendError(500, $err ?: 'Failed to update profile');
     }
 
@@ -212,6 +206,7 @@ class User
         Auth::requireAuth();
 
         $userId = $_SESSION['user_id'] ?? null;
+
         if (!$userId) {
             Service::sendError(401, 'User ID not found');
         }
@@ -244,6 +239,7 @@ class User
         }
 
         $stmt->bind_param('i', $userId);
+
         if (!$stmt->execute()) {
             $stmt->close();
             Service::sendError(500, 'Database error: ' . $stmt->error);
@@ -255,15 +251,18 @@ class User
             $stmt->close();
             Service::sendError(404, 'User not found');
         }
+
         $stmt->close();
 
         $currentPasswordHash = hash('sha256', $currentPassword);
+
         if ($currentPasswordHash !== $currentHash) {
             Service::sendError(401, 'Current password is incorrect');
         }
 
         $newPasswordHash = hash('sha256', $newPassword);
         $updateStmt = $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+
         if (!$updateStmt) {
             Service::sendError(500, 'Database error: ' . $db->error);
         }
@@ -287,8 +286,7 @@ class User
     {
         Auth::requireAuth();
 
-        $auth = new Auth(Database::db());
-        $currentUser = $auth->getCurrentUser();
+        $currentUser = Auth::getCurrentUser();
 
         if (!$currentUser || ($currentUser['role'] ?? null) !== 'admin') {
             Service::sendError(403, 'Admin access required');

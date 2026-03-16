@@ -1,9 +1,20 @@
 <section class="products-management">
     <div class="products-management-content">
         <h2>Управление товарами</h2>
-        <div style="display: flex; gap: 8px; margin-left: auto; position: relative;">
-            <button class="btn btn-secondary column-selector-btn" @click.stop="root.toggleColumnSelector">
-                <span>Столбцы</span>
+        <button class="products-actions-menu-btn" @click="root.toggleProductsActionsSidebar" title="Меню действий"
+                aria-label="Открыть меню действий">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+        <div class="products-actions-toolbar">
+            <button class="btn btn-primary" @click="root.openAddProductModal" title="Добавить товар">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+            <button class="btn btn-primary" @click="root.manageCategoryEdit" title="Категории">
+                <i class="fa-solid fa-sliders"></i>
+            </button>
+            <button class="btn btn-secondary" @click="root.refreshProducts" title="Обновить"><i class="fas fa-sync"></i></button>
+            <button class="btn btn-secondary" @click.stop="root.toggleColumnSelector" title="Столбцы">
+                <i class="fa-solid fa-list"></i>
             </button>
             <div v-if="root.showColumnSelector" class="column-selector-dropdown" @click.stop>
                 <div class="column-selector-header">
@@ -18,13 +29,55 @@
                     </label>
                 </div>
             </div>
-            <button class="btn btn-primary" @click="root.openAddProductModal">
-                <i class="fa-solid fa-plus"></i>
-            </button>
-            <button class="btn btn-primary"
-                    @click="root.manageCategoryEdit">Категории товаров</button>
         </div>
     </div>
+    <div class="products-management-controls">
+        <div class="form-group">
+            <label>Поиск</label>
+            <input>
+        </div>
+        <div class="form-group" style="margin: 0 24px">
+            <label>Фильтры</label>
+            <button class="btn btn-secondary" style="margin: 4px 12px" @click="root.openFiltersModal">
+                <i class="fa-solid fa-filter"></i>
+            </button>
+        </div>
+    </div>
+    <div class="products-actions-sidebar-overlay" :class="{ 'active': root.showProductsActionsSidebar }"
+         @click="root.closeProductsActionsSidebar"></div>
+    <teleport to="body">
+        <aside class="products-actions-sidebar" :class="{ 'open': root.showProductsActionsSidebar }">
+            <div class="products-actions-sidebar-header">
+                <h3>Действия</h3>
+                <button class="products-actions-sidebar-close" @click="root.closeProductsActionsSidebar"
+                        aria-label="Закрыть">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="products-actions-sidebar-body">
+                <button class="btn btn-primary btn-block" @click="root.openAddProductModal(); root.closeProductsActionsSidebar()">
+                    <i class="fa-solid fa-plus"></i> Добавить товар
+                </button>
+                <button class="btn btn-primary btn-block" @click="root.manageCategoryEdit(); root.closeProductsActionsSidebar()">
+                    <i class="fa-solid fa-sliders"></i> Категории
+                </button>
+                <button class="btn btn-secondary btn-block" @click="root.refreshProducts(); root.closeProductsActionsSidebar()">
+                    <i class="fas fa-sync"></i> Обновить
+                </button>
+                <div class="products-actions-sidebar-section">
+                    <strong>Столбцы таблицы</strong>
+                    <div class="column-selector-list column-selector-list-sidebar">
+                        <label v-for="(visible, column) in root.productTableColumns" :key="column"
+                               class="column-selector-item">
+                            <input type="checkbox" :checked="visible"
+                                   @change="root.toggleColumn(column)">
+                            <span>{{ root.getColumnLabel(column) }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </teleport>
     <template v-if="root.categoryEdit">
         <div class="categories-management" style="margin-top:20px;">
             <h3>Категории</h3>
@@ -41,8 +94,6 @@
                                    style="opacity:0.6;"></i>
                                 <div>
                                     <div style="font-weight:600;">{{ cat.name }}</div>
-                                    <div style="font-size:12px; opacity:0.7;">{{
-                                            cat.slug || cat.id }}</div>
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
@@ -77,11 +128,6 @@
                         <input type="text" v-model="root.categoryForm.name"
                                placeholder="Напр. Натуральная кожа">
                     </div>
-                    <div class="form-group">
-                        <label>Слаг (англ., опционально)</label>
-                        <input type="text" v-model="root.categoryForm.slug"
-                               placeholder="leather">
-                    </div>
 
                     <div v-if="root.categoryError" class="error-message">{{ root.categoryError }}
                     </div>
@@ -95,6 +141,9 @@
                         <button class="btn btn-secondary" style="margin-left:8px;"
                                 @click="root.startAddCategory">X</button>
                     </div>
+                </div>
+                <div class="categories-loader">
+                    <div class="products-loader"></div>
                 </div>
             </div>
         </div>
@@ -240,6 +289,12 @@
                 <td class="actions"
                     @contextmenu.prevent.stop="root.showContextMenu($event, product)">
                     <div class="actions-container">
+                        <button @click.stop="root.hideProduct(product.id)"
+                                class="btn btn-sm btn-link"
+                                :title="product.visibility === 0 ? 'Показать товар' : 'Скрыть товар'">
+                            <i class="fa-solid"
+                               :class="product.visibility === 0 ? 'fa-eye-slash' : 'fa-eye'"></i>
+                        </button>
                         <button @click.stop="root.openProductPage(product.id)"
                                 class="btn btn-sm btn-link">
                             <i class="fa-solid fa-up-right-from-square"></i>
@@ -257,5 +312,9 @@
             </tr>
             </tbody>
         </table>
+        <!-- Loader -->
+        <div class="products-table-loader">
+            <div class="products-loader"></div>
+        </div>
     </div>
 </section>

@@ -20,6 +20,7 @@ NV.ready(() => {
                     price: '',
                     price_sale: '',
                     category: '',
+                    product_type_id: null,
                     image: '',
                     image_description: '',
                     additionalImages: [],
@@ -76,11 +77,17 @@ NV.ready(() => {
                 usersLoading: false,
                 usersError: '',
                 editingOrderStatus: null,
-                productOptionTypes: [],
+                productOptions: [],
                 newOptionTypeName: '',
                 optionsLoading: false,
                 optionsError: '',
                 optionsSuccess: '',
+                productTypes: [],
+                newProductTypeName: '',
+                selectedProductTypeId: null,
+                typesLoading: false,
+                typesError: '',
+                typesSuccess: '',
                 isUploading: false,
                 uploadProgress: 0,
                 uploadSuccess: false,
@@ -164,6 +171,7 @@ NV.ready(() => {
                     updated_at: true
                 },
                 showColumnSelector: false,
+                showProductsActionsSidebar: false,
                 badIps: [],
                 dailyChart: null,
                 hourlyChart: null,
@@ -309,11 +317,15 @@ NV.ready(() => {
                     { class: 'fas fa-thumbs-up', name: 'Большой палец вверх', category: 'all' },
                     { class: 'fas fa-thumbs-down', name: 'Большой палец вниз', category: 'all' }
                 ],
+                title: '',
+                description: '',
                 imageMetaTags: '',
                 pickupAddress: '',
                 workHours: '',
                 storePhone: '',
-                selectedProducts: []
+                deliveryBel: 0,
+                deliveryRus: 0,
+                selectedProducts: [],
             }
         },
         watch: {
@@ -322,21 +334,26 @@ NV.ready(() => {
             },
             iconSearchQuery() {
                 this.updateFilteredIcons();
+            },
+            selectedProductTypeId(newVal) {
+                if (newVal) {
+                    this.loadProductOptions().then(() => null);
+                } else {
+                    this.productOptions = [];
+                }
             }
         },
         mounted() {
             this.cleanupOldOrders().then(() => null);
-
             this.getAllProducts().then(() => null);
             this.loadCategories().then(() => null);
             this.loadPageBlocks().then(() => null);
             this.loadOrders().then(() => null);
             this.loadUsers().then(() => null);
             this.loadPages().then(() => null);
-            this.loadProductOptions().then(() => null);
+            this.loadProductTypes().then(() => null);
             this.loadParams().then(() => null);
             this.loadColumnSettings();
-
             this.loadModalSizes();
 
             window.addEventListener('resize', () => {
@@ -381,19 +398,6 @@ NV.ready(() => {
             } catch (e) {
                 console.error('Error reading page from URL params', e);
             }
-
-            fetch('../bad_ip.json')
-                .then(response => response.json())
-                .then(blockedIps => {
-                    if (Array.isArray(blockedIps)) {
-                        this.badIps = blockedIps;
-                    } else {
-                        console.warn('Ожидался массив IP в bad_ip.json, получено:', blockedIps);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки bad_ip.json при инициализации:', error);
-                });
         },
         computed: {
             canCreateUser() {
@@ -562,6 +566,7 @@ NV.ready(() => {
                             price: '',
                             price_sale: '',
                             category: '',
+                            product_type_id: null,
                             image: '',
                             additionalImages: [],
                             additionalVideos: []
@@ -744,6 +749,7 @@ NV.ready(() => {
                     price: product.price,
                     price_sale: product.price_sale || '',
                     category: product.category,
+                    product_type_id: product.product_type_id || null,
                     image: product.image,
                     additionalImages: product.additional_images ? [...product.additional_images] : [],
                     additionalVideos: product.additional_videos ? [...product.additional_videos] : []
@@ -812,6 +818,7 @@ NV.ready(() => {
                         formData.append('price', this.productForm.price);
                         formData.append('price_sale', this.productForm.price_sale || '');
                         formData.append('category', this.productForm.category);
+                        formData.append('product_type_id', this.productForm.product_type_id || '');
                         formData.append('image', this.productForm.image);
                         formData.append('image_description', this.productForm.image_description)
 
@@ -839,6 +846,7 @@ NV.ready(() => {
                                     price: parseInt(this.productForm.price),
                                     price_sale: parseInt(this.productForm.price_sale),
                                     category: this.productForm.category,
+                                    product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
                                     image: (payload && payload.image) ? payload.image : this.products[index].image
                                 };
                             }
@@ -861,6 +869,7 @@ NV.ready(() => {
                         formData.append('price', this.productForm.price);
                         formData.append('price_sale', this.productForm.price_sale || '');
                         formData.append('category', this.productForm.category);
+                        formData.append('product_type_id', this.productForm.product_type_id || '');
                         formData.append('image', this.productForm.image || '');
                         formData.append('image_description', this.productForm.image_description || '');
 
@@ -886,6 +895,7 @@ NV.ready(() => {
                                 price: parseInt(this.productForm.price),
                                 price_sale: parseInt(this.productForm.price_sale),
                                 category: this.productForm.category,
+                                product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
                                 image: result && result.image ? result.image : ''
                             });
                         } else {
@@ -909,6 +919,26 @@ NV.ready(() => {
                     console.error('Error saving product:', error);
                     alert('Ошибка при сохранении товара');
                 }
+            },
+            async refreshProducts() {
+                await this.getAllProducts();
+                await Category.methods.loadCategories();
+
+                let productsLoader = document.querySelector('.products-table-loader');
+                let categoriesLoader = document.querySelector('.categories-loader');
+
+                if (productsLoader) {
+                    productsLoader.style.display = 'block';
+                }
+
+                if (categoriesLoader) {
+                    categoriesLoader.style.display = 'block';
+                }
+
+                setTimeout(() => {
+                    if (productsLoader) productsLoader.style.display = 'none';
+                    if (categoriesLoader) categoriesLoader.style.display = 'none';
+                }, 500);
             },
             async generateDescriptionWithAI() {
                 if (this.aiGeneratingDescription) {
@@ -1173,7 +1203,6 @@ NV.ready(() => {
             removeImage() {
                 this.selectedFile = null;
                 this.productForm.image = '';
-                this.$refs.fileInput.value = '';
             },
             getImageUrl() {
                 if (this.selectedFile) {
@@ -1294,7 +1323,9 @@ NV.ready(() => {
 
                     const resizeHandles = table.querySelectorAll('.column-resize-handle');
                     resizeHandles.forEach(handle => {
-                        this.setupColumnResize(handle);
+                        const newHandle = handle.cloneNode(true);
+                        handle.parentNode.replaceChild(newHandle, handle);
+                        this.setupColumnResize(newHandle);
                     });
                 });
             },
@@ -1307,6 +1338,7 @@ NV.ready(() => {
 
                 const startResize = (e) => {
                     if (window.innerWidth <= 768) return;
+                    if (e.detail && e.detail > 1) return;
 
                     e.preventDefault();
                     e.stopPropagation();
@@ -1336,7 +1368,29 @@ NV.ready(() => {
                         if (!isResizing) return;
 
                         const newWidth = Math.max(50, startWidth + (e.clientX - startX));
-                        column.style.width = newWidth + 'px';
+                        const widthPx = newWidth + 'px';
+
+                        column.style.width = widthPx;
+                        column.style.minWidth = widthPx;
+
+                        const table = column.closest('table');
+                        if (table) {
+                            const headerRow = table.querySelector('thead tr');
+                            if (headerRow) {
+                                const columnIndex = Array.from(headerRow.children).indexOf(column);
+
+                                if (columnIndex !== -1) {
+                                    const rows = table.querySelectorAll('tbody tr');
+                                    rows.forEach(row => {
+                                        const cells = row.querySelectorAll('td');
+                                        if (cells[columnIndex]) {
+                                            cells[columnIndex].style.width = widthPx;
+                                            cells[columnIndex].style.minWidth = widthPx;
+                                        }
+                                    });
+                                }
+                            }
+                        }
 
                         this.saveColumnWidth(column.dataset.column, newWidth);
 
@@ -1361,6 +1415,60 @@ NV.ready(() => {
                 };
 
                 handle.addEventListener('mousedown', startResize);
+                    handle.addEventListener('dblclick', (e) => {
+                        if (window.innerWidth <= 768) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const col = handle.parentElement;
+                        if (!col) return;
+
+                        const columnName = col.dataset.column;
+                        if (!columnName) return;
+
+                        const table = col.closest('table');
+                        if (!table) return;
+
+                        const headerRow = table.querySelector('thead tr');
+                        if (!headerRow) return;
+
+                        const columnIndex = Array.from(headerRow.children).indexOf(col);
+                        if (columnIndex === -1) return;
+
+                        const originalLayout = table.style.tableLayout;
+                        table.style.tableLayout = 'auto';
+
+                        col.style.width = '';
+                        col.style.minWidth = '';
+                        const rowsForMeasure = table.querySelectorAll('tbody tr');
+                        rowsForMeasure.forEach(row => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells[columnIndex]) {
+                                cells[columnIndex].style.width = '';
+                                cells[columnIndex].style.minWidth = '';
+                            }
+                        });
+
+                        table.offsetWidth;
+                        const naturalWidth = col.offsetWidth;
+                        const widthPx = naturalWidth + 'px';
+
+                        table.style.tableLayout = originalLayout || 'fixed';
+
+                        col.style.width = widthPx;
+                        col.style.minWidth = widthPx;
+
+                        const rows = table.querySelectorAll('tbody tr');
+                        rows.forEach(row => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells[columnIndex]) {
+                                cells[columnIndex].style.width = widthPx;
+                                cells[columnIndex].style.minWidth = widthPx;
+                            }
+                        });
+
+                        this.saveColumnWidth(columnName, naturalWidth);
+                    });
             },
             saveColumnWidth(columnName, width) {
                 const savedWidths = JSON.parse(localStorage.getItem('admin_column_widths') || '{}');
@@ -1375,7 +1483,24 @@ NV.ready(() => {
                 Object.keys(savedWidths).forEach(columnName => {
                     const column = table.querySelector(`th[data-column="${columnName}"]`);
                     if (column) {
-                        column.style.width = savedWidths[columnName] + 'px';
+                        const widthPx = savedWidths[columnName] + 'px';
+                        column.style.width = widthPx;
+                        column.style.minWidth = widthPx;
+
+                        const headerRow = table.querySelector('thead tr');
+                        if (!headerRow) return;
+
+                        const columnIndex = Array.from(headerRow.children).indexOf(column);
+                        if (columnIndex === -1) return;
+
+                        const rows = table.querySelectorAll('tbody tr');
+                        rows.forEach(row => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells[columnIndex]) {
+                                cells[columnIndex].style.width = widthPx;
+                                cells[columnIndex].style.minWidth = widthPx;
+                            }
+                        });
                     }
                 });
             },
@@ -2740,6 +2865,12 @@ NV.ready(() => {
             toggleColumnSelector() {
                 this.showColumnSelector = !this.showColumnSelector;
             },
+            toggleProductsActionsSidebar() {
+                this.showProductsActionsSidebar = !this.showProductsActionsSidebar;
+            },
+            closeProductsActionsSidebar() {
+                this.showProductsActionsSidebar = false;
+            },
             getVisibleColumnsCount() {
                 return Object.values(this.productTableColumns).filter(v => v !== false).length + 2; // +2 for checkbox and actions
             },
@@ -3457,26 +3588,58 @@ NV.ready(() => {
             },
             async loadProductOptions() {
                 try {
-                    const response = await fetch('../api.php?action=product_options', { credentials: 'same-origin' });
+                    const params = new URLSearchParams();
+                    params.set('action', 'product_options');
+
+                    if (this.selectedProductTypeId) {
+                        params.set('type_id', this.selectedProductTypeId);
+                    }
+
+                    const response = await fetch('../api.php?' + params.toString(), { credentials: 'same-origin' });
+
                     if (response.ok) {
                         const data = await response.json();
-                        const incoming = Array.isArray(data.types) ? data.types : [];
-                        this.productOptionTypes = incoming.length
-                            ? incoming.map(type => ({
-                                id: type.id || null,
-                                name: type.name || '',
-                                slug: type.slug || '',
-                                values: Array.isArray(type.values) && type.values.length ? [...type.values] : ['']
-                            }))
-                            : this.getDefaultOptionTypes();
+
+                        this.productOptions = data.options.map((type) => ({
+                            id: type.id || null,
+                            name: type.name || '',
+                            values: Array.isArray(type.values) && type.values.length ? [...type.values] : ['']
+                        }));
                     } else {
-                        this.productOptionTypes = this.getDefaultOptionTypes();
+                        console.error('Failed to load options', response.error);
                     }
+
                     this.newOptionTypeName = '';
                 } catch (error) {
                     alert(`Error loading product options: ${error}`);
-                    this.productOptionTypes = this.getDefaultOptionTypes();
                     this.newOptionTypeName = '';
+                }
+            },
+            async loadProductTypes() {
+                try {
+                    const response = await fetch('../api.php?action=product_types', { credentials: 'same-origin' });
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        this.productTypes = Array.isArray(data.types)
+                            ? data.types.map((type) => ({
+                                id: type.id || null,
+                                name: type.name || '',
+                            }))
+                            : [];
+
+                        if (!this.selectedProductTypeId && this.productTypes.length) {
+                            this.selectedProductTypeId = this.productTypes[0].id || null;
+                        }
+                    } else {
+                        console.error('Failed to load product types', response.error);
+                    }
+
+                    this.newProductTypeName = '';
+                } catch (error) {
+                    alert(`Error loading product types: ${error}`);
+                    this.newProductTypeName = '';
                 }
             },
             async saveProductOptions() {
@@ -3485,7 +3648,15 @@ NV.ready(() => {
                 this.optionsSuccess = '';
 
                 try {
-                    const preparedTypes = this.productOptionTypes.map(type => {
+                    const currentTypeId = this.selectedProductTypeId ? parseInt(this.selectedProductTypeId, 10) : 0;
+
+                    if (!currentTypeId) {
+                        this.optionsError = 'Сначала выберите тип товара';
+                        this.optionsLoading = false;
+                        return;
+                    }
+
+                    const preparedOptions = this.productOptions.map(type => {
                         const name = type.name ? type.name.trim() : '';
                         const values = Array.isArray(type.values)
                             ? type.values
@@ -3498,15 +3669,10 @@ NV.ready(() => {
                         };
                     }).filter(type => type.name && type.values.length);
 
-                    if (!preparedTypes.length) {
-                        this.optionsError = 'Добавьте хотя бы один тип опций и его значения';
-                        this.optionsLoading = false;
-                        return;
-                    }
-
                     const formData = new FormData();
                     formData.append('action', 'save_product_options');
-                    formData.append('option_types', JSON.stringify(preparedTypes));
+                    formData.append('option_types', JSON.stringify(preparedOptions));
+                    formData.append('type_id', String(currentTypeId));
 
                     const response = await fetch('../api.php', {
                         method: 'POST',
@@ -3534,65 +3700,141 @@ NV.ready(() => {
 
                 this.optionsLoading = false;
             },
+            async saveProductTypes() {
+                this.typesLoading = true;
+                this.typesError = '';
+                this.typesSuccess = '';
+
+                try {
+                    const preparedTypes = this.productTypes
+                        .map(type => {
+                            const name = type.name ? type.name.trim() : '';
+                            return { name };
+                        })
+                        .filter(type => type.name);
+
+                    if (!preparedTypes.length) {
+                        this.typesError = 'Добавьте хотя бы один тип товара';
+                        this.typesLoading = false;
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('action', 'save_product_types');
+                    formData.append('types', JSON.stringify(preparedTypes));
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            this.typesSuccess = 'Типы товаров успешно сохранены';
+                            setTimeout(() => {
+                                this.typesSuccess = '';
+                            }, 3000);
+                        } else {
+                            this.typesError = result.error || 'Ошибка сохранения';
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        this.typesError = errorData.error || 'Ошибка сохранения';
+                    }
+                } catch (error) {
+                    console.error('Error saving product types:', error);
+                    this.typesError = 'Ошибка сохранения типов товаров';
+                }
+
+                this.typesLoading = false;
+            },
             addOptionType() {
                 const name = this.newOptionTypeName.trim();
                 if (!name) {
                     this.optionsError = 'Введите название типа опций';
                     return;
                 }
-                this.productOptionTypes.push({
+                this.productOptions.push({
                     id: null,
                     name,
-                    slug: '',
                     values: ['']
                 });
                 this.newOptionTypeName = '';
                 this.optionsError = '';
             },
+            addProductType() {
+                const name = (this.newProductTypeName || '').trim();
+                if (!name) {
+                    this.typesError = 'Введите название типа товара';
+                    return;
+                }
+
+                this.productTypes.push({
+                    id: null,
+                    name,
+                });
+
+                this.newProductTypeName = '';
+                this.typesError = '';
+            },
             removeOptionType(index) {
-                this.productOptionTypes.splice(index, 1);
+                if (confirm('Вы действительно хотите удалить этот список опций?')) {
+                    this.productOptions.splice(index, 1);
+                }
+            },
+            removeProductType(index) {
+                if (!this.productTypes[index]) {
+                    return;
+                }
+
+                if (confirm('Вы действительно хотите удалить этот тип товара?')) {
+                    this.productTypes.splice(index, 1);
+                }
             },
             moveOptionTypeUp(typeIndex) {
-                if (typeIndex <= 0 || typeIndex >= this.productOptionTypes.length) {
+                if (typeIndex <= 0 || typeIndex >= this.productOptions.length) {
                     return;
                 }
-                const temp = this.productOptionTypes[typeIndex];
-                this.productOptionTypes[typeIndex] = this.productOptionTypes[typeIndex - 1];
-                this.productOptionTypes[typeIndex - 1] = temp;
+                const temp = this.productOptions[typeIndex];
+                this.productOptions[typeIndex] = this.productOptions[typeIndex - 1];
+                this.productOptions[typeIndex - 1] = temp;
+            },
+            moveProductTypeUp(index) {
+                if (index <= 0 || index >= this.productTypes.length) {
+                    return;
+                }
+
+                const temp = this.productTypes[index];
+                this.productTypes[index] = this.productTypes[index - 1];
+                this.productTypes[index - 1] = temp;
             },
             moveOptionTypeDown(typeIndex) {
-                if (typeIndex < 0 || typeIndex >= this.productOptionTypes.length - 1) {
+                if (typeIndex < 0 || typeIndex >= this.productOptions.length - 1) {
                     return;
                 }
-                const temp = this.productOptionTypes[typeIndex];
-                this.productOptionTypes[typeIndex] = this.productOptionTypes[typeIndex + 1];
-                this.productOptionTypes[typeIndex + 1] = temp;
+                const temp = this.productOptions[typeIndex];
+                this.productOptions[typeIndex] = this.productOptions[typeIndex + 1];
+                this.productOptions[typeIndex + 1] = temp;
+            },
+            moveProductTypeDown(index) {
+                if (index < 0 || index >= this.productTypes.length - 1) {
+                    return;
+                }
+
+                const temp = this.productTypes[index];
+                this.productTypes[index] = this.productTypes[index + 1];
+                this.productTypes[index + 1] = temp;
             },
             addOptionValue(typeIndex) {
-                if (!this.productOptionTypes[typeIndex]) {
+                if (!this.productOptions[typeIndex]) {
                     return;
                 }
-                this.productOptionTypes[typeIndex].values.push('');
+                this.productOptions[typeIndex].values.push('');
             },
             removeOptionValue(typeIndex, valueIndex) {
-                const optionType = this.productOptionTypes[typeIndex];
+                const optionType = this.productOptions[typeIndex];
                 optionType.values.splice(valueIndex, 1);
-            },
-            getDefaultOptionTypes() {
-                return [
-                    {
-                        id: null,
-                        name: 'Размеры',
-                        slug: 'sizes',
-                        values: ['38', '40', '42', '44']
-                    },
-                    {
-                        id: null,
-                        name: 'Модели',
-                        slug: 'models',
-                        values: ['Apple', 'Samsung', 'Xiaomi', 'Honor']
-                    }
-                ];
             },
             async deleteOrder(orderId) {
                 if (!orderId) {
@@ -3692,13 +3934,19 @@ NV.ready(() => {
             async loadParams() {
                 try {
                     const response = await fetch('../api.php?action=get_params', { credentials: 'same-origin' });
+
                     if (response.ok) {
                         const data = await response.json();
+
                         if (data.success) {
+                            this.title = data.title;
+                            this.description = data.description;
                             this.imageMetaTags = data.image_meta_tags;
                             this.pickupAddress = data.pickup_address;
                             this.workHours = data.work_hours;
                             this.storePhone = data.store_phone;
+                            this.deliveryBel = data.delivery_bel;
+                            this.deliveryRus = data.delivery_rus;
                         }
                     }
                 } catch (error) {
@@ -3706,32 +3954,33 @@ NV.ready(() => {
                 }
             },
             async saveParams() {
-                if (this.imageMetaTags) {
-                    try {
-                        const formData = new FormData();
-                        formData.append('action', 'save_params');
-                        formData.append('image_meta_tags', this.imageMetaTags);
-                        formData.append('pickup_address', this.pickupAddress);
-                        formData.append('work_hours', this.workHours);
-                        formData.append('store_phone', this.storePhone);
+                try {
+                    const formData = new FormData();
 
-                        const response = await fetch('../api.php', {
-                            method: 'POST',
-                            body: formData
-                        });
+                    formData.append('action', 'save_params');
+                    formData.append('title', this.title);
+                    formData.append('description', this.description);
+                    formData.append('image_meta_tags', this.imageMetaTags);
+                    formData.append('pickup_address', this.pickupAddress);
+                    formData.append('work_hours', this.workHours);
+                    formData.append('store_phone', this.storePhone);
+                    formData.append('delivery_bel', this.deliveryBel);
+                    formData.append('delivery_rus', this.deliveryRus);
 
-                        const data = await response.json();
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                        if (response.ok && data.success) {
-                            alert('Параметры успешно сохранены');
-                        } else {
-                            alert(`Ошибка при сохранении параметров: ${data.error || 'Неизвестная ошибка'}`);
-                        }
-                    } catch (error) {
-                        alert(`Произошла ошибка при сохранении параметров: ${error}`);
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        alert('Параметры успешно сохранены');
+                    } else {
+                        alert(`Ошибка при сохранении параметров: ${data.error || 'Неизвестная ошибка'}`);
                     }
-                } else {
-                    alert('Пожалуйста, введите теги изображений');
+                } catch (error) {
+                    alert(`Произошла ошибка при сохранении параметров: ${error}`);
                 }
             },
             showContextMenu(event, product = null) {
@@ -3826,6 +4075,7 @@ NV.ready(() => {
                     id: null,
                     name: product.name + ' (копия)'
                 };
+
                 this.editProduct(duplicatedProduct);
             },
             selectProductFromMenu() {
@@ -3835,6 +4085,7 @@ NV.ready(() => {
             },
             toggleProductSelection(productId) {
                 const index = this.selectedProducts.indexOf(productId);
+
                 if (index > -1) {
                     this.selectedProducts.splice(index, 1);
                 } else {
@@ -3882,6 +4133,42 @@ NV.ready(() => {
             },
             getObject(e) {
                 return JSON.parse(JSON.stringify(e));
+            },
+            async hideProduct(id) {
+                try {
+                    const product = this.products.find(p => p.id === id);
+
+                    if (!product) {
+                        alert('Товар не найден');
+                        return;
+                    }
+
+                    const newVisibility = product.visibility === 0 ? 1 : 0;
+
+                    const formData = new FormData();
+                    formData.append('action', 'visibility');
+                    formData.append('id', id);
+                    formData.append('visibility', String(newVisibility));
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json().catch(() => null);
+
+                        if (data && data.success) {
+                            product.visibility = newVisibility;
+                        } else {
+                            alert(`Ошибка при изменении видимости товара`);
+                        }
+                    } else {
+                        alert(`Ошибка при изменении видимости товара`);
+                    }
+                } catch (error) {
+                    alert(`Ошибка при изменении видимости товара: ${error}`);
+                }
             }
         }
     });

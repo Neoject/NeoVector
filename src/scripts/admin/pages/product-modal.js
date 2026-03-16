@@ -32,6 +32,9 @@ NV.ready(function registerProductModalComponent() {
             categories() {
                 return this.$root.categories || [];
             },
+            productTypes() {
+                return this.$root.productTypes || [];
+            },
             selectOpen() {
                 return this.$root.selectOpen;
             },

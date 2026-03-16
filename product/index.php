@@ -1,6 +1,6 @@
 <?php
 
-use NeoVision\Config;
+use NeoVector\Config;
 
 require_once __DIR__ . '/../header.php';
 
@@ -365,7 +365,7 @@ if (isset($product) && $product) {
                     <div v-if="cartItems.length > 0">
                         <div class="cart-item" v-for="(item, cartIndex) in cartItems"
                             :key="`${item.id}-${item.optionKey || cartIndex}`">
-                            <img :src="'/'+item.image" :alt="item.name" class="cart-item-img" loading="lazy"
+                            <img :src="item.image" :alt="item.name" class="cart-item-img" loading="lazy"
                                 decoding="async">
                             <div class="cart-item-details">
                                 <h4 class="cart-item-title">{{ item.name }}</h4>
@@ -478,7 +478,7 @@ if (isset($product) && $product) {
                         cartItems: [],
                         wishlist: [],
                         products: [],
-                        productOptionTypes: [],
+                        productOptions: [],
                         selectedProductOptions: [],
                         optionSelectionIndex: 0,
                         showOptionSelector: false,
@@ -500,6 +500,7 @@ if (isset($product) && $product) {
                             delivery_building: '',
                             delivery_date: '',
                             delivery_time: '',
+                            deliveryPrice: 0,
                             payment_type: 'cash',
                             notes: ''
                         },
@@ -515,14 +516,33 @@ if (isset($product) && $product) {
                         orderLoading: false,
                         orderError: '',
                         orderSuccess: '',
-                        policy: false,
+                        policyYes: false,
+                        policyNo: false,
+                        deliveryAvailable: true,
                         mobileGalleryTouchStart: null,
                         mobileGalleryMouseStart: null,
                         mobileGalleryNavigating: false,
                         isImageLoading: false,
                         wasSwipe: false,
                         imageTouchStart: null,
-                        params: NV.loadParams()
+                        params: NV.loadParams(),
+                        deliveryBel: '',
+                        deliveryRus: '',
+                        dadataToken: '7c958262d9f01a263e77984b8ee106c01816709a',
+                        citySuggestions: [],
+                        streetSuggestions: [],
+                        citySearchLoading: false,
+                        streetSearchLoading: false,
+                        citySearchTimeout: null,
+                        streetSearchTimeout: null,
+                        citySearchAbortController: null,
+                        streetSearchAbortController: null,
+                        deliveryCityValid: false,
+                        deliveryStreetValid: false,
+                        selectedCityData: null,
+                        selectedStreetData: null,
+                        deliveryCityError: '',
+                        deliveryStreetError: '',
                     };
                 },
                 computed: {
@@ -534,10 +554,10 @@ if (isset($product) && $product) {
                         return this.cartItems.some(item => item.id === this.product.id);
                     },
                     currentOptionType() {
-                        if (!this.productOptionTypes || !this.productOptionTypes.length) {
+                        if (!this.productOptions || !this.productOptions.length) {
                             return null;
                         }
-                        return this.productOptionTypes[this.optionSelectionIndex] || null;
+                        return this.productOptions[this.optionSelectionIndex] || null;
                     },
                     favoriteProducts() {
                         return this.products.filter(product => this.wishlist.includes(product.id));
@@ -843,18 +863,18 @@ if (isset($product) && $product) {
                     },
                     async loadProductOptions() {
                         try {
-                            const apiUrl = (this.homeUrl.endsWith('/') ? this.homeUrl : this.homeUrl + '/') + 'api.php?action=product_options';
+                            const apiUrl = (this.homeUrl.endsWith('/') ? this.homeUrl : this.homeUrl + '/') + 'api.php?action=product_options&type_id=' + encodeURIComponent(this.product && this.product.product_type_id ? this.product.product_type_id : 0);
                             const response = await fetch(apiUrl, { credentials: 'same-origin' });
+
                             if (response && response.ok) {
                                 const data = await response.json();
-                                const types = Array.isArray(data.types) ? data.types : [];
-                                this.productOptionTypes = types.length ? this.normalizeOptionTypes(types) : this.getDefaultOptionTypes();
+                                const options = Array.isArray(data.options) ? data.options : [];
+                                this.productOptions = this.normalizeOptionTypes(options);
                             } else {
-                                this.productOptionTypes = this.getDefaultOptionTypes();
+                                console.warn('Failed to load product options, using defaults');
                             }
                         } catch (error) {
                             console.error('Error loading product options:', error);
-                            this.productOptionTypes = this.getDefaultOptionTypes();
                         }
                     },
                     normalizeOptionTypes(types) {
@@ -876,32 +896,17 @@ if (isset($product) && $product) {
                             })
                             .filter(type => type.values.length);
                     },
-                    getDefaultOptionTypes() {
-                        return [
-                            {
-                                id: null,
-                                name: 'Размеры',
-                                slug: 'sizes',
-                                values: ['38', '40', '42', '44']
-                            },
-                            {
-                                id: null,
-                                name: 'Модели',
-                                slug: 'models',
-                                values: ['Apple', 'Samsung', 'Xiaomi', 'Honor']
-                            }
-                        ];
-                    },
                     slugifyOptionName(name) {
-                        if (!name) return '';
+                        if (!name) {
+                            return '';
+                        }
                         return name
                             .toString()
-                            .toLowerCase()
-                            .replace(/\s+/g, '-')
-                            .replace(/[^\w\-]+/g, '')
-                            .replace(/\-\-+/g, '-')
-                            .replace(/^-+/, '')
-                            .replace(/-+$/, '');
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[^a-zA-Z0-9]+/g, '-')
+                            .replace(/^-+|-+$/g, '')
+                            .toLowerCase();
                     },
                     startProductHandSelection(action, event) {
                         if (event) {
@@ -910,7 +915,7 @@ if (isset($product) && $product) {
                         this.selectedProductOptions = [];
                         this.optionSelectionIndex = 0;
                         this.selectingHandAction = action === 'buyNow' ? 'buy' : 'cart';
-                        if (this.productOptionTypes.length > 0) {
+                        if (this.productOptions.length > 0) {
                             this.showOptionSelector = true;
                         } else {
                             this.finishProductOptionSelection();
@@ -926,7 +931,7 @@ if (isset($product) && $product) {
                             value
                         });
                         this.optionSelectionIndex += 1;
-                        if (this.optionSelectionIndex >= this.productOptionTypes.length) {
+                        if (this.optionSelectionIndex >= this.productOptions.length) {
                             this.showOptionSelector = false;
                             this.$nextTick(() => {
                                 this.finishProductOptionSelection();
@@ -1002,7 +1007,7 @@ if (isset($product) && $product) {
                         const pickupAddressEl = document.getElementById('pickup_address');
                         const workHoursEl = document.getElementById('work_hours');
                         const storePhoneEl = document.getElementById('store_phone');
-                        
+
                         if (pickupAddressEl && NV.pickupAddress) {
                             pickupAddressEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${NV.pickupAddress}`;
                         }
@@ -1012,6 +1017,13 @@ if (isset($product) && $product) {
                         if (storePhoneEl && NV.storePhone) {
                             storePhoneEl.innerHTML = `<i class="fas fa-phone"></i> ${NV.storePhone}`;
                         }
+                    },
+                    loadParams() {
+                        //todo
+                        // const delivery = document.getElementById('delivery_price');
+
+                        // this.deliveryBel = NV.deliveryBel;
+                        // this.deliveryRus = NV.deliveryRus;
                     },
                     closeOrderModal() {
                         this.orderModalOpen = false;
@@ -1155,9 +1167,11 @@ if (isset($product) && $product) {
                     },
                     getCartItemsCount() {
                         let count = 0;
+
                         for (let p in this.cartItems) {
                             count += this.cartItems[p].quantity;
                         }
+
                         return count;
                     },
                     getWishlistCount() {
@@ -1178,17 +1192,21 @@ if (isset($product) && $product) {
                     },
                     normalizeMediaUrl(path) {
                         if (!path) return '';
+
                         if (path.startsWith('http://') || path.startsWith('https://')) {
                             return path;
                         }
+
                         if (path.startsWith('/')) {
                             const baseWithoutTrailing = this.homeUrl === '/' ? '' : this.homeUrl.replace(/\/+$/, '');
                             return baseWithoutTrailing + path;
                         }
+
                         return this.homeUrl + path;
                     },
                     getImageUrl(url) {
                         if (!url) return '';
+
                         return this.normalizeMediaUrl(url);
                     },
                     increaseQuantity(item) {
@@ -1207,6 +1225,7 @@ if (isset($product) && $product) {
                                 cartItem.id === item.id &&
                                 (cartItem.optionKey || this.buildOptionKey(cartItem.options || [])) === (item.optionKey || this.buildOptionKey(item.options || []))
                             );
+
                             if (index > -1) {
                                 this.cartItems.splice(index, 1);
                                 this.saveCart();
@@ -1222,19 +1241,23 @@ if (isset($product) && $product) {
                         } else {
                             this.wishlist.push(productId);
                         }
+
                         this.saveWishlist();
                     },
                     fromWishlistToCart(productId, event) {
                         if (event) {
                             event.stopPropagation();
                         }
+
                         const product = this.products.find(p => p.id === productId);
+
                         if (product) {
                             const optionKey = '';
                             const existingItem = this.cartItems.find(item =>
                                 item.id === product.id &&
                                 (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
                             );
+
                             if (existingItem) {
                                 existingItem.quantity += 1;
                             } else {
@@ -1303,7 +1326,23 @@ if (isset($product) && $product) {
                         if (this.currentMediaIndex < this.allMedia.length - 1) {
                             this.currentMediaIndex += 1;
                         }
-                    }
+                    },
+                    policyChange(value) {
+                        this.fieldErrors.policy = '';
+
+                        if (value === 'yes') {
+                            this.policyNo = false;
+                            this.deliveryAvailable = true;
+                        } else if (value === 'no') {
+                            this.policyNotify();
+                            this.orderForm.delivery_type = 'pickup';
+                            this.policyYes = false;
+                            this.deliveryAvailable = false;
+                        }
+                    },
+                    policyNotify() {
+                        NV.notifyPolicyReject();
+                    },
                 }
             }).mount('#app');
         })

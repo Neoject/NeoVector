@@ -9,6 +9,14 @@
             <input type="text" v-model="productForm.name" required>
         </div>
         <div class="form-group">
+            <label>Тип товара</label>
+            <select v-model="productForm.product_type_id" required>
+                <option v-for="type in productTypes" :key="type.id" :value="type.id">
+                    {{ type.name }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group">
             <label>Описание товара</label>
             <textarea v-model="productForm.description"></textarea>
         </div>

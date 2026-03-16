@@ -19,8 +19,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-use NeoVision\Auth;
-use NeoVision\Database;
+use NeoVector\Auth;
+use NeoVector\Database;
 use Random\RandomException;
 
 $db = Database::getInstance()->getConnection();
@@ -123,7 +123,7 @@ $adminUser = $auth->getCurrentUser();
     <meta name="msapplication-tap-highlight" content="no">
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../script.js"></script>
+    <script src="../src/scripts/script.js"></script>
     <script src="<?=$HOME_URL?>src/scripts/admin/pages/admin-dashboard.js"></script>
     <?php foreach ($scripts as $script): ?>
     <script src="<?=$HOME_URL?>src/scripts/admin/pages/<?=$script?>.js"></script>
@@ -433,7 +433,7 @@ $adminUser = $auth->getCurrentUser();
     <script src="../src/scripts/admin/admin.js"></script>
 
     <?php foreach ($scripts as $script) {
-        echo '<script src="'. __DIR__ .'/pages/'.$script.'.js"></script>';
+        echo '<script src="../src/scripts/admin/pages/'.$script.'.js"></script>';
     } ?>
 
     <script type="text/x-template" id="admin-dashboard-template">

@@ -260,6 +260,7 @@
 }
 
 .categories-layout {
+    position: relative;
     border: 1px solid var(--primary);
     border-radius: 1vw;
     margin: 2vw 0;

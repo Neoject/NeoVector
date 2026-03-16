@@ -1,25 +1,23 @@
 <?php
 
-namespace NeoVision;
+namespace NeoVector\Product;
 
-use mysqli;
 use Exception;
+use NeoVector\Auth;
+use NeoVector\Config;
+use NeoVector\Database;
+use NeoVector\Log;
+use NeoVector\Service;
 
 class Product
 {
-    private mysqli $db;
-
-    public function __construct(mysqli $db)
-    {
-        $this->db = $db;
-        $this->createTables();
-    }
-
     /**
      * @return void
      */
-    private function createTables(): void
+    private static function createTables(): void
     {
+        $db = Database::db();
+
         $sql = "CREATE TABLE IF NOT EXISTS `products` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
             `name` varchar(255) NOT NULL,
@@ -29,8 +27,10 @@ class Product
             `price` int(255) NOT NULL,
             `price_sale` int(255) NULL,
             `category` varchar(64) NOT NULL,
+            `product_type_id` int(11) DEFAULT NULL,
             `image` varchar(255) NOT NULL,
             `image_description` text NOT NULL,
+            `visibility` int(255) NOT NULL DEFAULT '1',
             `sort_order` int(11) DEFAULT 0,
             `created_by` int(255) NOT NULL,
             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,24 +39,8 @@ class Product
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        if (!$this->db->query($sql)) {
-            Log::error('Failed to create products table', $this->db->error);
-        }
-
-        $checkColumn = $this->db->query("SHOW COLUMNS FROM `products` LIKE 'sort_order'");
-        if ($checkColumn && $checkColumn->num_rows === 0) {
-            $this->db->query("ALTER TABLE `products` ADD COLUMN `sort_order` int(11) DEFAULT 0");
-            $this->db->query("UPDATE `products` SET `sort_order` = `id` WHERE `sort_order` = 0");
-        }
-
-        $checkLastChangedBy = $this->db->query("SHOW COLUMNS FROM `products` LIKE 'last_changed_by'");
-        if ($checkLastChangedBy && $checkLastChangedBy->num_rows === 0) {
-            $this->db->query("ALTER TABLE `products` ADD COLUMN `last_changed_by` int(255) NOT NULL DEFAULT 0 AFTER `created_at`");
-        }
-
-        $checkLastChangedAt = $this->db->query("SHOW COLUMNS FROM `products` LIKE 'last_changed_at'");
-        if ($checkLastChangedAt && $checkLastChangedAt->num_rows === 0) {
-            $this->db->query("ALTER TABLE `products` ADD COLUMN `last_changed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `last_changed_by`");
+        if (!$db->query($sql)) {
+            Log::error('Failed to create products table', $db->error);
         }
 
         $sqlImages = "CREATE TABLE IF NOT EXISTS `product_images` (
@@ -71,33 +55,34 @@ class Product
             FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        if (!$this->db->query($sqlImages)) {
-            Log::error('Failed to create product_images table', $this->db->error);
+        if (!$db->query($sqlImages)) {
+            Log::error('Failed to create product_images table', $db->error);
         }
     }
 
     /**
      * @return array
      */
-    public function getAll(): array
+    private static function getAll(): array
     {
-        $stmt = $this->db->prepare('SELECT id, name, description, peculiarities, material, price, price_sale, category, image, image_description, sort_order, created_by, created_at, last_changed_at, last_changed_by FROM products ORDER BY sort_order, id');
-        
+        $db = Database::db();
+        $stmt = $db->prepare('SELECT * FROM products ORDER BY sort_order, id');
+
         if (!$stmt) {
-            Log::error('Failed to prepare statement in getAll', $this->db->error);
+            Log::error('Failed to prepare statement in getAll', $db->error);
             return [];
         }
-        
+
         $stmt->execute();
         $result = $stmt->get_result();
 
         $products = [];
 
         while ($row = $result->fetch_assoc()) {
-            $imagesStmt = $this->db->prepare('SELECT image_path, file_type FROM product_images WHERE product_id = ? ORDER BY sort_order');
-            
+            $imagesStmt = $db->prepare('SELECT image_path, file_type FROM product_images WHERE product_id = ? ORDER BY sort_order');
+
             if (!$imagesStmt) {
-                Log::error('Failed to prepare images statement', $this->db->error);
+                Log::error('Failed to prepare images statement', $db->error);
                 $imagesResult = null;
             } else {
                 $imagesStmt->bind_param('i', $row['id']);
@@ -136,10 +121,12 @@ class Product
                 'price' => $price,
                 'price_sale' => $priceSale,
                 'category' => $row['category'],
+                'product_type_id' => isset($row['product_type_id']) ? (int) $row['product_type_id'] : null,
                 'image' => $row['image'],
                 'image_description' => $row['image_description'],
                 'additional_images' => $additionalImages,
                 'additional_videos' => $additionalVideos,
+                'visibility' => $row['visibility'],
                 'sort_order' => $row['sort_order'],
                 'created_by' => $row['created_by'],
                 'created_at' => $row['created_at'],
@@ -157,9 +144,10 @@ class Product
      * @param array $order
      * @return bool
      */
-    public function updateOrder(array $order): bool
+    private static function updateOrder(array $order): bool
     {
-        $stmt = $this->db->prepare('UPDATE products SET sort_order = ?, last_changed_at = CURRENT_TIMESTAMP, last_changed_by = ? WHERE id = ?');
+        $db = Database::db();
+        $stmt = $db->prepare('UPDATE products SET sort_order = ?, last_changed_at = CURRENT_TIMESTAMP, last_changed_by = ? WHERE id = ?');
 
         if (!$stmt) {
             Log::error('Update statement failed', '');
@@ -214,10 +202,33 @@ class Product
      */
     private static function storeUploadedMedia(array $file): string
     {
-        $assetsDir = dirname(__DIR__) . '/assets/';
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) {
+            $messages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize.',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE.',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION => 'A server extension stopped the upload.',
+            ];
+
+            throw new Exception($messages[$error] ?? 'Upload error code ' . $error);
+        }
+
+        $tmpName = $file['tmp_name'] ?? '';
+
+        if (!is_string($tmpName) || $tmpName === '' || !is_uploaded_file($tmpName)) {
+            throw new Exception('Invalid or missing uploaded file.');
+        }
+
+        $assetsDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($assetsDir)) {
-            mkdir($assetsDir, 0755, true);
+            if (!mkdir($assetsDir, 0755, true)) {
+                throw new Exception('Could not create assets directory.');
+            }
         }
 
         $fileType = (string) ($file['type'] ?? '');
@@ -239,8 +250,8 @@ class Product
         $newFileName = uniqid() . '_' . time() . ($fileExtension ? ('.' . $fileExtension) : '');
         $uploadPath = $assetsDir . $newFileName;
 
-        if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            throw new Exception('Failed to upload file');
+        if (!move_uploaded_file($tmpName, $uploadPath)) {
+            throw new Exception('Failed to save uploaded file.');
         }
 
         return 'assets/' . $newFileName;
@@ -251,8 +262,8 @@ class Product
      */
     public static function getProducts(): void
     {
-        $product = new self(Database::db());
-        $products = $product->getAll();
+        self::createTables();
+        $products = self::getAll();
         Service::sendJson($products);
     }
 
@@ -269,8 +280,7 @@ class Product
             Service::sendError(400, 'Invalid data format');
         }
 
-        $product = new self(Database::db());
-        $product->updateOrder($order);
+        self::updateOrder($order);
         Service::sendJson(['success' => true]);
     }
 
@@ -293,6 +303,7 @@ class Product
         $priceSale = self::normalizePrice($priceSaleRaw);
 
         $category = $_POST['category'] ?? '';
+        $productTypeId = (int) ($_POST['product_type_id'] ?? 0);
         $image = $_POST['image'] ?? '';
         $imageDescription = $_POST['image_description'] ?? '';
 
@@ -302,8 +313,8 @@ class Product
 
         $db = Database::db();
         $userId = (int) $_SESSION['user_id'];
-        $stmt = $db->prepare('INSERT INTO products (name, description, peculiarities, material, price, price_sale, category, image, image_description, created_by, last_changed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->bind_param('ssssiisssii', $name, $description, $peculiarities, $material, $price, $priceSale, $category, $image, $imageDescription, $userId, $userId);
+        $stmt = $db->prepare('INSERT INTO products (name, description, peculiarities, material, price, price_sale, category, product_type_id, image, image_description, created_by, last_changed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->bind_param('ssssiisissii', $name, $description, $peculiarities, $material, $price, $priceSale, $category, $productTypeId, $image, $imageDescription, $userId, $userId);
 
         if ($stmt->execute()) {
             $id = $db->insert_id;
@@ -341,6 +352,7 @@ class Product
         $priceSale = self::normalizePrice($priceSaleRaw);
 
         $category = $_POST['category'] ?? '';
+        $productTypeId = (int) ($_POST['product_type_id'] ?? 0);
         $image = $_POST['image'] ?? '';
         $imageDescription = $_POST['image_description'] ?? '';
 
@@ -350,8 +362,8 @@ class Product
 
         $db = Database::db();
         $userId = (int) $_SESSION['user_id'];
-        $stmt = $db->prepare('UPDATE products SET name = ?, description = ?, peculiarities = ?, material = ?, price = ?, price_sale = ?, category = ?, image = ?, image_description = ?, last_changed_by = ?, last_changed_at = CURRENT_TIMESTAMP WHERE id = ?');
-        $stmt->bind_param('ssssiisssii', $name, $description, $peculiarities, $material, $price, $priceSale, $category, $image, $imageDescription, $userId, $id);
+        $stmt = $db->prepare('UPDATE products SET name = ?, description = ?, peculiarities = ?, material = ?, price = ?, price_sale = ?, category = ?, product_type_id = ?, image = ?, image_description = ?, last_changed_by = ?, last_changed_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $stmt->bind_param('ssssiisissii', $name, $description, $peculiarities, $material, $price, $priceSale, $category, $productTypeId, $image, $imageDescription, $userId, $id);
 
         if ($stmt->execute()) {
             $stmt->close();
@@ -539,7 +551,7 @@ class Product
 
         if ($del->execute()) {
             $del->close();
-            $fullPath = dirname(__DIR__) . '/' . ltrim($imagePath, '/');
+            $fullPath = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($imagePath, '/\\'));
 
             if (is_file($fullPath)) {
                 @unlink($fullPath);
@@ -619,41 +631,41 @@ class Product
         Service::sendJson(['description' => $description]);
     }
 
-    /**
-     * @return void
-     */
-    public static function getProductOptions(): void
-    {
-        $db = Database::db();
-        $options = new ProductOption($db);
-        $types = $options->getAll();
-
-        if (!$types) {
-            $options->save([
-                ['name' => 'Размеры', 'values' => ['38', '40', '42', '44']],
-                ['name' => 'Модели', 'values' => ['Apple', 'Samsung', 'Xiaomi', 'Honor']],
-            ]);
-            $types = $options->getAll();
-        }
-
-        Service::sendJson(['types' => $types]);
-    }
-
-    /**
-     * @return void
-     */
-    public static function saveProductOptions(): void
+    public static function changeVisibility(): void
     {
         Auth::requireAuth();
-        $payload = json_decode($_POST['option_types'] ?? '[]', true);
 
-        if (!is_array($payload)) {
-            Service::sendError(400, 'Invalid data format');
+        $id = (int) ($_POST['id'] ?? 0);
+        $visibility = $_POST['visibility'] ?? null;
+
+        if ($id <= 0) {
+            Service::sendError(400, 'Invalid product id');
         }
 
+        if ($visibility === null || !in_array((int) $visibility, [0, 1], true)) {
+            Service::sendError(400, 'Invalid visibility value');
+        }
+
+        $visibility = (int) $visibility;
+
         $db = Database::db();
-        $options = new ProductOption($db);
-        $options->save($payload);
-        Service::sendJson(['success' => true]);
+        $userId = (int) $_SESSION['user_id'];
+
+        $stmt = $db->prepare('UPDATE products SET visibility = ?, last_changed_by = ?, last_changed_at = CURRENT_TIMESTAMP WHERE id = ?');
+
+        if (!$stmt) {
+            Service::sendError(500, $db->error ?: 'Failed to prepare visibility update');
+        }
+
+        $stmt->bind_param('iii', $visibility, $userId, $id);
+
+        if ($stmt->execute()) {
+            $stmt->close();
+            Service::sendJson(['success' => true, 'visibility' => $visibility]);
+        }
+
+        $err = $stmt->error;
+        $stmt->close();
+        Service::sendError(500, $err ?: 'Failed to update visibility');
     }
 }

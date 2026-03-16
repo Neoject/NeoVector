@@ -6,15 +6,15 @@ NV.ready(function registerOptionsComponent() {
     NV.admin.component('options-view', {
     template: '#options-template',
     computed: {
-        productOptionTypes: {
+        productOptions: {
             get() {
-                if (!this.$root.productOptionTypes) {
-                    this.$root.productOptionTypes = [];
+                if (!this.$root.productOptions) {
+                    this.$root.productOptions = [];
                 }
-                return this.$root.productOptionTypes;
+                return this.$root.productOptions;
             }
         },
-        newOptionTypeName: {
+        newOptionName: {
             get() {
                 return this.$root.newOptionTypeName || '';
             },
@@ -30,6 +30,37 @@ NV.ready(function registerOptionsComponent() {
         },
         optionsSuccess() {
             return this.$root.optionsSuccess || '';
+        },
+        productTypes() {
+            if (!this.$root.productTypes) {
+                this.$root.productTypes = [];
+            }
+            return this.$root.productTypes;
+        },
+        newProductTypeName: {
+            get() {
+                return this.$root.newProductTypeName || '';
+            },
+            set(value) {
+                this.$root.newProductTypeName = value;
+            }
+        },
+        typesLoading() {
+            return this.$root.typesLoading || false;
+        },
+        typesError() {
+            return this.$root.typesError || '';
+        },
+        typesSuccess() {
+            return this.$root.typesSuccess || '';
+        },
+        selectedProductTypeId: {
+            get() {
+                return this.$root.selectedProductTypeId || null;
+            },
+            set(value) {
+                this.$root.selectedProductTypeId = value;
+            }
         }
     },
     methods: {
@@ -77,6 +108,36 @@ NV.ready(function registerOptionsComponent() {
         removeOptionValue(typeIndex, valueIndex) {
             if (typeof this.$root.removeOptionValue === 'function') {
                 this.$root.removeOptionValue(typeIndex, valueIndex);
+            }
+        },
+        async loadProductTypes() {
+            if (typeof this.$root.loadProductTypes === 'function') {
+                await this.$root.loadProductTypes();
+            }
+        },
+        async saveProductTypes() {
+            if (typeof this.$root.saveProductTypes === 'function') {
+                await this.$root.saveProductTypes();
+            }
+        },
+        addProductType() {
+            if (typeof this.$root.addProductType === 'function') {
+                this.$root.addProductType();
+            }
+        },
+        removeProductType(index) {
+            if (typeof this.$root.removeProductType === 'function') {
+                this.$root.removeProductType(index);
+            }
+        },
+        moveProductTypeUp(index) {
+            if (typeof this.$root.moveProductTypeUp === 'function') {
+                this.$root.moveProductTypeUp(index);
+            }
+        },
+        moveProductTypeDown(index) {
+            if (typeof this.$root.moveProductTypeDown === 'function') {
+                this.$root.moveProductTypeDown(index);
             }
         }
     }

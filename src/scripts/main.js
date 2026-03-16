@@ -29,7 +29,7 @@ NV.ready(() => {
                 isMobileDevice: false,
                 activeFilter: 'all',
                 hand: null,
-                productOptionTypes: [],
+                productOptions: [],
                 selectedProductOptions: [],
                 optionSelectionIndex: 0,
                 showHandSelector: false,
@@ -57,6 +57,7 @@ NV.ready(() => {
                     delivery_building: '',
                     delivery_date: '',
                     delivery_time: '',
+                    delivery_price: 0,
                     payment_type: 'cash',
                     notes: ''
                 },
@@ -110,7 +111,9 @@ NV.ready(() => {
                     other: []
                 },
                 imageInfo: {},
-                policy: false,
+                policyYes: false,
+                policyNo: false,
+                deliveryAvailable: true,
                 productImageIndices: {},
                 productImageTouchStart: {},
                 productImageMouseStart: {},
@@ -124,13 +127,20 @@ NV.ready(() => {
                 productSlideDirection: 'next',
                 contentView: false,
                 productMinSwipeDistance: 50,
+                title: '',
+                description: '',
                 imageMetaTags: '',
                 pickupAddress: '',
                 workHours: '',
-                storePhone: ''
+                storePhone: '',
+                deliveryBel: '',
+                deliveryRus: '',
             }
         },
         computed: {
+            policy() {
+                return !!this.policyYes && !this.policyNo;
+            },
             filteredProducts() {
                 if (this.activeFilter === 'all') {
                     return this.products;
@@ -149,10 +159,11 @@ NV.ready(() => {
                 return window.innerWidth <= 768;
             },
             currentOptionType() {
-                if (!this.productOptionTypes || !this.productOptionTypes.length) {
+                if (!this.productOptions || !this.productOptions.length) {
                     return null;
                 }
-                return this.productOptionTypes[this.optionSelectionIndex] || null;
+
+                return this.productOptions[this.optionSelectionIndex] || null;
             },
             selectingHandProduct() {
                 if (!this.selectingHandProductId) return null;
@@ -348,11 +359,14 @@ NV.ready(() => {
                 });
 
                 this.checkMe().then(r => null);
+
                 const savedUser = localStorage.getItem('remember_username');
+
                 if (savedUser) {
                     this.loginData.username = savedUser;
                     this.loginData.remember = true;
                 }
+
                 window.addEventListener('scroll', this.handleScroll);
                 window.addEventListener('resize', this.handleResize);
                 document.addEventListener('touchstart', this.handleDocumentTouchStart, { passive: false });
@@ -576,23 +590,35 @@ NV.ready(() => {
 
                 this.saveWishlist();
             },
-            startHandSelection(product, action, point, event) {
+            async startOptionSelection(product, action, point, event) {
                 if (this.isMobile && event) {
                     event.stopPropagation();
                 }
+
                 this.resetOptionSelectionState();
+
                 if (point === 'buyNow') {
                     this.buyNowPressed = true;
                 } else if (point === 'addToCart') {
                     this.addToCartPressed = true;
                 }
+
                 this.selectingHandProductId = product.id;
+
                 this.selectingHandAction = action; // 'buy' | 'cart'
-                if (this.productOptionTypes.length > 0) {
+
+                // Загружаем опции только для типа выбранного товара
+                await this.loadProductOptions();
+
+                if (this.productOptions.length > 0) {
                     this.showOptionSelector = true;
                 } else {
                     this.finishOptionSelection(product);
                 }
+            },
+            startHandSelection(product, action, point, event) {
+                // Для обратной совместимости (используется, например, в избранном)
+                return this.startOptionSelection(product, action, point, event);
             },
             chooseOptionValue(product, value) {
                 const optionType = this.currentOptionType;
@@ -606,7 +632,8 @@ NV.ready(() => {
                     value
                 });
                 this.optionSelectionIndex += 1;
-                if (this.optionSelectionIndex >= this.productOptionTypes.length) {
+
+                if (this.optionSelectionIndex >= this.productOptions.length) {
                     this.showOptionSelector = false;
                     this.finishOptionSelection(product);
                 }
@@ -739,7 +766,8 @@ NV.ready(() => {
                     await this.loadProducts();
                 }
 
-                const product = this.products.find(p => p.id == productId);
+                const product = this.products.find(p => p.id === productId);
+
                 if (product) {
                     this.openProductPage(product);
                 } else {
@@ -1041,23 +1069,24 @@ NV.ready(() => {
             async loadProductOptions() {
                 try {
                     let response;
+                    const typeId = this.selectingHandProduct ? this.selectingHandProduct.product_type_id : null;
+                    const query = typeId ? `api.php?action=product_options&type_id=${encodeURIComponent(typeId)}` : 'api.php?action=product_options';
+
                     if (typeof fetch !== 'undefined') {
-                        response = await fetch('api.php?action=product_options', { credentials: 'same-origin' });
+                        response = await fetch(query, { credentials: 'same-origin' });
                     } else {
-                        response = await this.fetchWithXHR('api.php?action=product_options');
+                        response = await this.fetchWithXHR(query);
                     }
 
                     if (response && response.ok) {
                         const data = await response.json();
-                        const types = Array.isArray(data.types) ? data.types : [];
-                        this.productOptionTypes = types.length ? this.normalizeOptionTypes(types) : this.getDefaultOptionTypes();
+                        const options = Array.isArray(data.options) ? data.options : [];
+                        this.productOptions = this.normalizeOptionTypes(options);
                     } else {
                         console.warn('Failed to load product options, using defaults');
-                        this.productOptionTypes = this.getDefaultOptionTypes();
                     }
                 } catch (error) {
                     console.error('Error loading product options:', error);
-                    this.productOptionTypes = this.getDefaultOptionTypes();
                 }
             },
             async loadCategories() {
@@ -1188,10 +1217,15 @@ NV.ready(() => {
             async loadParams() {
                 try {
                     await NV.loadParams();
+
+                    this.title = NV.title || '';
+                    this.description = NV.description || '';
                     this.imageMetaTags = NV.imageMetaTags || '';
                     this.pickupAddress = NV.pickupAddress || '';
                     this.workHours = NV.workHours || '';
                     this.storePhone = NV.storePhone || '';
+                    this.deliveryBel = NV.deliveryBel || '';
+                    this.deliveryRus = NV.deliveryRus || '';
                 } catch (error) {
                     console.error('Error loading params:', error);
                 }
@@ -1691,7 +1725,7 @@ NV.ready(() => {
                 }
 
                 this.citySearchTimeout = setTimeout(() => {
-                    this.searchBelarusCities(query);
+                    this.searchCity(query).then(r => null);
                 }, 300);
             },
             onCityBlur() {
@@ -1701,11 +1735,11 @@ NV.ready(() => {
                     return;
                 }
                 if (!this.deliveryCityValid) {
-                    this.deliveryCityError = 'Выберите существующий город Беларуси из списка';
+                    this.deliveryCityError = 'Выберите город из списка';
                 }
                 this.citySuggestions = [];
             },
-            async searchBelarusCities(query) {
+            async searchCity(query) {
                 if (!this.dadataToken) {
                     console.warn('Dadata token is missing. Cannot perform city search.');
                     return;
@@ -1739,7 +1773,8 @@ NV.ready(() => {
                         })
                     });
 
-                    const result = await response.json();
+                    const result = await response.json()
+
                     this.citySuggestions = Array.isArray(result?.suggestions)
                         ? result.suggestions.map(s => ({
                             label: s.value,
@@ -1749,6 +1784,38 @@ NV.ready(() => {
                         }))
                         : [];
 
+                    if (!result.suggestions.length) {
+                        const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': `Token ${this.dadataToken}`
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                count: 10,
+                                locations: [
+                                    { country: 'Россия' },
+                                    { country_iso_code: 'RU' }
+                                ],
+                                restrict_value: true,
+                                from_bound: { value: 'city' },
+                                to_bound: { value: 'city' }
+                            })
+                        });
+
+                        const result = await response.json()
+
+                        this.citySuggestions = Array.isArray(result?.suggestions)
+                            ? result.suggestions.map(s => ({
+                                label: s.value,
+                                value: s.value,
+                                data: s.data,
+                                raw: s
+                            }))
+                            : [];
+                    }
                 } catch (err) {
                     console.error('Dadata city error:', err);
                     this.deliveryCityError = 'Ошибка поиска городов. Попробуйте позже.';
@@ -1760,7 +1827,9 @@ NV.ready(() => {
                 if (!place || !place.address) {
                     return null;
                 }
+
                 const label = this.normalizeCityName(place.address);
+
                 if (!label) {
                     return null;
                 }
@@ -1797,7 +1866,7 @@ NV.ready(() => {
                 }
 
                 this.streetSearchTimeout = setTimeout(() => {
-                    this.searchBelarusStreets(query);
+                    this.searchStreet(query);
                 }, 300);
             },
             onStreetBlur() {
@@ -1811,7 +1880,7 @@ NV.ready(() => {
                 }
                 this.streetSuggestions = [];
             },
-            async searchBelarusStreets(query) {
+            async searchStreet(query) {
                 if (!this.dadataToken) {
                     console.warn('Dadata token is missing. Cannot perform street search.');
                     this.streetSuggestions = [];
@@ -1857,6 +1926,7 @@ NV.ready(() => {
                     });
 
                     const result = await response.json();
+
                     this.streetSuggestions = Array.isArray(result?.suggestions)
                         ? result.suggestions.map(s => ({
                             label: s.value,
@@ -1866,6 +1936,43 @@ NV.ready(() => {
                         }))
                         : [];
 
+                    if (!result.suggestions.length) {
+                        const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': `Token ${this.dadataToken}`
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                count: 15,
+                                locations: [
+                                    {
+                                        country: 'Россия',
+                                        region_fias_id: this.selectedCityData.region_fias_id,
+                                        area_fias_id: this.selectedCityData.area_fias_id || null,
+                                        city_fias_id: this.selectedCityData.city_fias_id || null,
+                                        settlement_fias_id: this.selectedCityData.settlement_fias_id || null
+                                    }
+                                ],
+                                restrict_value: true,
+                                from_bound: { value: 'street' },
+                                to_bound: { value: 'street' }
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        this.streetSuggestions = Array.isArray(result?.suggestions)
+                            ? result.suggestions.map(s => ({
+                                label: s.value,
+                                value: s.value,
+                                data: s.data,
+                                raw: s
+                            }))
+                            : [];
+                    }
                 } catch (err) {
                     console.error('Dadata street error:', err);
                     this.deliveryStreetError = 'Ошибка поиска улиц.';
@@ -2195,14 +2302,25 @@ NV.ready(() => {
 
             handleOnlinePayment() {
                 if (this.validateOrderForm()) {
+                    this.orderForm.delivery_price = this.currentOrderProduct
+                        ? this.orderForm.delivery_type === 'delivery'
+                            ? this.orderForm.delivery_city && this.orderForm.delivery_city.includes('Беларусь')
+                                ? this.deliveryBel
+                                : this.orderForm.delivery_city
+                                    ? this.deliveryRus
+                                    : 0
+                            : 0
+                        : 0;
+
                     const orderData = {
                         orderForm: { ...this.orderForm },
                         cartItems: this.currentOrderProduct ? [this.currentOrderProduct] : [...this.cartItems],
-                        cartTotal: this.currentOrderProduct
+                        cartTotal: (this.currentOrderProduct
                             ? (this.currentOrderProduct.price * this.currentOrderProduct.quantity)
-                            : this.cartTotal,
+                            : this.cartTotal) + this.orderForm.delivery_price,
                         currentOrderProduct: this.currentOrderProduct
                     };
+
                     NV.payment(orderData, async () => {
                         try {
                             await this.submitOrder();
@@ -2265,18 +2383,6 @@ NV.ready(() => {
             },
             getDefaultOptionTypes() {
                 return [
-                    {
-                        id: null,
-                        name: 'Размеры',
-                        slug: 'sizes',
-                        values: ['38', '40', '42', '44']
-                    },
-                    {
-                        id: null,
-                        name: 'Модели',
-                        slug: 'models',
-                        values: ['Apple', 'Samsung', 'Xiaomi', 'Honor']
-                    }
                 ];
             },
             slugifyOptionName(name) {
@@ -2980,20 +3086,25 @@ NV.ready(() => {
                 if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
                     return;
                 }
+
                 this.$nextTick(() => {
                     const mainImageContainer = document.querySelector('.product-detail .main-image');
+
                     if (mainImageContainer && !mainImageContainer._swipeHandlers) {
                         const handlers = {
                             start: (e) => this.handleProductDetailTouchStart(e),
                             move: (e) => this.handleProductDetailTouchMove(e),
                             end: (e) => this.handleProductDetailTouchEnd(e)
                         };
+
                         mainImageContainer._swipeHandlers = handlers;
                         mainImageContainer.addEventListener('touchstart', handlers.start, { passive: true });
                         mainImageContainer.addEventListener('touchmove', handlers.move, { passive: true });
                         mainImageContainer.addEventListener('touchend', handlers.end, { passive: true });
                     }
+
                     const contentViewContainer = document.querySelector('.content-view.content');
+
                     if (contentViewContainer && !contentViewContainer._swipeHandlers) {
                         const handlers = {
                             start: (e) => this.handleProductDetailTouchStart(e),
@@ -3009,6 +3120,7 @@ NV.ready(() => {
             },
             handleProductDetailTouchStart(e) {
                 const touch = e.touches[0];
+
                 this.touchStartX = touch.clientX;
                 this.touchStartY = touch.clientY;
             },
@@ -3016,6 +3128,7 @@ NV.ready(() => {
                 const touch = e.touches[0];
                 const deltaY = Math.abs(touch.clientY - this.touchStartY);
                 const deltaX = Math.abs(touch.clientX - this.touchStartX);
+
                 if (deltaY > deltaX) {
                     return;
                 }
@@ -3040,52 +3153,6 @@ NV.ready(() => {
                 } else if (deltaX > 0) {
                     this.previousProductImage();
                 }
-            },
-            startProductHandSelection(point, event) {
-                if (this.isMobile && event) {
-                    event.stopPropagation();
-                }
-
-
-                this.resetOptionSelectionState();
-                if (point === 'buyNow') {
-                    this.buyNowPressed = true;
-                    this.selectingHandAction = 'buy';
-                } else if (point === 'addToCart') {
-                    this.addToCartPressed = true;
-                    this.selectingHandAction = 'cart';
-                }
-
-                if (this.productOptionTypes.length > 0) {
-                    this.showOptionSelector = true;
-                } else {
-                    this.finishProductOptionSelection();
-                }
-            },
-            finishProductOptionSelection() {
-                if (!this.currentProduct) return;
-
-                const optionsSnapshot = this.selectedProductOptions.map(option => ({ ...option }));
-                const optionKey = this.buildOptionKey(optionsSnapshot);
-
-                if (this.selectingHandAction === 'buy') {
-                    this.currentOrderProduct = {
-                        ...this.currentProduct,
-                        options: optionsSnapshot,
-                        optionKey,
-                        quantity: this.productQuantity,
-                        price: this.currentProduct.price_sale || this.currentProduct.price
-                    };
-
-                    this.openOrderModal();
-                } else if (this.selectingHandAction === 'cart') {
-                    this.addProductToCartInternal(optionsSnapshot);
-                }
-
-                this.showOptionSelector = false;
-                this.selectingHandAction = null;
-                this.buyNowPressed = false;
-                this.addToCartPressed = false;
             },
             addProductToCartInternal(options = []) {
                 if (!this.currentProduct) return;
@@ -3121,18 +3188,20 @@ NV.ready(() => {
                 this.saveWishlist();
             },
             chooseProductOptionValue(value) {
-                const optionType = this.currentOptionType;
-                if (!optionType) {
+                const option = this.currentOptionType;
+
+                if (!option) {
                     return;
                 }
-                const slug = optionType.slug || this.slugifyOptionName(optionType.name) || `option-${this.optionSelectionIndex}`;
+
                 this.selectedProductOptions.push({
-                    slug,
-                    name: optionType.name || `Опция ${this.optionSelectionIndex + 1}`,
+                    name: option.name || `Опция ${this.optionSelectionIndex + 1}`,
                     value
                 });
+
                 this.optionSelectionIndex += 1;
-                if (this.optionSelectionIndex >= this.productOptionTypes.length) {
+
+                if (this.optionSelectionIndex >= this.productOptions.length) {
                     this.showOptionSelector = false;
                     this.$nextTick(() => {
                         this.finishProductOptionSelection();
@@ -3165,6 +3234,22 @@ NV.ready(() => {
                 }
                 return item.type === 'video';
             },
+            policyChange(value) {
+                this.fieldErrors.policy = '';
+
+                if (value === 'yes') {
+                    this.policyNo = false;
+                    this.deliveryAvailable = true;
+                } else if (value === 'no') {
+                    this.policyNotify();
+                    this.orderForm.delivery_type = 'pickup';
+                    this.policyYes = false;
+                    this.deliveryAvailable = false;
+                }
+            },
+            policyNotify() {
+                NV.notifyPolicyReject();
+            }
             /*payment() {
                 var params ={
                     checkout_url: "https://checkout.bepaid.by",
