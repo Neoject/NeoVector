@@ -4,14 +4,14 @@
  *
  * Использование:
  * 1. Через cron job (рекомендуется):
- *    0 2 * * * /usr/bin/php /path/to/cleanup_old_orders.php
+ *    0 2 * * * /usr/bin/php /path/to/orders_cleanup.php
  *    (запуск каждый день в 2:00 ночи)
  *
  * 2. Через браузер:
  *    http://yourdomain.com/cleanup_old_orders.php?secret_key=your_secret_key
  *
  * 3. Через командную строку:
- *    php cleanup_old_orders.php
+ *    php orders_cleanup.php
  */
 
 error_reporting(E_ALL);

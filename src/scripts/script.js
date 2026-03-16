@@ -110,8 +110,8 @@ const NV = {
         const path = window.location.pathname;
         const parts = path.split('/');
 
-        if (parts.includes('aeternum')) {
-            const index = parts.indexOf('aeternum');
+        if (parts.includes('nv')) {
+            const index = parts.indexOf('nv');
             return '/' + parts.slice(1, index + 1).join('/') + '/';
         }
 
@@ -143,10 +143,14 @@ const NV = {
 
             if (scriptEl && scriptEl.src) {
                 const url = new URL(scriptEl.src, window.location.origin);
-                const pathname = url.pathname || '/';
-                const idx = pathname.lastIndexOf('/');
-                const base = idx >= 0 ? pathname.substring(0, idx + 1) : '/';
-                return base + 'api.php';
+                const pathSegments = url.pathname.split('/').filter(s => s);
+
+                if (pathSegments.includes('src') && pathSegments.includes('scripts')) {
+                    return '/api.php';
+                }
+
+                const basePath = '../'.repeat(2);
+                return basePath + 'api.php';
             }
         } catch (e) {
             console.error(e);
@@ -183,24 +187,6 @@ const NV = {
     getUsername() {
         const auth = this.getAuth();
         return auth.username;
-    },
-    async checkServerAuth() {
-        try {
-            const apiUrl = this.getApiUrl();
-            const response = await fetch(apiUrl + '?action=me', { credentials: 'same-origin' });
-
-            if (response.ok) {
-                const me = await response.json();
-                this.setAuth(me);
-                return me;
-            } else {
-                this.clearAuth();
-                return { authenticated: false, role: null, username: null };
-            }
-        } catch (e) {
-            this.clearAuth();
-            return { authenticated: false, role: null, username: null };
-        }
     },
     async checkUserAuth() {
         try {

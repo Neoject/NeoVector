@@ -198,9 +198,9 @@ NV.ready(() => {
 
                 let path = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
 
-                if (path.startsWith('aeternum/')) {
-                    path = path.replace('aeternum/', '');
-                } else if (path === 'aeternum') {
+                if (path.startsWith('nv/')) {
+                    path = path.replace('nv/', '');
+                } else if (path === 'nv') {
                     path = '';
                 }
 

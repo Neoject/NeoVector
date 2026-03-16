@@ -132,23 +132,31 @@ const Auth = {
         async updateProfile() {
             this.profileError = '';
             this.profileSuccess = '';
+
             try {
                 const username = (this.profileForm.username || '').trim();
+
                 if (username === '') {
                     throw new Error('Имя пользователя не может быть пустым');
                 }
+
                 if (username.length > 50) {
                     throw new Error('Имя пользователя слишком длинное');
                 }
+
                 this.profileLoading = true;
+
                 const formData = new FormData();
                 formData.append('action', 'update_profile');
                 formData.append('username', username);
+
                 const response = await fetch('../api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
                 const data = await response.json();
+
                 if (!response.ok || !data.success) {
                     throw new Error(data.error || 'Ошибка обновления профиля');
                 }
+
                 this.profileSuccess = 'Профиль успешно обновлен';
 
                 if (typeof NV !== 'undefined' && NV.getAuth && NV.setAuth) {

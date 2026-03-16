@@ -42,7 +42,7 @@
 
 .block-type {
     background: var(--primary);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
@@ -215,7 +215,7 @@
 }
 
 .category-btn:hover { background: var(--bg-white-10); border-color: var(--border-white-medium); }
-.category-btn.active { background: var(--primary); color: var(--text-very-dark); border-color: var(--primary); }
+.category-btn.active { background: var(--primary); color: var(--text-dark); border-color: var(--primary); }
 .category-btn i { font-size: 14px; }
 
 .icons-grid {
@@ -328,7 +328,7 @@
 
 .feature-number, .history-number, .promotion-number {
     background: var(--primary);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
     width: 25px;
     height: 25px;
     border-radius: 50%;

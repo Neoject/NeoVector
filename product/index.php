@@ -21,7 +21,7 @@ if (isset($product) && $product) {
         <header class="scrolled">
             <div class="container nav-container">
                 <div class="nav-left">
-                    <a class="logo" href="<?php echo e($HOME_URL); ?>">Aeternum</a>
+                    <a class="logo" href="<?php echo e($HOME_URL); ?>">NeoVector</a>
                     <div class="mobile-cart-icon" @click="toggleCart">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" v-if="getCartItemsCount() > 0">{{ getCartItemsCount() }}</span>

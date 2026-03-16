@@ -6,18 +6,16 @@ use mysqli;
 
 class HomeContent
 {
-    private mysqli $db;
 
-    public function __construct(mysqli $db)
+    public function __construct()
     {
-        $this->db = $db;
         $this->createTable();
     }
 
     /**
      * @return void
      */
-    private function createTable(): void
+    private static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `home_content` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
@@ -31,14 +29,14 @@ class HomeContent
             UNIQUE KEY `section_sort` (`section`, `sort_order`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        $this->db->query($sql);
+        Database::db()->query($sql);
     }
 
     /**
      * @return array
      */
-    public function getAll(): array {
-        $stmt = $this->db->prepare('SELECT * FROM home_content ORDER BY section, sort_order ASC');
+    public static function getAll(): array {
+        $stmt = Database::db()->prepare('SELECT * FROM home_content ORDER BY section, sort_order ASC');
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -61,10 +59,10 @@ class HomeContent
      * @param array $contentData
      * @return bool
      */
-    public function save(array $contentData): bool {
-        $this->db->query('DELETE FROM home_content');
+    public static function save(array $contentData): bool {
+        Database::db()->query('DELETE FROM home_content');
 
-        $stmt = $this->db->prepare('INSERT INTO home_content (section, title, content, sort_order) VALUES (?, ?, ?, ?)');
+        $stmt = Database::db()->prepare('INSERT INTO home_content (section, title, content, sort_order) VALUES (?, ?, ?, ?)');
 
         foreach ($contentData as $item) {
             $section = $item['section'] ?? '';

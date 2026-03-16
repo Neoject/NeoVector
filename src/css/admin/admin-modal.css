@@ -1,7 +1,7 @@
 /* Modal windows — core.html, content/edit modals */
 
 .modal {
-    background: linear-gradient(135deg, var(--bg-black-98) 0%, var(--bg-black-98) 100%);
+    background: var(--background);
     backdrop-filter: blur(10px);
     -webkit-border-radius: 15px;
     border-radius: 15px;

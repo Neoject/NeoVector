@@ -3845,7 +3845,7 @@ textarea.form-control {
 
 .quantity-btn:hover:not(:disabled) {
     background: var(--gold);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
 }
 
 .quantity-btn:disabled {
@@ -3884,7 +3884,7 @@ textarea.form-control {
     font-size: 0.9rem;
     font-weight: 400;
     background: linear-gradient(135deg, var(--gold) 0%, var(--warning-orange-dark) 100%);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
     border: none;
     border-radius: 50px;
     cursor: pointer;
@@ -3906,7 +3906,7 @@ textarea.form-control {
 
 .add-to-cart-btn-option {
     background: linear-gradient(135deg, var(--gold) 0%, var(--warning-orange-dark) 100%);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
     padding: 6px 18px;
     border: none;
     border-radius: 50px;
@@ -3946,12 +3946,12 @@ textarea.form-control {
 
 .wishlist-btn:hover {
     background: var(--gold);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
 }
 
 .wishlist-btn.active {
     background: var(--gold);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
 }
 
 .product-features {
@@ -4329,7 +4329,7 @@ textarea.form-control {
 
 .item-number {
     background: var(--primary);
-    color: var(--text-very-dark);
+    color: var(--text-dark);
     width: 25px;
     height: 25px;
     border-radius: 50%;
@@ -4482,7 +4482,7 @@ textarea.form-control {
     align-items: center;
     justify-content: center;
     text-align: center;
-    background: linear-gradient(135deg, var(--background-very-dark) 0%, var(--color-2d2d2d) 100%);
+    background: var(--background);
     color: var(--text-main);
 }
 

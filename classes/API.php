@@ -146,19 +146,19 @@ class API
                     User::me($action);
                     break;
                 case 'page':
-                    self::handleGetPage();
+                    Page::get();
                     break;
                 case 'pages':
-                    self::handleGetPages();
+                    Page::getAll();
                     break;
                 case 'add_page':
-                    self::handleAddPage();
+                    Page::addPage();
                     break;
                 case 'update_page':
-                    self::handleUpdatePage();
+                    Page::updatePage();
                     break;
                 case 'delete_page':
-                    self::handleDeletePage();
+                    Page::deletePage();
                     break;
                 case 'page_navigation':
                     self::handleGetPageNavigation();
@@ -210,7 +210,7 @@ class API
                     break;
                 case 'home_content':
                 case 'public_home_content':
-                    self::handleGetHomeContent();
+                    Service::sendJson(HomeContent::getAll());
                     break;
                 case 'save_home_content':
                     self::handleSaveHomeContent();
@@ -234,10 +234,10 @@ class API
                     self::handleSaveBlocksOrder();
                     break;
                 case 'upload_background_image':
-                    self::handleUploadBackgroundImage();
+                    Params::handleUploadBackgroundImage();
                     break;
                 case 'upload_logo':
-                    self::handleUploadLogo();
+                    Params::handleUploadLogo();
                     break;
                 case 'create_order':
                     self::handleCreateOrder();
@@ -320,169 +320,6 @@ class API
         } catch (Exception $e) {
             Log::error('Error:', $e->getMessage());
             Service::sendError(500, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleGetPage(): void
-    {
-        $slug = $_GET['slug'] ?? '';
-
-        if (empty($slug)) {
-            Service::sendError(400, 'Slug is required');
-        }
-
-        try {
-            $virtualPage = new VirtualPage(Database::db());
-            $page = $virtualPage->getBySlug($slug);
-
-            if ($page) {
-                if (isset($page['navigation_buttons']) && is_string($page['navigation_buttons'])) {
-                    $page['navigation_buttons'] = json_decode($page['navigation_buttons'], true);
-                }
-                Service::sendJson($page);
-            } else {
-                Service::sendError(404, 'Page not found');
-            }
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(500, 'Error loading page: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleGetPages(): void
-    {
-        Auth::requireAuth();
-
-        try {
-            $virtualPage = new VirtualPage(Database::db());
-            $pages = $virtualPage->getAll(false);
-            foreach ($pages as &$page) {
-                if (isset($page['navigation_buttons']) && is_string($page['navigation_buttons'])) {
-                    $page['navigation_buttons'] = json_decode($page['navigation_buttons'], true);
-                }
-            }
-            Service::sendJson($pages);
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(500, 'Error loading pages: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleAddPage(): void
-    {
-        Auth::requireAuth();
-
-        $data = [
-            'title' => $_POST['title'] ?? '',
-            'slug' => $_POST['slug'] ?? '',
-            'content' => $_POST['content'] ?? '',
-            'meta_title' => $_POST['meta_title'] ?? '',
-            'meta_description' => $_POST['meta_description'] ?? '',
-            'is_published' => isset($_POST['is_published']) ? (int) $_POST['is_published'] : 1,
-            'is_main_page' => isset($_POST['is_main_page']) ? (int) $_POST['is_main_page'] : 0
-        ];
-
-        if (isset($_POST['navigation_buttons'])) {
-            $navButtons = $_POST['navigation_buttons'];
-            if (is_string($navButtons)) {
-                $data['navigation_buttons'] = json_decode($navButtons, true);
-            } else {
-                $data['navigation_buttons'] = $navButtons;
-            }
-        }
-
-        if (empty($data['title'])) {
-            Service::sendError(400, 'Title is required');
-        }
-
-        try {
-            $virtualPage = new VirtualPage(Database::db());
-            $id = $virtualPage->create($data);
-            Service::sendSuccess(['success' => true, 'id' => $id]);
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(500, 'Failed to create page: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     * @throws Exception
-     */
-    private static function handleUpdatePage(): void
-    {
-        Auth::requireAuth();
-
-        $id = (int) ($_POST['id'] ?? 0);
-
-        if ($id <= 0) {
-            Service::sendError(400, 'Invalid page ID');
-        }
-
-        $data = [];
-        if (isset($_POST['title']))
-            $data['title'] = $_POST['title'];
-        if (isset($_POST['slug']))
-            $data['slug'] = $_POST['slug'];
-        if (isset($_POST['content']))
-            $data['content'] = $_POST['content'];
-        if (isset($_POST['meta_title']))
-            $data['meta_title'] = $_POST['meta_title'];
-        if (isset($_POST['meta_description']))
-            $data['meta_description'] = $_POST['meta_description'];
-        if (isset($_POST['is_published']))
-            $data['is_published'] = (int) $_POST['is_published'];
-        if (isset($_POST['is_main_page']))
-            $data['is_main_page'] = (int) $_POST['is_main_page'];
-        if (isset($_POST['navigation_buttons'])) {
-            $navButtons = $_POST['navigation_buttons'];
-            if (is_string($navButtons)) {
-                $data['navigation_buttons'] = json_decode($navButtons, true);
-            } else {
-                $data['navigation_buttons'] = $navButtons;
-            }
-        }
-
-        try {
-            $virtualPage = new VirtualPage(Database::db());
-            if ($virtualPage->update($id, $data)) {
-                Service::sendSuccess(['success' => true]);
-            } else {
-                Service::sendError(500, 'Failed to update page');
-            }
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(500, 'Failed to update page: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleDeletePage(): void
-    {
-        Auth::requireAuth();
-
-        $id = (int) ($_POST['id'] ?? 0);
-
-        if ($id <= 0) {
-            Service::sendError(400, 'Invalid page ID');
-        }
-
-        $virtualPage = new VirtualPage(Database::db());
-        if ($virtualPage->delete($id)) {
-            Service::sendSuccess(['success' => true]);
-        } else {
-            Service::sendError(500, 'Failed to delete page');
         }
     }
 
@@ -596,19 +433,6 @@ class API
         Service::sendJson(['success' => true]);
     }
 
-
-
-
-
-    /**
-     * @return void
-     */
-    private static function handleGetHomeContent(): void
-    {
-        $home = new HomeContent(Database::db());
-        Service::sendJson($home->getAll());
-    }
-
     /**
      * @return void
      */
@@ -621,8 +445,7 @@ class API
             Service::sendError(400, 'Invalid data format');
         }
 
-        $home = new HomeContent(Database::db());
-        $home->save($payload);
+        HomeContent::save($payload);
         Service::sendJson(['success' => true]);
     }
 
@@ -1304,7 +1127,6 @@ class API
     {
         Auth::requireAuth();
 
-        $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
         $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
         $description = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
         $imageMetaTags = isset($_POST['image_meta_tags']) ? trim((string) $_POST['image_meta_tags']) : '';
