@@ -50,4 +50,34 @@ class Service
 
         exit();
     }
+
+    public static function cleanupOldOrders($key): void
+    {
+        $expectedKey = (string) Config::get('CLEANUP_SECRET_KEY');
+
+        if ($key !== $expectedKey) {
+            Auth::requireAuth();
+        }
+
+        $daysToKeep = 60;
+        $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysToKeep} days"));
+        $stmt = Database::db()->prepare('DELETE FROM orders WHERE created_at < ?');
+        $stmt->bind_param('s', $cutoffDate);
+
+        if ($stmt->execute()) {
+            $deletedCount = $stmt->affected_rows;
+            $stmt->close();
+            Service::sendJson([
+                'success' => true,
+                'message' => "Удалено заказов: {$deletedCount}",
+                'deleted_count' => $deletedCount,
+                'cutoff_date' => $cutoffDate
+            ]);
+        }
+
+        $err = $stmt->error;
+        $stmt->close();
+        Log::error('Database error occurred:', $err);
+        Service::sendError(500, $err ?: 'Database error occurred');
+    }
 }

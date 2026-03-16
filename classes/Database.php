@@ -44,6 +44,7 @@ class Database
         if (self::$instance === null) {
             self::$instance = new Database();
         }
+
         return self::$instance;
     }
 
@@ -76,6 +77,28 @@ class Database
         return $stmt->rowCount();
     }
 
+    /**
+     * @param  string $table
+     * @param  array  $values
+     * <code>[ key => value ]</code>
+     * @return bool
+     */
+    public static function insert(string $table, array $values): bool
+    {
+        $columns = implode(', ', array_keys($values));
+        $placeholders = implode(', ', array_fill(0, count($values), '?'));
+
+        $sql = 'INSERT INTO ' . $table . ' (' . $columns . ') VALUES (' . $placeholders . ')';
+
+        $stmt = Database::db()->prepare($sql);
+
+        if ($stmt->execute(array_values($values))) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static function getList(string $table, array $filter = [], array $order = []): array
     {
         $table = '`' . str_replace('`', '``', $table) . '`';
@@ -85,19 +108,23 @@ class Database
 
         if (!empty($filter)) {
             $conditions = [];
+
             foreach ($filter as $column => $value) {
                 $conditions[] = "`$column` = ?";
                 $params[] = $value;
             }
+
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
 
         if (!empty($order)) {
             $orderParts = [];
+
             foreach ($order as $column => $direction) {
                 $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                 $orderParts[] = "`$column` $direction";
             }
+
             $sql .= ' ORDER BY ' . implode(', ', $orderParts);
         }
 

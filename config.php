@@ -3,6 +3,7 @@
 use NeoVector\Auth;
 use NeoVector\Config;
 use NeoVector\Database;
+use NeoVector\Params;
 
 require_once 'autoloader.php';
 
@@ -37,6 +38,8 @@ if ($projectBasePath === '/' || $projectBasePath === '\\' || $projectBasePath ==
 }
 
 //todo getdescription
+
+Params::getDescription();
 
 $_DESCRIPTION = 'Aeternum (Этернум) — бренд аксессуаров, построенный на философии вечности, ручного мастерства и натуральных материалов. Каждый ремень создаётся вручную с уважением к традициям кожевенного дела и продуманной функциональности, объединяя винтажную эстетику и современные технологии.
 Это не массовый продукт, а аксессуар с характером — надёжный, эстетичный и с душой. Ремни Aeternum в стиле handmade cuff превращают любые часы в выразительный акцент образа и полноценный statement piece.';

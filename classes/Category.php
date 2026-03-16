@@ -7,21 +7,18 @@ use Exception;
 
 class Category
 {
-    private mysqli $db;
-
     /**
      * @param mysqli $db
      */
-    public function __construct(mysqli $db)
+    public function __construct()
     {
-        $this->db = $db;
         $this->createTable();
     }
 
     /**
      * @return void
      */
-    private function createTable(): void
+    private static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `categories` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
@@ -31,15 +28,15 @@ class Category
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        $this->db->query($sql);
+        Database::db()->query($sql);
     }
 
     /**
      * @return array
      */
-    public function getAll(): array
+    public static function getAll(): array
     {
-        $stmt = $this->db->prepare('SELECT id, slug, name, sort_order FROM categories ORDER BY sort_order ASC, name ASC');
+        $stmt = Database::db()->prepare('SELECT id, slug, name, sort_order FROM categories ORDER BY sort_order ASC, name ASC');
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -64,7 +61,7 @@ class Category
      * @return int
      * @throws Exception
      */
-    public function create(array $data): int
+    public static function create(array $data): int
     {
         $name = trim($data['name'] ?? '');
         $slug = trim($data['slug'] ?? '');
@@ -79,10 +76,10 @@ class Category
             $slug = trim($slug, '-_');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO categories (slug, name, sort_order) VALUES (?, ?, ?)');
+        $stmt = Database::db()->prepare('INSERT INTO categories (slug, name, sort_order) VALUES (?, ?, ?)');
         $stmt->bind_param('ssi', $slug, $name, $sortOrder);
         $stmt->execute();
-        $id = $this->db->insert_id;
+        $id = Database::db()->insert_id;
         $stmt->close();
 
         return $id;
@@ -94,7 +91,7 @@ class Category
      * @return bool
      * @throws Exception
      */
-    public function update(int $id, array $data): bool
+    public static function update(int $id, array $data): bool
     {
         $name = trim($data['name'] ?? '');
         $slug = trim($data['slug'] ?? '');
@@ -109,7 +106,7 @@ class Category
             $slug = trim($slug, '-_');
         }
 
-        $stmt = $this->db->prepare('UPDATE categories SET slug = ?, name = ?, sort_order = ? WHERE id = ?');
+        $stmt = Database::db()->prepare('UPDATE categories SET slug = ?, name = ?, sort_order = ? WHERE id = ?');
         $stmt->bind_param('ssii', $slug, $name, $sortOrder, $id);
         $result = $stmt->execute();
         $stmt->close();
@@ -121,8 +118,8 @@ class Category
      * @param int $id
      * @return bool
      */
-    public function delete(int $id): bool {
-        $stmt = $this->db->prepare('DELETE FROM categories WHERE id = ?');
+    public static function delete(int $id): bool {
+        $stmt = Database::db()->prepare('DELETE FROM categories WHERE id = ?');
         $stmt->bind_param('i', $id);
         $result = $stmt->execute();
         $stmt->close();
@@ -134,8 +131,8 @@ class Category
      * @param array $order
      * @return bool
      */
-    public function updateOrder(array $order): bool {
-        $stmt = $this->db->prepare('UPDATE categories SET sort_order = ? WHERE id = ?');
+    public static function updateOrder(array $order): bool {
+        $stmt = Database::db()->prepare('UPDATE categories SET sort_order = ? WHERE id = ?');
 
         foreach ($order as $index => $id) {
             $idx = (int)$index;

@@ -7,15 +7,12 @@ use Exception;
 
 class Order
 {
-    private mysqli $db;
-
-    public function __construct(mysqli $db)
+    public function __construct()
     {
-        $this->db = $db;
         $this->createTable();
     }
 
-    private function createTable(): void
+    private static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `orders` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
@@ -37,7 +34,7 @@ class Order
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        $this->db->query($sql);
+        Database::db()->query($sql);
     }
 
     /**
@@ -45,7 +42,7 @@ class Order
      * @return int
      * @throws Exception
      */
-    public function create(array $data): int
+    public static function create(array $data): int
     {
         $customerName = trim($data['customer_name'] ?? '');
         $customerPhone = trim($data['customer_phone'] ?? '');
@@ -90,21 +87,48 @@ class Order
             $orderItems = json_encode($orderItems, JSON_UNESCAPED_UNICODE);
         }
 
-        $stmt = $this->db->prepare('INSERT INTO orders (customer_name, customer_phone, customer_email, delivery_type, delivery_address, delivery_date, delivery_time, payment_type, payment_status, order_items, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = Database::db()->prepare('INSERT INTO orders (customer_name, customer_phone, customer_email, delivery_type, delivery_address, delivery_date, delivery_time, payment_type, payment_status, order_items, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->bind_param('ssssssssisds', $customerName, $customerPhone, $customerEmail, $deliveryType, $deliveryAddress, $deliveryDate, $deliveryTime, $paymentType, $paymentStatus, $orderItems, $totalAmount, $notes);
         $stmt->execute();
-        $id = $this->db->insert_id;
+        $id = Database::db()->insert_id;
         $stmt->close();
 
+        self::handleOrder($data, $id);
+
         return $id;
+    }
+
+    private static function handleOrder(array $data, int $id): void
+    {
+        try {
+            $paymentType = $data['payment_type'] ?? 'cash';
+
+            if (!empty($data['customer_email'])) {
+                try {
+                    self::sendOrderConfirmationEmail($id, $paymentType);
+                } catch (Exception $e) {
+                    Log::error('Customer email sending error:', $e->getMessage());
+                }
+            }
+
+            try {
+                self::sendOrderNotificationToSeller($id, $paymentType);
+            } catch (Exception $e) {
+                Log::error('Seller email sending error:', $e->getMessage());
+            }
+
+            return;
+        } catch (Exception $e) {
+            Service::sendError(400, $e->getMessage());
+        }
     }
 
     /**
      * @return array
      */
-    public function getAll(): array
+    public static function getAll(): array
     {
-        $stmt = $this->db->prepare('SELECT * FROM orders ORDER BY created_at DESC');
+        $stmt = Database::db()->prepare('SELECT * FROM orders ORDER BY created_at DESC');
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -141,7 +165,7 @@ class Order
      * @return bool
      * @throws Exception
      */
-    public function updateStatus(int $orderId, string $status): bool
+    public static function updateStatus(int $orderId, string $status): bool
     {
         $allowedStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -149,7 +173,7 @@ class Order
             throw new Exception('Invalid status');
         }
 
-        $stmt = $this->db->prepare('UPDATE orders SET status = ? WHERE id = ?');
+        $stmt = Database::db()->prepare('UPDATE orders SET status = ? WHERE id = ?');
         $stmt->bind_param('si', $status, $orderId);
         $result = $stmt->execute();
         $stmt->close();
@@ -164,13 +188,13 @@ class Order
      * @return bool
      * @throws Exception
      */
-    public function updatePaymentStatus(int $orderId, int $paymentStatus): bool
+    public static function updatePaymentStatus(int $orderId, int $paymentStatus): bool
     {
         if (!in_array($paymentStatus, [0, 1])) {
             throw new Exception('Invalid payment status');
         }
 
-        $stmt = $this->db->prepare('UPDATE orders SET payment_status = ? WHERE id = ?');
+        $stmt = Database::db()->prepare('UPDATE orders SET payment_status = ? WHERE id = ?');
         $stmt->bind_param('ii', $paymentStatus, $orderId);
         $result = $stmt->execute();
         $stmt->close();
@@ -182,9 +206,9 @@ class Order
      * @param int $orderId
      * @return bool
      */
-    public function delete(int $orderId): bool
+    public static function delete(int $orderId): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM orders WHERE id = ?');
+        $stmt = Database::db()->prepare('DELETE FROM orders WHERE id = ?');
         $stmt->bind_param('i', $orderId);
         $result = $stmt->execute();
         $stmt->close();
@@ -197,9 +221,9 @@ class Order
      * @param int $orderId
      * @return array|null
      */
-    public function getById(int $orderId): ?array
+    public static function getById(int $orderId): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM orders WHERE id = ?');
+        $stmt = Database::db()->prepare('SELECT * FROM orders WHERE id = ?');
         $stmt->bind_param('i', $orderId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -236,9 +260,9 @@ class Order
      * @param string $paymentType Тип оплаты (cash или online)
      * @return bool
      */
-    public function sendOrderConfirmationEmail(int $orderId, string $paymentType = 'cash'): bool
+    public static function sendOrderConfirmationEmail(int $orderId, string $paymentType = 'cash'): bool
     {
-        $order = $this->getById($orderId);
+        $order = self::getById($orderId);
         
         if (!$order || empty($order['customer_email'])) {
             return false;
@@ -289,7 +313,6 @@ class Order
         }
 
         $deliveryTypeText = $order['delivery_type'] === 'delivery' ? 'Доставка' : 'Самовывоз';
-        $deliveryInfo = '';
         
         if ($order['delivery_type'] === 'delivery' && !empty($order['delivery_address'])) {
             $deliveryInfo = '<p><strong>Адрес доставки:</strong> ' . htmlspecialchars($order['delivery_address']) . '</p>';
@@ -401,9 +424,9 @@ class Order
      * @param string $paymentType Тип оплаты (cash или online)
      * @return bool
      */
-    public function sendOrderNotificationToSeller(int $orderId, string $paymentType = 'cash'): bool
+    public static function sendOrderNotificationToSeller(int $orderId, string $paymentType = 'cash'): bool
     {
-        $order = $this->getById($orderId);
+        $order = self::getById($orderId);
         
         if (!$order) {
             return false;

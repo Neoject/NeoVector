@@ -206,6 +206,35 @@ class Page extends Model
     }
 
     /**
+     * @return void
+     */
+    public static function navigation(): void
+    {
+        $slug = $_GET['slug'] ?? null;
+
+        try {
+            $virtualPage = new VirtualPage(Database::db());
+            $page = $slug ? $virtualPage->getBySlug($slug) : null;
+
+            $navigation = [];
+            if ($page && isset($page['navigation_buttons'])) {
+                $navButtons = $page['navigation_buttons'];
+
+                if (is_string($navButtons)) {
+                    $navigation = json_decode($navButtons, true) ?: [];
+                } else {
+                    $navigation = $navButtons ?: [];
+                }
+            }
+
+            Service::sendJson($navigation);
+        } catch (Exception $e) {
+            Log::error('Error:', $e->getMessage());
+            Service::sendError(500, 'Error loading navigation: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * @return array
      */
     public function getPublished(): array

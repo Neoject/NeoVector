@@ -161,25 +161,25 @@ class API
                     Page::deletePage();
                     break;
                 case 'page_navigation':
-                    self::handleGetPageNavigation();
+                    Page::navigation();
                     break;
                 case 'products':
                     Product::getProducts();
                     break;
                 case 'categories':
-                    self::handleGetCategories();
+                    Service::sendJson(Category::getAll());
                     break;
                 case 'add_category':
-                    self::handleAddCategory();
+                    Service::sendJson(['success' => true, 'id' => Category::create($_POST)]);
                     break;
                 case 'update_category':
-                    self::handleUpdateCategory();
+                    Category::update((int) $_POST['id'], $_POST);
                     break;
                 case 'delete_category':
-                    self::handleDeleteCategory();
+                    Category::delete((int) $_POST['id']);
                     break;
                 case 'save_categories_order':
-                    self::handleSaveCategoriesOrder();
+                    Category::updateOrder(json_decode($_POST['categories_order'], true));
                     break;
                 case 'save_products_order':
                     Product::saveProductsOrder();
@@ -213,25 +213,32 @@ class API
                     Service::sendJson(HomeContent::getAll());
                     break;
                 case 'save_home_content':
-                    self::handleSaveHomeContent();
+                    HomeContent::save(json_decode($_POST['content'] ?? '[]', true));
                     break;
                 case 'page_blocks':
-                    self::handleGetPageBlocks();
+                    Service::sendJson(PageBlock::getAll());
                     break;
                 case 'hero_image':
-                    self::handleGetHeroImage();
+                    Service::sendJson(['url' => PageBlock::getHeroImage()]);
                     break;
                 case 'add_page_block':
-                    self::handleAddPageBlock();
+                    Service::sendJson(['success' => true, 'id' => PageBlock::create($data)]);
                     break;
                 case 'update_page_block':
-                    self::handleUpdatePageBlock();
+                    PageBlock::update($_POST['id'], $data = [
+                        'type' => $_POST['type'] ?? '',
+                        'title' => $_POST['title'] ?? '',
+                        'content' => $_POST['content'] ?? '',
+                        'settings' => $_POST['settings'] ?? '{}',
+                        'sort_order' => (int) ($_POST['sort_order'] ?? 0),
+                        'is_active' => isset($_POST['is_active']) ? (int) $_POST['is_active'] : 1,
+                    ]);
                     break;
                 case 'delete_page_block':
-                    self::handleDeletePageBlock();
+                    PageBlock::delete($_POST['id']);
                     break;
                 case 'save_blocks_order':
-                    self::handleSaveBlocksOrder();
+                    PageBlock::updateOrder(json_decode($_POST['blocks_order'], true));
                     break;
                 case 'upload_background_image':
                     Params::handleUploadBackgroundImage();
@@ -240,22 +247,22 @@ class API
                     Params::handleUploadLogo();
                     break;
                 case 'create_order':
-                    self::handleCreateOrder();
+                    Order::create($_POST);
                     break;
                 case 'orders':
-                    self::handleGetOrders();
+                    Service::sendJson(Order::getAll());
                     break;
                 case 'update_order_status':
-                    self::handleUpdateOrderStatus();
+                    Order::updateStatus($_POST['id'], $_POST['status']);
                     break;
                 case 'update_payment_status':
-                    self::handleUpdatePaymentStatus();
+                    Order::updatePaymentStatus($_POST['order_id'], $_POST['payment_status']);
                     break;
                 case 'delete_order':
-                    self::handleDeleteOrder();
+                    Order::delete($_POST['order_id']);
                     break;
                 case 'cleanup_old_orders':
-                    self::handleCleanupOldOrders();
+                    Service::cleanupOldOrders($_POST['secret_key']);
                     break;
                 case 'contact_form':
                     ContactMessage::sendUserMail();
@@ -326,457 +333,6 @@ class API
     /**
      * @return void
      */
-    private static function handleGetPageNavigation(): void
-    {
-        $slug = $_GET['slug'] ?? null;
-
-        try {
-            $virtualPage = new VirtualPage(Database::db());
-            $page = $slug ? $virtualPage->getBySlug($slug) : null;
-
-            $navigation = [];
-            if ($page && isset($page['navigation_buttons'])) {
-                $navButtons = $page['navigation_buttons'];
-
-                if (is_string($navButtons)) {
-                    $navigation = json_decode($navButtons, true) ?: [];
-                } else {
-                    $navigation = $navButtons ?: [];
-                }
-            }
-
-            Service::sendJson($navigation);
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(500, 'Error loading navigation: ' . $e->getMessage());
-        }
-    }
-
-
-
-    /**
-     * @return void
-     */
-    private static function handleGetCategories(): void
-    {
-        $category = new Category(Database::db());
-        Service::sendJson($category->getAll());
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleAddCategory(): void
-    {
-        Auth::requireAuth();
-        $category = new Category(Database::db());
-
-        try {
-            $id = $category->create($_POST);
-            Service::sendJson(['success' => true, 'id' => $id]);
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(400, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleUpdateCategory(): void
-    {
-        Auth::requireAuth();
-        $id = (int) ($_POST['id'] ?? 0);
-        $category = new Category(Database::db());
-
-        try {
-            $category->update($id, $_POST);
-            Service::sendJson(['success' => true]);
-        } catch (Exception $e) {
-            Log::error('Error:', $e->getMessage());
-            Service::sendError(400, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleDeleteCategory(): void
-    {
-        Auth::requireAuth();
-        $id = (int) ($_POST['id'] ?? 0);
-        $category = new Category(Database::db());
-
-        if ($id <= 0) {
-            Service::sendError(400, 'Invalid category id');
-        }
-
-        $category->delete($id);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleSaveCategoriesOrder(): void
-    {
-        Auth::requireAuth();
-        $orderJson = $_POST['categories_order'] ?? '[]';
-        $order = json_decode($orderJson, true);
-
-        if (!is_array($order)) {
-            Service::sendError(400, 'Invalid data format');
-        }
-
-        $category = new Category(Database::db());
-        $category->updateOrder($order);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleSaveHomeContent(): void
-    {
-        Auth::requireAuth();
-        $payload = json_decode($_POST['content'] ?? '[]', true);
-
-        if (!is_array($payload)) {
-            Service::sendError(400, 'Invalid data format');
-        }
-
-        HomeContent::save($payload);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleGetPageBlocks(): void
-    {
-        $blocks = new PageBlock(Database::db());
-        Service::sendJson($blocks->getAll());
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleGetHeroImage(): void
-    {
-        $blocks = new PageBlock(Database::db());
-        Service::sendJson(['url' => $blocks->getHeroImage()]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleAddPageBlock(): void
-    {
-        Auth::requireAuth();
-        $blocks = new PageBlock(Database::db());
-        $data = [
-            'type' => $_POST['type'] ?? '',
-            'title' => $_POST['title'] ?? '',
-            'content' => $_POST['content'] ?? '',
-            'settings' => $_POST['settings'] ?? '{}',
-            'sort_order' => (int) ($_POST['sort_order'] ?? 0),
-            'is_active' => isset($_POST['is_active']) ? (int) $_POST['is_active'] : 1,
-        ];
-        $id = $blocks->create($data);
-        Service::sendJson(['success' => true, 'id' => $id]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleUpdatePageBlock(): void
-    {
-        Auth::requireAuth();
-        $id = (int) ($_POST['id'] ?? 0);
-
-        if ($id <= 0) {
-            Service::sendError(400, 'Invalid block id');
-        }
-
-        $blocks = new PageBlock(Database::db());
-        $data = [
-            'type' => $_POST['type'] ?? '',
-            'title' => $_POST['title'] ?? '',
-            'content' => $_POST['content'] ?? '',
-            'settings' => $_POST['settings'] ?? '{}',
-            'sort_order' => (int) ($_POST['sort_order'] ?? 0),
-            'is_active' => isset($_POST['is_active']) ? (int) $_POST['is_active'] : 1,
-        ];
-        $blocks->update($id, $data);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleDeletePageBlock(): void
-    {
-        Auth::requireAuth();
-        $id = (int) ($_POST['id'] ?? 0);
-
-        if ($id <= 0) {
-            Service::sendError(400, 'Invalid block id');
-        }
-
-        $blocks = new PageBlock(Database::db());
-        $blocks->delete($id);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleSaveBlocksOrder(): void
-    {
-        Auth::requireAuth();
-        $order = json_decode($_POST['blocks_order'] ?? '[]', true);
-
-        if (!is_array($order)) {
-            Service::sendError(400, 'Invalid data format');
-        }
-
-        $blocks = new PageBlock(Database::db());
-        $blocks->updateOrder($order);
-        Service::sendJson(['success' => true]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleUploadBackgroundImage(): void
-    {
-        Auth::requireAuth();
-
-        if (!isset($_FILES['image']) || ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            Service::sendError(400, 'No image uploaded');
-        }
-
-        $file = $_FILES['image'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $fileType = $file['type'] ?? '';
-
-        if (!in_array($fileType, $allowedTypes, true)) {
-            Service::sendError(400, 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.');
-        }
-
-        $fileSize = (int) ($file['size'] ?? 0);
-
-        if ($fileSize > 5 * 1024 * 1024) {
-            Service::sendError(400, 'File size too large. Maximum 5MB allowed.');
-        }
-
-        $uploadDir = dirname(__DIR__) . '/assets/backgrounds/';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $extension = pathinfo($file['name'] ?? 'bg', PATHINFO_EXTENSION);
-        $fileName = 'bg_' . uniqid() . '.' . $extension;
-        $filePath = $uploadDir . $fileName;
-
-        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-            Service::sendError(500, 'Failed to upload image');
-        }
-
-        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $baseUrl = '';
-
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir;
-        }
-
-        $url = $baseUrl . '/assets/backgrounds/' . $fileName;
-        Service::sendJson(['success' => true, 'url' => $url]);
-    }
-
-    private static function handleUploadLogo(): void
-    {
-        Auth::requireAuth();
-
-        if (!isset($_FILES['logo']) || ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            Service::sendError(400, 'Логотип не загружен');
-        }
-
-        $file = $_FILES['logo'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        $fileType = $file['type'] ?? '';
-
-        if (!in_array($fileType, $allowedTypes, true)) {
-            Service::sendError(400, 'Недопустимый тип файла. Разрешены JPEG, PNG, GIF, WebP и SVG.');
-        }
-
-        $fileSize = (int) ($file['size'] ?? 0);
-
-        if ($fileSize > 5 * 1024 * 1024) {
-            Service::sendError(400, 'Слишком большой файл. Максимум 5 МБ.');
-        }
-
-        $uploadDir = dirname(__DIR__) . '/assets/logo/';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
-        $fileName = 'site_logo.' . $extension;
-        $filePath = $uploadDir . $fileName;
-
-        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-            Service::sendError(500, 'Не удалось сохранить логотип');
-        }
-
-        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $baseUrl = '';
-
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir;
-        }
-
-        $url = $baseUrl . '/assets/logo/' . $fileName;
-        Service::sendJson(['success' => true, 'url' => $url]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleCreateOrder(): void
-    {
-        $order = new Order(Database::db());
-
-        try {
-            Log::write('post', $_POST);
-            $id = $order->create($_POST);
-            
-            $paymentType = $_POST['payment_type'] ?? 'cash';
-
-            if (!empty($_POST['customer_email'])) {
-                try {
-                    $order->sendOrderConfirmationEmail($id, $paymentType);
-                } catch (Exception $e) {
-                    Log::error('Customer email sending error:', $e->getMessage());
-                }
-            }
-            
-            try {
-                $order->sendOrderNotificationToSeller($id, $paymentType);
-            } catch (Exception $e) {
-                Log::error('Seller email sending error:', $e->getMessage());
-            }
-            
-            Service::sendJson(['success' => true, 'order_id' => $id]);
-        } catch (Exception $e) {
-            Service::sendError(400, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleGetOrders(): void
-    {
-        Auth::requireAuth();
-        $order = new Order(Database::db());
-        Service::sendJson($order->getAll());
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleUpdateOrderStatus(): void
-    {
-        Auth::requireAuth();
-        $orderId = (int) ($_POST['order_id'] ?? 0);
-        $status = (string) ($_POST['status'] ?? '');
-        $order = new Order(Database::db());
-
-        try {
-            $order->updateStatus($orderId, $status);
-            Service::sendJson(['success' => true]);
-        } catch (Exception $e) {
-            Service::sendError(400, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleUpdatePaymentStatus(): void
-    {
-        Auth::requireAuth();
-        $orderId = (int) ($_POST['order_id'] ?? 0);
-        $paymentStatus = (int) ($_POST['payment_status'] ?? 0);
-        $order = new Order(Database::db());
-
-        try {
-            $order->updatePaymentStatus($orderId, $paymentStatus);
-            Service::sendJson(['success' => true]);
-        } catch (Exception $e) {
-            Service::sendError(400, $e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleDeleteOrder(): void
-    {
-        Auth::requireAuth();
-        $orderId = (int) ($_POST['order_id'] ?? 0);
-
-        if ($orderId <= 0) {
-            Service::sendError(400, 'Order ID is required');
-        }
-
-        $order = new Order(Database::db());
-        $order->delete($orderId);
-        Service::sendJson(['success' => true, 'deleted_id' => $orderId]);
-    }
-
-    /**
-     * @return void
-     */
-    private static function handleCleanupOldOrders(): void
-    {
-        $secretKey = (string) ($_POST['secret_key'] ?? '');
-        $expectedKey = (string) Config::get('CLEANUP_SECRET_KEY', 'default_secret_key_change_me');
-
-        if ($secretKey !== $expectedKey) {
-            Auth::requireAuth();
-        }
-
-        $daysToKeep = 60;
-        $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysToKeep} days"));
-        $db = Database::db();
-        $stmt = $db->prepare('DELETE FROM orders WHERE created_at < ?');
-        $stmt->bind_param('s', $cutoffDate);
-
-        if ($stmt->execute()) {
-            $deletedCount = $stmt->affected_rows;
-            $stmt->close();
-            Service::sendJson([
-                'success' => true,
-                'message' => "Удалено заказов: {$deletedCount}",
-                'deleted_count' => $deletedCount,
-                'cutoff_date' => $cutoffDate
-            ]);
-        }
-
-        $err = $stmt->error;
-        $stmt->close();
-        Service::sendError(500, $err ?: 'Database error occurred');
-    }
-
-    /**
-     * @return void
-     */
     private static function handleContactMessage(): void
     {
         $contact = new ContactMessage(Database::db());
@@ -787,12 +343,12 @@ class API
 
             $contact->create($email, $message);
 
-            $sellerEmail = getenv('AETERNUM_CONTACT_EMAIL') ?: 'orders@aeternum.local';
+            $sellerEmail = getenv('EMAIL');
 
             if (filter_var($sellerEmail, FILTER_VALIDATE_EMAIL)) {
-                $subject = 'Aeternum: новое сообщение от клиента';
+                $subject = 'Новое сообщение от клиента';
                 $body = "Email клиента: {$email}\n\nСообщение:\n{$message}\n\nОтправлено: " . date('d.m.Y H:i');
-                $headers = 'From: no-reply@' . ($_SERVER['HTTP_HOST'] ?? 'aeternum.local');
+                $headers = 'From: no-reply@' . ($_SERVER['HTTP_HOST']);
                 @mail($sellerEmail, $subject, $body, $headers);
             }
 
@@ -977,13 +533,6 @@ class API
             Service::sendError(500, 'Ошибка при получении ответов: ' . $e->getMessage());
         }
     }
-
-    /**
-     * @return void
-     */
-    /**
-     * @return void
-     */
 
     /**
      * @return void

@@ -6,18 +6,15 @@ use mysqli;
 
 class PageBlock
 {
-    private mysqli $db;
-
     public function __construct(mysqli $db)
     {
-        $this->db = $db;
         $this->createTable();
     }
 
     /**
      * @return void
      */
-    private function createTable(): void
+    private static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `page_blocks` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
@@ -34,15 +31,15 @@ class PageBlock
             KEY `active_sort` (`is_active`, `sort_order`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        $this->db->query($sql);
+        Database::db()->query($sql);
     }
 
     /**
      * @return array
      */
-    public function getAll(): array
+    public static function getAll(): array
     {
-        $stmt = $this->db->prepare('SELECT * FROM page_blocks ORDER BY sort_order ASC');
+        $stmt = Database::db()->prepare('SELECT * FROM page_blocks ORDER BY sort_order ASC');
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -60,6 +57,7 @@ class PageBlock
         }
 
         $stmt->close();
+
         return $blocks;
     }
 
@@ -67,7 +65,7 @@ class PageBlock
      * @param array $data
      * @return int
      */
-    public function create(array $data): int
+    public static function create(array $data): int
     {
         $type = $data['type'] ?? '';
         $title = $data['title'] ?? '';
@@ -76,10 +74,10 @@ class PageBlock
         $sortOrder = (int) ($data['sort_order'] ?? 0);
         $isActive = isset($data['is_active']) ? (int) $data['is_active'] : 1;
 
-        $stmt = $this->db->prepare('INSERT INTO page_blocks (type, title, content, settings, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt = Database::db()->prepare('INSERT INTO page_blocks (type, title, content, settings, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->bind_param('ssssii', $type, $title, $content, $settings, $sortOrder, $isActive);
         $stmt->execute();
-        $id = $this->db->insert_id;
+        $id = Database::db()->insert_id;
         $stmt->close();
 
         return $id;
@@ -90,7 +88,7 @@ class PageBlock
      * @param array $data
      * @return bool
      */
-    public function update(int $id, array $data): bool
+    public static function update(int $id, array $data): bool
     {
         $type = $data['type'] ?? '';
         $title = $data['title'] ?? '';
@@ -99,7 +97,7 @@ class PageBlock
         $sortOrder = (int) ($data['sort_order'] ?? 0);
         $isActive = isset($data['is_active']) ? (int) $data['is_active'] : 1;
 
-        $stmt = $this->db->prepare('UPDATE page_blocks SET type = ?, title = ?, content = ?, settings = ?, sort_order = ?, is_active = ? WHERE id = ?');
+        $stmt = Database::db()->prepare('UPDATE page_blocks SET type = ?, title = ?, content = ?, settings = ?, sort_order = ?, is_active = ? WHERE id = ?');
         $stmt->bind_param('ssssiii', $type, $title, $content, $settings, $sortOrder, $isActive, $id);
         $result = $stmt->execute();
         $stmt->close();
@@ -111,9 +109,9 @@ class PageBlock
      * @param int $id
      * @return bool
      */
-    public function delete(int $id): bool
+    public static function delete(int $id): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM page_blocks WHERE id = ?');
+        $stmt = Database::db()->prepare('DELETE FROM page_blocks WHERE id = ?');
         $stmt->bind_param('i', $id);
         $result = $stmt->execute();
         $stmt->close();
@@ -125,9 +123,9 @@ class PageBlock
      * @param array $blocksOrder
      * @return bool
      */
-    public function updateOrder(array $blocksOrder): bool
+    public static function updateOrder(array $blocksOrder): bool
     {
-        $stmt = $this->db->prepare('UPDATE page_blocks SET sort_order = ? WHERE id = ?');
+        $stmt = Database::db()->prepare('UPDATE page_blocks SET sort_order = ? WHERE id = ?');
 
         foreach ($blocksOrder as $block) {
             $sortOrder = $block['sort_order'] ?? 0;
@@ -143,9 +141,9 @@ class PageBlock
     /**
      * @return string
      */
-    public function getHeroImage(): string
+    public static function getHeroImage(): string
     {
-        $stmt = $this->db->prepare("SELECT settings FROM page_blocks WHERE type = 'hero' AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
+        $stmt = Database::db()->prepare("SELECT settings FROM page_blocks WHERE type = 'hero' AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
