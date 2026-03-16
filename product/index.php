@@ -346,7 +346,7 @@ if (isset($product) && $product) {
                 $normalizeImageUrl = function($url) {
                     return Config::normalize_media_url($url, $HOME_URL);
                 };
-                include __DIR__ . '/../order-modal-template.php';
+                include __DIR__ . '/../order_modal.php';
                 ?>
 
                 <!-- Overlay -->

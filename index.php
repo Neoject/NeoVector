@@ -546,7 +546,7 @@ try {
 
         <?php
         $hasAutocomplete = true;
-        include __DIR__ . '/order-modal-template.php';
+        include __DIR__ . '/order_modal.php';
         ?>
     </div>
     <script src="src/scripts/main.js"></script>
