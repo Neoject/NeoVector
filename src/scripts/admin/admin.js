@@ -3938,15 +3938,15 @@ NV.ready(() => {
                     if (response.ok) {
                         const data = await response.json();
 
-                        if (data.success) {
-                            this.title = data.title;
-                            this.description = data.description;
-                            this.imageMetaTags = data.image_meta_tags;
-                            this.pickupAddress = data.pickup_address;
-                            this.workHours = data.work_hours;
-                            this.storePhone = data.store_phone;
-                            this.deliveryBel = data.delivery_bel;
-                            this.deliveryRus = data.delivery_rus;
+                        if (data && typeof data === 'object') {
+                            this.title = data.title ?? this.title;
+                            this.description = data.description ?? this.description;
+                            this.imageMetaTags = data.image_meta_tags ?? this.imageMetaTags;
+                            this.pickupAddress = data.pickup_address ?? this.pickupAddress;
+                            this.workHours = data.work_hours ?? this.workHours;
+                            this.storePhone = data.store_phone ?? this.storePhone;
+                            this.deliveryBel = data.delivery_bel ?? this.deliveryBel;
+                            this.deliveryRus = data.delivery_rus ?? this.deliveryRus;
                         }
                     }
                 } catch (error) {

@@ -146,7 +146,7 @@
 }
 
 .column-resize-handle.active::before {
-    background: var(--background-darker);
+    background: var(--background-additional);
     opacity: 1;
 }
 

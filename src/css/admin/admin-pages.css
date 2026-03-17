@@ -17,12 +17,12 @@ table.pages-table {
 table.pages-table.pages-table-th {
     padding: unset;
     width: auto;
-    background: var(--background-gray-dark);
+    background: var(--background-mod-8);
 }
 
 table.pages-table td {
     padding: 0 0.8vw;
-    background: var(--background-gray-dark);
+    background: var(--background-mod-8);
     border: 1px solid var(--color-292727);
 }
 

@@ -99,6 +99,51 @@ class Database
         return false;
     }
 
+    /**
+     * @param  string $table
+     * @param  array  $values
+     * <code>[ key => value ]</code>
+     * @param  array  $where
+     * <code>[ key => value ]</code>
+     * @return bool
+     */
+    public static function update(string $table, array $values, array $where): bool
+    {
+        $set = implode(', ', array_map(fn($col) => $col . ' = ?', array_keys($values)));
+        $conditions = implode(' AND ', array_map(fn($col) => $col . ' = ?', array_keys($where)));
+
+        $sql = 'UPDATE ' . $table . ' SET ' . $set . ' WHERE ' . $conditions;
+
+        $stmt = Database::db()->prepare($sql);
+
+        if ($stmt->execute([...array_values($values), ...array_values($where)])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  string $table
+     * @param  array  $where
+     * <code>[ key => value ]</code>
+     * @return bool
+     */
+    public static function delete(string $table, array $where): bool
+    {
+        $conditions = implode(' AND ', array_map(fn($col) => $col . ' = ?', array_keys($where)));
+
+        $sql = 'DELETE FROM ' . $table . ' WHERE ' . $conditions;
+
+        $stmt = Database::db()->prepare($sql);
+
+        if ($stmt->execute(array_values($where))) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static function getList(string $table, array $filter = [], array $order = []): array
     {
         $table = '`' . str_replace('`', '``', $table) . '`';

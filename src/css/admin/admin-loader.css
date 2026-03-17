@@ -51,7 +51,7 @@
 .admin-block-loader {
     width: 60px;
     aspect-ratio: 1;
-    border: 15px solid var(--background-min-dark);
+    border: 15px solid var(--background-mod-1);
     border-radius: 50%;
     position: relative;
     transform: rotate(45deg);

@@ -1058,7 +1058,17 @@ NV.ready(() => {
                 }
             },
             isElementInView(id) {
-                return this.elementStates[id] === 'animated';
+                const element = document.getElementById(id);
+                if (!element) return false;
+
+                const rect = element.getBoundingClientRect();
+
+                return (
+                    rect.bottom > 0 &&
+                    rect.right > 0 &&
+                    rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
+                    rect.left < (window.innerWidth || document.documentElement.clientWidth)
+                );
             },
             generateElementId(element) {
                 if (!element.id) {

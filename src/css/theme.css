@@ -1,6 +1,6 @@
 @font-face {
-    font-family: 'Tangerine';
-    src: url('../fonts/Tangerine-Regular.ttf') format('truetype');
+    font-family: 'Main';
+    src: url('../fonts/CyberAlert.otf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -9,18 +9,18 @@
 :root {
     /* Background colors */
     --background: #ffffff;
-    --background-dark: #757575;
-    --background-darker: #ffffff;
-    --background-min-dark: #ffffff;
-    --background-min-light: #ffffff;
-    --background-very-dark: #ffffff;
-    --background-extra-dark: #ffffff;
-    --background-gray: #cacaca;
-    --background-gray-light: #ffffff;
-    --background-gray-lighter: #ffffff;
-    --background-gray-dark: #ffffff;
-    --background-gray-darker: #ffffff;
-    --background-light-gray: #ffffff;
+    --background-secondary: #757575;
+    --background-additional: #ffffff;
+    --background-mod-1: #ffffff;
+    --background-mod-2: #ffffff;
+    --background-mod-3: #ffffff;
+    --background-mod-4: #ffffff;
+    --background-mod-5: #cacaca;
+    --background-mod-6: #ffffff;
+    --background-mod-7: #ffffff;
+    --background-mod-8: #ffffff;
+    --background-mod-9: #ffffff;
+    --background-mod-0: #ffffff;
     --background-empty: #ffffff;
     
     /* Primary colors */

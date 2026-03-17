@@ -20,7 +20,8 @@ class Params
             `value` varchar(255) NOT NULL,
             `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
             `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `unique_key` (`key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
         Database::db()->query($sql);
@@ -31,18 +32,84 @@ class Params
      */
     public static function getDescription(): array
     {
+        self::createTable();
         return Database::getList('params');
     }
 
-    public static function setParam()
+    public static function set($data): bool
     {
-
+        return Database::insert('params', $data);
     }
 
-    public static function getParams(array $filter = []): array
+    public static function update($data, $id): bool
     {
-        return Database::getList('params', $filter);
+        return Database::update('params', $data, ['id' => $id]);
     }
+
+    public static function delete($id): bool
+    {
+        return Database::delete('params', $id);
+    }
+
+    /**
+     * @param array $keys
+     * @return array
+     */
+    public static function get(array $keys = []): array
+    {
+        $all = array_column(Database::getList('params'), 'value', 'key');
+
+        if (empty($keys)) {
+            return $all;
+        }
+
+        return array_intersect_key($all, array_flip($keys));
+    }
+
+    /**
+     * @return string
+     */
+    public static function getTitle(): string
+    {
+        return self::get(['title'])['title'] ?? 'error';
+    }
+
+    /**
+     * @param $data
+     * @return void
+     */
+    public static function save($data): void
+    {
+        Auth::requireAuth();
+
+        $fields = [
+            'logo' => trim($data['logo'] ?? ''),
+            'title' => trim((string) ($data['title'] ?? '')),
+            'description' => trim((string) ($data['description'] ?? '')),
+            'image_meta_tags' => trim((string) ($data['image_meta_tags'] ?? '')),
+            'pickup_address' => trim((string) ($data['pickup_address'] ?? '')),
+            'work_hours' => trim((string) ($data['work_hours'] ?? '')),
+            'store_phone' => trim((string) ($data['store_phone'] ?? '')),
+            'delivery_bel' => Service::formatNumber(trim((string) ($data['delivery_bel'] ?? ''))),
+            'delivery_rus' => Service::formatNumber(trim((string) ($data['delivery_rus'] ?? ''))),
+        ];
+
+        $placeholders = implode(', ', array_fill(0, count($fields), '(?, ?)'));
+        $sql = 'INSERT INTO params (`key`, `value`) VALUES ' . $placeholders . '
+            ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+
+        $bindings = [];
+
+        foreach ($fields as $key => $value) {
+            $bindings[] = $key;
+            $bindings[] = $value;
+        }
+
+        Database::execute($sql, $bindings);
+
+        Service::sendJson(['success' => true]);
+    }
+
 
     /**
      * @return void
@@ -144,59 +211,5 @@ class Params
 
         $url = $baseUrl . '/assets/backgrounds/' . $fileName;
         Service::sendJson(['success' => true, 'url' => $url]);
-    }
-
-    private static function handleGetParams(): void
-    {
-        /*$createParamsTableSQL = "CREATE TABLE IF NOT EXISTS `params` (
-            `id` INT AUTO_INCREMENT,
-            `title` VARCHAR(255) NOT NULL,
-            `description` TEXT NOT NULL,
-            `image_meta_tags` TEXT NOT NULL,
-            `pickup_address` VARCHAR(255) NOT NULL,
-            `work_hours` VARCHAR(255) NOT NULL,
-            `store_phone` VARCHAR(255) NOT NULL,
-            `delivery_belarus` INT(255) NOT NULL,
-            `delivery_russia` INT(255) NOT NULL,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
-
-        Database::db()->query($createParamsTableSQL);*/
-
-        $stmt = Database::db()->prepare("SELECT * FROM params");
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $stmt->close();
-
-            Service::sendJson([
-                'success' => true,
-                'title' => $row['title'],
-                'description' => $row['description'],
-                'image_meta_tags' => $row['image_meta_tags'],
-                'pickup_address' => $row['pickup_address'],
-                'work_hours' => $row['work_hours'],
-                'store_phone' => $row['store_phone'],
-                'delivery_bel' => $row['delivery_belarus'],
-                'delivery_rus' => $row['delivery_russia'],
-            ]);
-        } else {
-            $stmt->close();
-
-            Service::sendJson([
-                'success' => true,
-                'title' => '',
-                'description' => '',
-                'image_meta_tags' => '',
-                'pickup_address' => '',
-                'work_hours' => '',
-                'store_phone' => '',
-                'delivery_bel' => '',
-                'delivery_rus' => '',
-            ]);
-        }
     }
 }

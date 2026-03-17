@@ -40,7 +40,7 @@
 
 .header-actions .btn-primary {
     background: linear-gradient(135deg, var(--header-gold) 0%, var(--header-gold) 100%);
-    color: var(--background-very-dark);
+    color: var(--background-mod-3);
 }
 
 .header-actions .btn-primary:hover {

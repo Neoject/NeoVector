@@ -3,9 +3,8 @@
 use NeoVector\ApiController;
 use NeoVector\Database;
 use NeoVector\PageBlock;
+use NeoVector\Params;
 use NeoVector\Router;
-
-$TITLE = 'Aeternum - Премиальные ремни для часов';
 
 require_once __DIR__ . '/header.php';
 
@@ -97,7 +96,7 @@ try {
                         <i class="fas fa-bars"></i>
                     </button>
                     <a class="logo" href="#"
-                        @click.prevent="currentProduct ? closeProductPage() : goHome()">Aeternum</a>
+                        @click.prevent="currentProduct ? closeProductPage() : goHome()"><?= Params::getTitle() ?></a>
                     <div class="mobile-cart-icon" @click="toggleCart">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" v-if="cartItems.length > 0">{{ getCartItemsCount() }}</span>
@@ -400,7 +399,7 @@ try {
         <section v-if="sortedPageBlocks.length === 0 && !currentVirtualPage && !currentProduct && !virtualPageError" class="empty-state">
             <div class="container">
                 <div class="empty-content">
-                    <h2>Добро пожаловать в Aeternum</h2>
+                    <h2>Добро пожаловать</h2>
                     <p>Сайт находится в разработке. Скоро здесь появится контент.</p>
                 </div>
             </div>

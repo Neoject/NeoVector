@@ -80,4 +80,19 @@ class Service
         Log::error('Database error occurred:', $err);
         Service::sendError(500, $err ?: 'Database error occurred');
     }
+
+    public static function formatNumber($number): int
+    {
+        $value = preg_replace('/[^0-9]/', '', $number);
+        return (int) $value;
+    }
+
+    public static function setTitle($title = ''): void
+    {
+        if ($title) {
+            echo '<title>' . $title . '</title>';
+        } else {
+            echo '<title>' . Params::getTitle() . '</title>';
+        }
+    }
 }

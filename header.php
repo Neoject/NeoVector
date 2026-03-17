@@ -1,15 +1,18 @@
 <?php
 
 use NeoVector\Database;
+use NeoVector\Params;
+use NeoVector\Service;
 use NeoVector\VisitTracker;
 
 require_once __DIR__ . '/config.php';
 
-global $HOME_URL;
+global $HOME_URL, $TITLE;
 
-if (!isset($TITLE)) {
-    $TITLE = '';
-}
+if (!$TITLE) $TITLE = Params::getTitle();
+
+Service::setTitle($TITLE);
+
 $vars = [];
 
 try {
@@ -36,7 +39,7 @@ try {
 if (isset($_GET['id'])) {
     $product = NeoVector\Config::getProductData($productId = (int) $_GET['id']);
 
-    $TITLE = $product ? ($product['name'] . ' - Aeternum') : 'Товар не найден - Aeternum';
+    $TITLE = $product ? ($product['name'] . ' - ' . Params::getTitle()) : 'Товар не найден';
 
     $mainImageUrl = '';
     if ($product && !empty($product['image'])) {
@@ -69,7 +72,7 @@ if (isset($_GET['id'])) {
     }
 }
 
-function e(string $s): string
+function e(string $s = ''): string
 {
     return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
@@ -106,5 +109,4 @@ if (!preg_match('~^https?://~i', $ogImage)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="<?= $HOME_URL ?>src/css/style.css">
-    <title><?= e($TITLE) ?></title>
 </head>

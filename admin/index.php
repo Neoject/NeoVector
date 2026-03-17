@@ -21,6 +21,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 use NeoVector\Auth;
 use NeoVector\Database;
+use NeoVector\Params;
 use Random\RandomException;
 
 $db = Database::getInstance()->getConnection();
@@ -65,7 +66,7 @@ if (!$auth->isAdmin()) {
         <link rel="icon" href="../favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <link rel="stylesheet" href="style.css">
-        <title>Вход - Админ панель Aeternum</title>
+        <title>Вход - Админ панель <?= Params::getTitle() ?></title>
     </head>
 
     <body>
@@ -131,7 +132,7 @@ $adminUser = $auth->getCurrentUser();
     <link rel="icon" href="../favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <title>Админ панель - Aeternum</title>
+    <title>Админ панель - <?= Params::getTitle() ?></title>
 </head>
 
 <body>
@@ -148,7 +149,7 @@ $adminUser = $auth->getCurrentUser();
                                 <button class="mobile-menu-btn" @click="toggleMobileMenu">
                                     <i class="fas fa-bars"></i>
                                 </button>
-                                <a class="logo logo-admin" href="/">Aeternum</a>
+                                <a class="logo logo-admin" href="/"><?= Params::getTitle() ?></a>
                             </div>
                             <div class="admin-actions">
                                 <button @click="changePage('admin')" class="btn btn-secondary" title="Управление">
@@ -191,7 +192,7 @@ $adminUser = $auth->getCurrentUser();
                 </div>
                 <div class="mobile-admin-menu" :class="{ 'active': mobileMenuOpen }">
                     <div class="mobile-menu-btn-header" @click="changePage('admin')">
-                        Aeternum
+                        <?= Params::getTitle() ?>
                     </div>
                     <button class="mobile-menu-close" @click="closeMobileMenu">
                         <i class="fas fa-times"></i>
