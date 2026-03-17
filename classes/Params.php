@@ -36,16 +36,29 @@ class Params
         return Database::getList('params');
     }
 
+    /**
+     * @param $data
+     * @return bool
+     */
     public static function set($data): bool
     {
         return Database::insert('params', $data);
     }
 
+    /**
+     * @param $data
+     * @param $id
+     * @return bool
+     */
     public static function update($data, $id): bool
     {
         return Database::update('params', $data, ['id' => $id]);
     }
 
+    /**
+     * @param $id
+     * @return bool
+     */
     public static function delete($id): bool
     {
         return Database::delete('params', $id);
@@ -114,102 +127,74 @@ class Params
     /**
      * @return void
      */
-    public static function handleUploadLogo(): void
+    public static function uploadLogo(): void
     {
-        Auth::requireAuth();
-
-        if (!isset($_FILES['logo']) || ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            Service::sendError(400, 'Логотип не загружен');
-        }
-
-        $file = $_FILES['logo'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        $fileType = $file['type'] ?? '';
-
-        if (!in_array($fileType, $allowedTypes, true)) {
-            Service::sendError(400, 'Недопустимый тип файла. Разрешены JPEG, PNG, GIF, WebP и SVG.');
-        }
-
-        $fileSize = (int) ($file['size'] ?? 0);
-
-        if ($fileSize > 5 * 1024 * 1024) {
-            Service::sendError(400, 'Слишком большой файл. Максимум 5 МБ.');
-        }
-
-        $uploadDir = dirname(__DIR__) . '/assets/logo/';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
-        $fileName = 'site_logo.' . $extension;
-        $filePath = $uploadDir . $fileName;
-
-        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-            Service::sendError(500, 'Не удалось сохранить логотип');
-        }
-
-        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $baseUrl = '';
-
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir;
-        }
-
-        $url = $baseUrl . '/assets/logo/' . $fileName;
-        Service::sendJson(['success' => true, 'url' => $url]);
+        Service::sendJson(['success' => true, 'url' => self::uploadImage('logo')]);
     }
 
     /**
      * @return void
      */
-    public static function handleUploadBackgroundImage(): void
+    public static function uploadBackground(): void
+    {
+        Service::sendJson(['success' => true, 'url' => self::uploadImage('background')]);
+    }
+
+    /**
+     * @param string $dir
+     * @return string
+     */
+    private static function uploadImage(string $dir): string
     {
         Auth::requireAuth();
 
-        if (!isset($_FILES['image']) || ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            Service::sendError(400, 'No image uploaded');
-        }
+        $file = self::validateUploadedFile('image', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
-        $file = $_FILES['image'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $fileType = $file['type'] ?? '';
-
-        if (!in_array($fileType, $allowedTypes, true)) {
-            Service::sendError(400, 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.');
-        }
-
-        $fileSize = (int) ($file['size'] ?? 0);
-
-        if ($fileSize > 5 * 1024 * 1024) {
-            Service::sendError(400, 'File size too large. Maximum 5MB allowed.');
-        }
-
-        $uploadDir = dirname(__DIR__) . '/assets/backgrounds/';
+        $uploadDir = dirname(__DIR__) . '/assets/' . $dir . '/';
 
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
 
-        $extension = pathinfo($file['name'] ?? 'bg', PATHINFO_EXTENSION);
-        $fileName = 'bg_' . uniqid() . '.' . $extension;
-        $filePath = $uploadDir . $fileName;
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $fileName = uniqid() . '.' . $extension;
 
-        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
             Service::sendError(500, 'Failed to upload image');
         }
 
-        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $baseUrl = '';
+        $relativePath = '/assets/' . $dir .'/' . $fileName;
 
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir;
+        Database::execute(
+            'INSERT INTO params (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
+            [$dir, $relativePath]
+        );
+
+        return $relativePath;
+    }
+
+    /**
+     * @param string $field
+     * @param array $allowedTypes
+     * @param int $maxSize
+     * @return array
+     */
+    private static function validateUploadedFile(string $field, array $allowedTypes, int $maxSize = 5 * 1024 * 1024): array
+    {
+        if (!isset($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            Service::sendError(400, 'Файл не загружен');
         }
 
-        $url = $baseUrl . '/assets/backgrounds/' . $fileName;
-        Service::sendJson(['success' => true, 'url' => $url]);
+        $file = $_FILES[$field];
+
+        if (!in_array($file['type'] ?? '', $allowedTypes, true)) {
+            Service::sendError(400, 'Недопустимый тип файла: ' . implode(', ', $allowedTypes));
+        }
+
+        if ((int) ($file['size'] ?? 0) > $maxSize) {
+            Service::sendError(400, 'Слишком большой файл. Максимум ' . ($maxSize / 1024 / 1024) . ' МБ.');
+        }
+
+        return $file;
     }
 }
