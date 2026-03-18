@@ -222,7 +222,7 @@ class API
                     Service::sendJson(['url' => PageBlock::getHeroImage()]);
                     break;
                 case 'add_page_block':
-                    Service::sendJson(['success' => true, 'id' => PageBlock::create($data)]);
+                    Service::sendJson(['success' => true, 'id' => PageBlock::create($_POST)]);
                     break;
                 case 'update_page_block':
                     PageBlock::update($_POST['id'], $data = [
@@ -241,10 +241,10 @@ class API
                     PageBlock::updateOrder(json_decode($_POST['blocks_order'], true));
                     break;
                 case 'upload_background_image':
-                    Params::handleUploadBackgroundImage();
+                    Params::uploadBackground();
                     break;
                 case 'upload_logo':
-                    Params::handleUploadLogo();
+                    Params::uploadLogo();
                     break;
                 case 'create_order':
                     Order::create($_POST);

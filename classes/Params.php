@@ -129,7 +129,31 @@ class Params
      */
     public static function uploadLogo(): void
     {
-        Service::sendJson(['success' => true, 'url' => self::uploadImage('logo')]);
+        Auth::requireAuth();
+
+        $file = self::validateUploadedFile('logo', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']);
+
+        $uploadDir = dirname(__DIR__) . '/assets/logo/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
+        $fileName = 'logo_' . uniqid() . '.' . $extension;
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
+            Service::sendError(500, 'Не удалось сохранить логотип');
+        }
+
+        $relativePath = '/assets/logo/' . $fileName;
+
+        Database::execute(
+            'INSERT INTO params (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
+            ['logo', $relativePath]
+        );
+
+        Service::sendJson(['success' => true, 'url' => $relativePath]);
     }
 
     /**
@@ -137,40 +161,31 @@ class Params
      */
     public static function uploadBackground(): void
     {
-        Service::sendJson(['success' => true, 'url' => self::uploadImage('background')]);
-    }
-
-    /**
-     * @param string $dir
-     * @return string
-     */
-    private static function uploadImage(string $dir): string
-    {
         Auth::requireAuth();
 
         $file = self::validateUploadedFile('image', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
-        $uploadDir = dirname(__DIR__) . '/assets/' . $dir . '/';
+        $uploadDir = dirname(__DIR__) . '/assets/backgrounds/';
 
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
 
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $fileName = uniqid() . '.' . $extension;
+        $extension = pathinfo($file['name'] ?? 'bg', PATHINFO_EXTENSION);
+        $fileName = 'bg_' . uniqid() . '.' . $extension;
 
         if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
             Service::sendError(500, 'Failed to upload image');
         }
 
-        $relativePath = '/assets/' . $dir .'/' . $fileName;
+        $relativePath = '/assets/backgrounds/' . $fileName;
 
         Database::execute(
             'INSERT INTO params (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
-            [$dir, $relativePath]
+            ['background', $relativePath]
         );
 
-        return $relativePath;
+        Service::sendJson(['success' => true, 'url' => $relativePath]);
     }
 
     /**

@@ -22,7 +22,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 use NeoVector\Auth;
 use NeoVector\Database;
 use NeoVector\Params;
-use Random\RandomException;
+use NeoVector\Service;
 
 $db = Database::getInstance()->getConnection();
 $auth = new Auth($db);
@@ -34,6 +34,8 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'logout') {
     exit;
 }
 
+$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'settings', 'users', 'profile'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $username = trim((string) ($_POST['username'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
@@ -43,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     try {
         $result = $auth->login($username, $password, $remember);
-    } catch (RandomException $e) {
+    } catch (Exception $e) {
         error_log($e->getMessage());
     }
 
@@ -53,22 +55,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     $loginError = ($result['role'] ?? '') !== 'admin' ? 'Недостаточно прав' : ($result['error'] ?? 'Неверные учетные данные');
-}
+} ?>
+<!doctype html>
+<html lang="ru" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 
-if (!$auth->isAdmin()) {
-    ?>
-    <!doctype html>
-    <html lang="ru">
-
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="../favicon.ico" type="image/x-icon">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link rel="stylesheet" href="style.css">
-        <title>Вход - Админ панель <?= Params::getTitle() ?></title>
-    </head>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../src/scripts/script.js"></script>
+    <script src="<?=$HOME_URL?>src/scripts/admin/pages/admin-dashboard.js"></script>
+    <?php foreach ($scripts as $script): ?>
+    <script src="<?=$HOME_URL?>src/scripts/admin/pages/<?=$script?>.js"></script>
+    <?php endforeach; ?>
+    <link rel="icon" href="../favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <title>Админ панель - <?= Params::getTitle() ?></title>
+</head>
+<?php if (!$auth->isAdmin()): ?>
     <body>
         <div class="login-container">
             <div class="login-form" style="text-align:center;">
@@ -104,37 +115,9 @@ if (!$auth->isAdmin()) {
 
     </html>
     <?php
-    exit;
-}
-
-$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'settings', 'users', 'profile'];
-
+    else:
 $adminUser = $auth->getCurrentUser();
 ?>
-<!doctype html>
-<html lang="ru" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="msapplication-tap-highlight" content="no">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../src/scripts/script.js"></script>
-    <script src="<?=$HOME_URL?>src/scripts/admin/pages/admin-dashboard.js"></script>
-    <?php foreach ($scripts as $script): ?>
-    <script src="<?=$HOME_URL?>src/scripts/admin/pages/<?=$script?>.js"></script>
-    <?php endforeach; ?>
-    <link rel="icon" href="../favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <title>Админ панель - <?= Params::getTitle() ?></title>
-</head>
-
 <body>
     <div class="admin-loading-container" id="load_box">
         <div class="admin-loader"></div>
@@ -446,5 +429,8 @@ $adminUser = $auth->getCurrentUser();
     </script>
     <?php endforeach; ?>
 </body>
+<?php endif;
+Service::adminJS('components/service');
 
-</html>
+require_once $HOME_URL . 'footer.php';
+?>

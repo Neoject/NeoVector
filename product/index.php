@@ -1348,5 +1348,6 @@ if (isset($product) && $product) {
         })
     </script>
 </body>
-
-</html>
+<?php
+require_once $HOME_URL . 'footer.php';
+?>

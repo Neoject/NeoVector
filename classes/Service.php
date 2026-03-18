@@ -4,7 +4,6 @@ namespace NeoVector;
 
 class Service
 {
-
     /**
      * @param $data
      * @return void
@@ -93,6 +92,48 @@ class Service
             echo '<title>' . $title . '</title>';
         } else {
             echo '<title>' . Params::getTitle() . '</title>';
+        }
+    }
+
+    public static function addJS(mixed $data): void
+    {
+        global $HOME_URL;
+
+        if (!is_array($data)) {
+            echo '<script src="' . $HOME_URL . 'src/scripts/local/' . $data . '.js"></script>';
+
+
+        } else {
+            foreach ($data as $script) {
+                echo '<script src="' . $HOME_URL . 'src/scripts/local/' . $script . '.js"></script>';
+            }
+        }
+    }
+
+    public static function addCSS(mixed $data): void
+    {
+        global $HOME_URL;
+
+        if (!is_array($data)) {
+            echo '<link rel="stylesheet" href="' . $HOME_URL . 'src/css/local/' . $data . '.css">';
+
+        } else {
+            foreach ($data as $style) {
+                echo '<link rel="stylesheet" href="' . $HOME_URL . 'src/css/local/' . $style . '.css">';
+            }
+        }
+    }
+
+    public static function adminJS(mixed $data): void
+    {
+        global $HOME_URL;
+
+        if (!is_array($data)) {
+            echo '<script src="' . $HOME_URL . 'src/scripts/admin/' . $data . '.js"></script>';
+        } else {
+            foreach ($data as $script) {
+                echo '<script src="' . $HOME_URL . 'src/scripts/admin/' . $script . '.js"></script>';
+            }
         }
     }
 }

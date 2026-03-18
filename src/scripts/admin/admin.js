@@ -2,7 +2,10 @@ NV.ready(() => {
     const { createApp } = Vue;
 
     NV.admin = Vue.createApp({
-        mixins: [Modal, Auth, Category, Mail],
+        mixins: [Modal, Auth, Category, Mail, Service],
+        components: {
+            Service
+        },
         data() {
             return {
                 origin: window.location.origin,
@@ -117,7 +120,7 @@ NV.ready(() => {
                 availableElements: [
                     { type: 'heading', label: 'Заголовок', icon: 'fas fa-heading', defaultContent: 'Новый заголовок' },
                     { type: 'paragraph', label: 'Абзац', icon: 'fas fa-paragraph', defaultContent: 'Новый абзац текста' },
-                    { type: 'image', label: 'Изображение', icon: 'fas fa-image', defaultContent: '' },
+                    { type: 'image', label: 'Изображение', icon: 'fas fa-photo-film', defaultContent: '' },
                     { type: 'list', label: 'Список', icon: 'fas fa-list', defaultContent: '<ul><li>Элемент списка 1</li><li>Элемент списка 2</li></ul>' },
                     { type: 'button', label: 'Кнопка', icon: 'fas fa-hand-pointer', defaultContent: 'Кнопка' },
                     { type: 'divider', label: 'Разделитель', icon: 'fas fa-minus', defaultContent: '<hr>' }
@@ -317,6 +320,7 @@ NV.ready(() => {
                     { class: 'fas fa-thumbs-up', name: 'Большой палец вверх', category: 'all' },
                     { class: 'fas fa-thumbs-down', name: 'Большой палец вниз', category: 'all' }
                 ],
+                logo: '',
                 title: '',
                 description: '',
                 imageMetaTags: '',
@@ -741,6 +745,7 @@ NV.ready(() => {
             },
             editProduct(product) {
                 this.editingProduct = product;
+
                 this.productForm = {
                     name: product.name,
                     description: product.description || '',
@@ -2174,6 +2179,7 @@ NV.ready(() => {
                     if (response.ok) {
                         if (this.editingBlock) {
                             const index = this.pageBlocks.findIndex(b => b.id === this.editingBlock.id);
+
                             if (index !== -1) {
                                 this.pageBlocks[index] = {
                                     ...this.pageBlocks[index],
@@ -2230,10 +2236,12 @@ NV.ready(() => {
                         const infoButtonsBlock = this.pageBlocks.find(b => b.type === 'info_buttons');
                         const footerBlock = this.pageBlocks.find(b => b.type === 'footer');
                         this.pageBlocks = [...regularBlocks];
+
                         if (infoButtonsBlock) {
                             infoButtonsBlock.sort_order = regularBlocks.length;
                             this.pageBlocks.push(infoButtonsBlock);
                         }
+
                         if (footerBlock) {
                             footerBlock.sort_order = this.pageBlocks.length;
                             this.pageBlocks.push(footerBlock);
@@ -3939,6 +3947,7 @@ NV.ready(() => {
                         const data = await response.json();
 
                         if (data && typeof data === 'object') {
+                            this.logoUrl = data.logo ?? this.logoUrl;
                             this.title = data.title ?? this.title;
                             this.description = data.description ?? this.description;
                             this.imageMetaTags = data.image_meta_tags ?? this.imageMetaTags;
@@ -3951,6 +3960,15 @@ NV.ready(() => {
                     }
                 } catch (error) {
                     console.error('Error loading params:', error);
+                }
+            },
+            async uploadLogo(e) {
+                const result = await this.uploadImage(this.logo ?? e, 'logo', { maxSizeMb: 5, fieldName: 'logo' });
+                if (result?.url) {
+                    alert('Логотип успешно загружен');
+
+                    this.logoUrl = result.url;
+                    this.logo = null;
                 }
             },
             async saveParams() {

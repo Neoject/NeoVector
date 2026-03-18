@@ -550,5 +550,6 @@ try {
     </div>
     <script src="src/scripts/main.js"></script>
 </body>
-
-</html>
+<?php
+require_once $HOME_URL . 'footer.php';
+?>

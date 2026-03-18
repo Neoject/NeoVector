@@ -5,7 +5,7 @@ NV.ready(function registerSettingsComponent() {
     }
 
     const rootFields = [
-        'title', 'description', 'imageMetaTags', 'pickupAddress',
+        'logo', 'title', 'description', 'imageMetaTags', 'pickupAddress',
         'workHours', 'storePhone', 'deliveryBel', 'deliveryRus'
     ];
 
@@ -22,10 +22,11 @@ NV.ready(function registerSettingsComponent() {
         template: '#settings-template',
         computed,
         methods: {
+            uploadLogo() {
+                this.$root.uploadLogo();
+            },
             saveParams() {
-                if (typeof this.$root.saveParams === 'function') {
-                    this.$root.saveParams();
-                }
+                this.$root.saveParams();
             }
         }
     });
