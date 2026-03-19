@@ -6058,8 +6058,6 @@ header {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(280%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-    mix-blend-mode: luminosity;
-
     transition: background 0.3s ease, backdrop-filter 0.3s ease;
 }
 

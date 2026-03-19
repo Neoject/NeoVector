@@ -96,7 +96,9 @@ try {
                         <i class="fas fa-bars"></i>
                     </button>
                     <a class="logo" href="#"
-                        @click.prevent="currentProduct ? closeProductPage() : goHome()"><?= Params::getTitle() ?></a>
+                        @click.prevent="currentProduct ? closeProductPage() : goHome()">
+                        <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+                    </a>
                     <div class="mobile-cart-icon" @click="toggleCart">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" v-if="cartItems.length > 0">{{ getCartItemsCount() }}</span>

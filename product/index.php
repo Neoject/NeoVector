@@ -1,6 +1,7 @@
 <?php
 
 use NeoVector\Config;
+use NeoVector\Params;
 
 require_once __DIR__ . '/../header.php';
 
@@ -21,7 +22,9 @@ if (isset($product) && $product) {
         <header class="scrolled">
             <div class="container nav-container">
                 <div class="nav-left">
-                    <a class="logo" href="<?php echo e($HOME_URL); ?>">NeoVector</a>
+                    <a class="logo" href="<?php echo e($HOME_URL); ?>">
+                        <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+                    </a>
                     <div class="mobile-cart-icon" @click="toggleCart">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" v-if="getCartItemsCount() > 0">{{ getCartItemsCount() }}</span>

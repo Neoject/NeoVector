@@ -34,7 +34,7 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'logout') {
     exit;
 }
 
-$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'settings', 'users', 'profile'];
+$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'users', 'profile'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $username = trim((string) ($_POST['username'] ?? ''));
@@ -132,7 +132,9 @@ $adminUser = $auth->getCurrentUser();
                                 <button class="mobile-menu-btn" @click="toggleMobileMenu">
                                     <i class="fas fa-bars"></i>
                                 </button>
-                                <a class="logo logo-admin" href="/"><?= Params::getTitle() ?></a>
+                                <a class="logo logo-admin" href="/">
+                                    <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+                                </a>
                             </div>
                             <div class="admin-actions">
                                 <button @click="changePage('admin')" class="btn btn-secondary" title="Управление">
@@ -274,7 +276,8 @@ $adminUser = $auth->getCurrentUser();
                     <block-modal-view></block-modal-view>
                 </template>
                 <template v-if="page === 'settings'">
-                    <settings-view v-if="isAuthenticated"></settings-view>
+                    <Settings/>
+<!--                    <settings-view v-if="isAuthenticated"></settings-view>-->
                 </template>
                 <template v-if="page === 'messages'">
                     <messages-view v-if="isAuthenticated"></messages-view>
@@ -431,6 +434,12 @@ $adminUser = $auth->getCurrentUser();
 </body>
 <?php endif;
 Service::adminJS('components/service');
+
+$pages = ['settings'];
+
+foreach ($pages as $page) {
+    Service::adminJS('pages/'.$page);
+}
 
 require_once $HOME_URL . 'footer.php';
 ?>

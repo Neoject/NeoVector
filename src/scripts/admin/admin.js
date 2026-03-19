@@ -2,9 +2,10 @@ NV.ready(() => {
     const { createApp } = Vue;
 
     NV.admin = Vue.createApp({
-        mixins: [Modal, Auth, Category, Mail, Service],
+        mixins: [Modal, Auth, Category, Mail, Service, Settings],
         components: {
-            Service
+            Service,
+            Settings
         },
         data() {
             return {
@@ -3939,7 +3940,7 @@ NV.ready(() => {
                     window.location.href = window.location.origin + '/product/?id=' + id;
                 }
             },
-            async loadParams() {
+            /*async loadParams() {
                 try {
                     const response = await fetch('../api.php?action=get_params', { credentials: 'same-origin' });
 
@@ -3961,17 +3962,18 @@ NV.ready(() => {
                 } catch (error) {
                     console.error('Error loading params:', error);
                 }
-            },
-            async uploadLogo(e) {
+            },*/
+            /*async uploadLogo(e) {
                 const result = await this.uploadImage(this.logo ?? e, 'logo', { maxSizeMb: 5, fieldName: 'logo' });
+
                 if (result?.url) {
                     alert('Логотип успешно загружен');
 
                     this.logoUrl = result.url;
                     this.logo = null;
                 }
-            },
-            async saveParams() {
+            },*/
+            /*async saveParams() {
                 try {
                     const formData = new FormData();
 
@@ -4000,7 +4002,7 @@ NV.ready(() => {
                 } catch (error) {
                     alert(`Произошла ошибка при сохранении параметров: ${error}`);
                 }
-            },
+            },*/
             showContextMenu(event, product = null) {
                 console.log('showContextMenu called', { product, event });
                 event.preventDefault();

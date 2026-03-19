@@ -87,6 +87,11 @@ class Params
         return self::get(['title'])['title'] ?? 'error';
     }
 
+    public static function getLogo()
+    {
+        return self::get(['logo'])['logo'];
+    }
+
     /**
      * @param $data
      * @return void
