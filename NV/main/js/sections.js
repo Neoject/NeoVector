@@ -1418,6 +1418,7 @@ const Contact = {
 const InfoButtons = {
     mixins: [Props],
     template: `
+      {{block}}
       <section
           v-if="block && block.type === 'info_buttons' && block.is_active && block.settings.buttons && block.settings.buttons.length > 0"
           class="info-buttons-block">

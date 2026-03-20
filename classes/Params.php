@@ -28,15 +28,6 @@ class Params
     }
 
     /**
-     * @return array
-     */
-    public static function getDescription(): array
-    {
-        self::createTable();
-        return Database::getList('params');
-    }
-
-    /**
      * @param $data
      * @return bool
      */
@@ -84,12 +75,17 @@ class Params
      */
     public static function getTitle(): string
     {
-        return self::get(['title'])['title'] ?? 'error';
+        return self::get(['title'])['title'] ?? '';
     }
 
-    public static function getLogo()
+    public static function getLogo(): string
     {
-        return self::get(['logo'])['logo'];
+        return self::get(['logo'])['logo'] ?? '';
+    }
+
+    public static function getDescription(): string
+    {
+        return self::get(['description'])['description'] ?? '';
     }
 
     /**

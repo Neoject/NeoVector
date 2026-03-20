@@ -97,42 +97,36 @@ class Service
 
     public static function addJS(mixed $data): void
     {
-        global $HOME_URL;
-
         if (!is_array($data)) {
-            echo '<script src="' . $HOME_URL . 'src/scripts/local/' . $data . '.js"></script>';
+            echo '<script src="' . NV . '/main/js/local/' . $data . '.js"></script>';
 
 
         } else {
             foreach ($data as $script) {
-                echo '<script src="' . $HOME_URL . 'src/scripts/local/' . $script . '.js"></script>';
+                echo '<script src="' . NV . '/main/js/local/' . $script . '.js"></script>';
             }
         }
     }
 
     public static function addCSS(mixed $data): void
     {
-        global $HOME_URL;
-
         if (!is_array($data)) {
-            echo '<link rel="stylesheet" href="' . $HOME_URL . 'src/css/local/' . $data . '.css">';
+            echo '<link rel="stylesheet" href="' . NV . '/main/styles/local/' . $data . '.css">';
 
         } else {
             foreach ($data as $style) {
-                echo '<link rel="stylesheet" href="' . $HOME_URL . 'src/css/local/' . $style . '.css">';
+                echo '<link rel="stylesheet" href="' . NV . '/main/styles/local/' . $style . '.css">';
             }
         }
     }
 
     public static function adminJS(mixed $data): void
     {
-        global $HOME_URL;
-
         if (!is_array($data)) {
-            echo '<script src="' . $HOME_URL . 'src/scripts/admin/' . $data . '.js"></script>';
+            echo '<script src="' . NV . '/main/js/admin/' . $data . '.js"></script>';
         } else {
             foreach ($data as $script) {
-                echo '<script src="' . $HOME_URL . 'src/scripts/admin/' . $script . '.js"></script>';
+                echo '<script src="' . NV . '/main/js/admin/' . $script . '.js"></script>';
             }
         }
     }

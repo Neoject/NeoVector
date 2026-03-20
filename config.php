@@ -37,15 +37,8 @@ if ($projectBasePath === '/' || $projectBasePath === '\\' || $projectBasePath ==
     $HOME_URL = rtrim($projectBasePath, "/\\\\") . '/';
 }
 
-// URL base prefix ('' for site root, '/subdir' for subdirectory deployment)
 define('ROOT', $HOME_URL === '/' ? '' : rtrim($HOME_URL, '/'));
+const ROOT_PATH = __DIR__;
+const NV = ROOT . '/NV';
 
-// Absolute filesystem path to project root, for require/include calls
-define('ROOT_PATH', __DIR__);
-
-//todo getdescription
-
-Params::getDescription();
-
-$_DESCRIPTION = 'Aeternum (Этернум) — бренд аксессуаров, построенный на философии вечности, ручного мастерства и натуральных материалов. Каждый ремень создаётся вручную с уважением к традициям кожевенного дела и продуманной функциональности, объединяя винтажную эстетику и современные технологии.
-Это не массовый продукт, а аксессуар с характером — надёжный, эстетичный и с душой. Ремни Aeternum в стиле handmade cuff превращают любые часы в выразительный акцент образа и полноценный statement piece.';
+$_DESCRIPTION = Params::getDescription();

@@ -1,4 +1,4 @@
 @import "../src/css/theme.css";
-@import "../src/css/main.css";
-@import "../src/css/admin.css";
-@import "../src/css/mail.css";
+@import "../NV/main/styles/main.css";
+@import "../NV/main/styles/admin.css";
+@import "../NV/main/styles/mail.css";

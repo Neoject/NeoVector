@@ -83,8 +83,6 @@ const Settings = {
                 if (response.ok) {
                     const data = await response.json();
 
-                    console.log(data);
-
                     if (data && typeof data === 'object') {
                         this.data.logoUrl = data.logo;
                         this.data.title = data.title;

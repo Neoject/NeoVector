@@ -190,7 +190,7 @@ try {
                 :is-in-view="isInView"
             ></info-buttons>
             <?php
-            $homeSections = ['footer', 'contact'];
+            $homeSections = ['footer'];
             foreach ($homeSections as $section) {
                 include __DIR__ . '/src/home/sections/' . $section . '.html';
             }
@@ -350,11 +350,9 @@ try {
             @click="closeAllModals"></div>
         <?php
         $hasAutocomplete = true;
-        include __DIR__ . '/order_modal.php';
+        include NV. '/order_modal.php';
         ?>
     </div>
-    <script src="src/scripts/sections.js"></script>
-    <script src="src/scripts/main.js"></script>
 <?php
-include $HOME_URL . 'footer.php';
+include sprintf("%sfooter.php", ROOT);
 ?>

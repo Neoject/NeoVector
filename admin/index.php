@@ -375,14 +375,14 @@ $adminUser = $auth->getCurrentUser();
         window.__ADMIN_AUTH__ = <?= json_encode($adminUser ?? ['authenticated' => false]); ?>;
     </script>
 
-    <script src="../src/scripts/admin/modal.js"></script>
-    <script src="../src/scripts/admin/auth.js"></script>
-    <script src="../src/scripts/admin/category.js"></script>
-    <script src="../src/scripts/admin/mail.js"></script>
-    <script src="../src/scripts/admin/admin.js"></script>
+    <script src="../NV/main/js/admin/modal.js"></script>
+    <script src="../NV/main/js/admin/auth.js"></script>
+    <script src="../NV/main/js/admin/category.js"></script>
+    <script src="../NV/main/js/admin/mail.js"></script>
+    <script src="../NV/main/js/admin/admin.js"></script>
 
     <?php foreach ($scripts as $script) {
-        echo '<script src="../src/scripts/admin/pages/'.$script.'.js"></script>';
+        echo '<script src="'.NV.'/main/js/admin/pages/'.$script.'.js"></script>';
     } ?>
 
     <script type="text/x-template" id="admin-dashboard-template">
