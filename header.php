@@ -104,6 +104,7 @@ if (!preg_match('~^https?://~i', $ogImage)) {
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script type="text/javascript" src="https://js.bepaid.by/widget/be_gateway.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="<?= $HOME_URL ?>src/scripts/nv_object.js"></script>
     <script src="<?= $HOME_URL ?>src/scripts/script.js"></script>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

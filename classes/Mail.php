@@ -119,8 +119,8 @@ class Mail extends API
         }
 
         try {
-            $adminEmail = Config::get('EMAIL') ?: 'admin@' . ($_SERVER['HTTP_HOST'] ?? 'aeternum.local');
-            $adminName = 'Администратор Aeternum';
+            $adminEmail = Config::get('EMAIL') ?: 'admin@' . ($_SERVER['HTTP_HOST']);
+            $adminName = 'Администратор';
 
             $emailMessageHtml = "
             <html>
@@ -131,7 +131,7 @@ class Mail extends API
             <body>
                 <p>" . nl2br(htmlspecialchars($message)) . "</p>
                 <hr>
-                <p style='color: #888; font-size: 12px;'>Это ответ на ваше сообщение, отправленное через форму обратной связи на сайте Aeternum.</p>
+                <p style='color: #888; font-size: 12px;'>Это ответ на ваше сообщение, отправленное через форму обратной связи на сайте <?= Params::getTitle() ?>.</p>
             </body>
             </html>
             ";
@@ -247,7 +247,7 @@ class Mail extends API
         </html>
         ";
 
-        $siteName = Config::get('MAIL_FROM_NAME', 'Aeternum');
+        $siteName = Config::get('MAIL_FROM_NAME');
         $headers  = "From: \"{$siteName}\" <{$to}>\r\n";
         $headers .= "Reply-To: " . ($safeName ? "\"{$safeName}\" " : '') . "<{$safeEmail}>\r\n";
         $headers .= "MIME-Version: 1.0\r\n";

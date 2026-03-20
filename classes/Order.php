@@ -393,7 +393,7 @@ class Order
         </html>";
 
         $fromEmail = Config::get('EMAIL_FROM', 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-        $fromName = Config::get('EMAIL_FROM_NAME', 'Aeternum');
+        $fromName = Config::get('EMAIL_FROM_NAME');
         
         $headers = "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "Reply-To: " . Config::get('EMAIL', $fromEmail) . "\r\n";
@@ -435,11 +435,11 @@ class Order
         $sellerEmail = Config::get('EMAIL');
 
         if (empty($sellerEmail)) {
-            $sellerEmail = Config::get('AETERNUM_CONTACT_EMAIL');
+            $sellerEmail = Config::get('CONTACT_EMAIL');
         }
 
         if (empty($sellerEmail)) {
-            $sellerEmail = getenv('AETERNUM_CONTACT_EMAIL') ?: 'orders@aeternum.local';
+            $sellerEmail = getenv('CONTACT_EMAIL');
         }
 
         if (empty($sellerEmail) || !filter_var($sellerEmail, FILTER_VALIDATE_EMAIL)) {
@@ -577,7 +577,7 @@ class Order
         </html>";
 
         $fromEmail = Config::get('EMAIL_FROM', 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-        $fromName = Config::get('EMAIL_FROM_NAME', 'Aeternum');
+        $fromName = Config::get('EMAIL_FROM_NAME');
         
         $headers = "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "Reply-To: " . (!empty($order['customer_email']) ? $order['customer_email'] : $fromEmail) . "\r\n";

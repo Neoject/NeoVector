@@ -68,10 +68,10 @@ if (!$isCli && $secretKey !== $expectedKey) {
     exit();
 }
 
-$dbHost = env_value('DB_HOST', '127.0.0.1');
-$dbUser = env_value('DB_USER', 'admin');
-$dbPass = env_value('DB_PASS', 'hohol1488');
-$dbName = env_value('DB_NAME', 'aeternum');
+$dbHost = env_value('DB_HOST');
+$dbUser = env_value('DB_USER');
+$dbPass = env_value('DB_PASS');
+$dbName = env_value('DB_NAME');
 
 $mysqli = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
 if ($mysqli->connect_errno) {

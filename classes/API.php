@@ -74,7 +74,7 @@ class API
     /**
      * @return void
      */
-    private static function setupSession(): void
+    public static function setupSession(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';

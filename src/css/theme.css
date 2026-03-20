@@ -7,38 +7,25 @@
 }
 
 :root {
-    /* Background colors */
-    --background: #ffffff;
-    --background-secondary: #757575;
-    --background-additional: #ffffff;
-    --background-mod-1: #ffffff;
-    --background-mod-2: #ffffff;
-    --background-mod-3: #ffffff;
-    --background-mod-4: #ffffff;
-    --background-mod-5: #cacaca;
-    --background-mod-6: #ffffff;
-    --background-mod-7: #ffffff;
-    --background-mod-8: #ffffff;
-    --background-mod-9: #ffffff;
-    --background-mod-0: #ffffff;
-    --background-empty: #ffffff;
-    
-    /* Primary colors */
+    --background: linear-gradient(45deg, rgba(128, 255, 255, 0.25), rgba(200, 100, 255, 0.25));
+    --background-section: #ffffff00;
+    --background-secondary: rgba(86, 122, 140, 0.54);
+    --background-additional: #8a8a8a;
+    --background-empty: #393939;
+
     --primary: #61bef8;
-    --primary-alt: #8e8e8e;
-    --secondary: #8e8e8e;
-    
-    /* Gold colors */
-    --header-gold: #8e8e8e;
-    --header-gold-highlight: #8e8e8e;
-    --header-gold-shadow: #8e8e8e;
-    --gold: #8e8e8e;
-    --gold-hover: #8e8e8e;
+    --primary-alt: #6fc2cc;
+    --secondary: #53958f;
+    --header-main: #00d7e6;
+    --header-secondary: #2d84bf;
+    --header-additional: #0f56b3;
+    --text-simple: #8e8e8e;
+    --text-hover: #2b6b7c;
     
     /* Text colors */
-    --text-main: #404040;
-    --text-secondary: #535353;
-    --text-additional: #636363;
+    --text-main: #3959b8;
+    --text-secondary: #1f238c;
+    --text-additional: #43658c;
     --text-additional-light: #989898;
     --text-additional-dark: #000000;
     --text-dark: #373737;
@@ -64,6 +51,7 @@
     --success-green-alt: #2ecc71;
     --success-green-dark: #27ae60;
     --success-green-light: #218838;
+    --success-dark: #212121;
     
     /* Status colors - Error */
     --error-bg: #f8d7da;
@@ -76,8 +64,8 @@
     --error-red-light: #ff8a80;
     
     /* Status colors - Warning */
-    --warning-orange: #f39c12;
-    --warning-orange-dark: #e67e22;
+    --warning: #cd1942;
+    --warning-dark: #8a0419;
     
     /* Info colors */
     --info-blue: #007bff;
@@ -88,13 +76,13 @@
     --purple: #9b59b6;
     
     /* Border colors */
-    --border-white-light: rgba(255, 255, 255, 0.1);
-    --border-white-medium: rgba(255, 255, 255, 0.2);
-    --border-white-strong: rgba(255, 255, 255, 0.3);
-    --border-white-stronger: rgba(255, 255, 255, 0.4);
-    --border-primary-light: rgba(255, 237, 179, 0.1);
-    --border-primary-medium: rgba(255, 237, 179, 0.2);
-    --border-primary-strong: rgba(255, 237, 179, 0.3);
+    --border-light: rgba(255, 255, 255, 0.1);
+    --border-medium: rgba(255, 255, 255, 0.2);
+    --border-strong: rgba(255, 255, 255, 0.3);
+    --border-stronger: rgba(255, 255, 255, 0.4);
+    --border-primary-light: rgb(166, 251, 255);
+    --border-primary-medium: rgb(142, 202, 200);
+    --border-primary-strong: rgb(71, 152, 147);
     --border-primary-stronger: rgba(255, 237, 179, 0.4);
     --border-primary-strongest: rgba(255, 237, 179, 0.8);
     --border-gold-light: rgba(212, 175, 55, 0.3);
@@ -103,6 +91,11 @@
     --border-gold-shadow: rgba(154, 116, 21, 0.4);
     --border-gray: #666;
     --border-gray-light: #888;
+
+    --hover-primary: #aeaeae;
+    --hover-secondary: #9e9e9e;
+    --hover-button: #717171;
+    --hover-table: #717171;
     
     /* Background rgba colors */
     --bg-white-02: rgba(255, 255, 255, 0.02);
@@ -159,7 +152,6 @@
     --bg-red-30: rgba(231, 76, 60, 0.3);
     --bg-red-80: rgba(231, 76, 60, 0.8);
     --bg-gray-20: rgba(241, 236, 236, 0.2);
-    --bg-gray-30: rgba(241, 236, 236, 0.3);
     
     /* Text rgba colors */
     --text-white-40: rgba(255, 255, 255, 0.4);
@@ -169,7 +161,6 @@
     --text-white-70: rgba(255, 255, 255, 0.7);
     --text-white-75: rgba(255, 255, 255, 0.75);
     --text-white-85: rgba(255, 255, 255, 0.85);
-    --text-gold-75: rgba(255, 215, 0, 0.75);
     
     /* Other colors */
     --color-ae9549: #ae9549;
@@ -190,12 +181,4 @@
     --color-4e4e4e: #4E4E4E;
     --color-2d2d2d: #2d2d2d;
     --color-1e1e1e: #1e1e1e;
-    --color-6c757d: #6c757d;
-    --color-FFA500: #FFA500;
-    --color-2a2a2a: #2a2a2a;
-    --color-252525: #252525;
-    --color-999: #999;
-    --color-777: #777;
-    --color-ffcc80: #ffcc80;
-    --color-ddd: #dddddd;
 }

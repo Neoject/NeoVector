@@ -29,12 +29,12 @@ header {
     padding: 20px 0 10px 0;
     position: fixed;
     width: 100%;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     z-index: 999;
     transition: all 0.3s ease;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    background: var(--background-mod-1);
+    background: var(--background);
     box-shadow: var(--shadow-regular)
 }
 
@@ -81,20 +81,20 @@ input[type=checkbox] {
 }
 
 input[type=checkbox]:hover {
-    border-color: var(--header-gold);
+    border-color: var(--header-secondary);
     background: var(--bg-black-95);
     box-shadow: 0 0 8px var(--bg-gold-30);
 }
 
 input[type=checkbox]:focus {
     outline: none;
-    border-color: var(--header-gold-highlight);
+    border-color: var(--header-main);
     box-shadow: 0 0 12px var(--bg-gold-50);
 }
 
 input[type=checkbox]:checked {
-    background: linear-gradient(135deg, var(--header-gold-highlight) 0%, var(--header-gold) 100%);
-    border-color: var(--header-gold);
+    background: linear-gradient(135deg, var(--header-main) 0%, var(--header-secondary) 100%);
+    border-color: var(--header-secondary);
     box-shadow: 0 0 12px var(--bg-gold-60);
 }
 
@@ -112,7 +112,7 @@ input[type=checkbox]:checked::after {
 }
 
 input[type=checkbox]:checked:hover {
-    background: linear-gradient(135deg, var(--header-gold) 0%, var(--header-gold-highlight) 100%);
+    background: linear-gradient(135deg, var(--header-secondary) 0%, var(--header-main) 100%);
     box-shadow: 0 0 16px var(--bg-gold-80);
 }
 
@@ -323,7 +323,7 @@ header.scrolled .user-menu-popup {
 }
 
 a {
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .scrolled .header-bottom {
@@ -333,7 +333,7 @@ a {
     left: 0;
     width: 100%;
     height: 5%;
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
 }
 
 @keyframes liquidShine {
@@ -411,7 +411,7 @@ a {
 
 .info-buttons-block {
     padding: 40px 0 0;
-    background-color: var(--background-mod-0);
+    background-color: var(--background);
     flex: 0 0 calc(33.333% - 10px);
 }
 
@@ -432,6 +432,7 @@ a {
 }
 
 .info-buttons-container {
+    margin: 8vh 0;
     width: auto;
 }
 
@@ -496,7 +497,7 @@ a {
 }
 
 .nav-links a:hover {
-    background: linear-gradient(135deg, var(--header-gold-highlight) 0%, var(--header-gold) 60%, var(--header-gold-shadow) 100%);
+    background: linear-gradient(135deg, var(--header-main) 0%, var(--header-secondary) 60%, var(--header-additional) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -509,7 +510,7 @@ a {
     height: 2px;
     bottom: -5px;
     left: 0;
-    background: linear-gradient(135deg, var(--header-gold-highlight) 0%, var(--header-gold) 60%, var(--header-gold-shadow) 100%);
+    background: linear-gradient(135deg, var(--header-main) 0%, var(--header-secondary) 60%, var(--header-additional) 100%);
     transition: width 0.3s ease;
 }
 
@@ -528,7 +529,7 @@ a {
     top: -8px;
     right: -8px;
     background: var(--bg-black-65);
-    color: var(--header-gold);
+    color: var(--header-secondary);
     border: 1px solid var(--border-gold-medium);
     box-shadow: 0 0 10px var(--bg-gold-shadow-40);
     border-radius: 50%;
@@ -645,14 +646,14 @@ h1 span {
 }
 
 section {
-    padding: 100px 0;
-    background: var(--background);
+    padding: 12vh 0;
+    background: var(--background-section);
 }
 
 .section-title {
     text-align: center;
     font-size: 36px;
-    margin-bottom: 60px;
+    margin-bottom: 24px;
     position: relative;
 }
 
@@ -680,7 +681,7 @@ section {
 .filter-btn {
     padding: 8px 20px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     color: var(--text-main);
     border-radius: 30px;
     cursor: pointer;
@@ -721,7 +722,7 @@ section {
     overflow: hidden;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     touch-action: manipulation;
     display: flex;
     flex-direction: column;
@@ -763,7 +764,7 @@ section {
     cursor: pointer;
     position: relative;
     padding: 0.5vh 2vw;
-    border: 2px solid var(--background-mod-4);
+    border: 2px solid var(--background);
     border-radius: 12px;
     background: var(--color-181717);
     height: 32vh;
@@ -793,8 +794,8 @@ section {
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid var(--border-white-medium);
-    border-top-color: var(--header-gold);
+    border: 4px solid var(--border-medium);
+    border-top-color: var(--header-secondary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     box-shadow: 0 2px 8px var(--bg-black-30);
@@ -953,7 +954,7 @@ section {
     background: var(--bg-white-40);
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     pointer-events: auto !important;
     -webkit-tap-highlight-color: transparent;
     position: relative;
@@ -1091,7 +1092,7 @@ section {
 .wishlist {
     width: 40px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     color: var(--text-main);
     border-radius: 8px;
     cursor: pointer;
@@ -1149,7 +1150,7 @@ section {
     -webkit-transition: all 0.3s ease;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .feature-card:hover {
@@ -1261,7 +1262,7 @@ section {
     align-items: center;
     margin-bottom: 30px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .favorites-header-left {
@@ -1328,7 +1329,7 @@ section {
     align-items: center;
     margin-bottom: 30px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .close-icon {
@@ -1354,7 +1355,7 @@ section {
     display: flex;
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .cart-item-img {
@@ -1404,7 +1405,7 @@ section {
     width: 30px;
     height: 30px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     color: var(--text-main);
     border-radius: 4px;
     cursor: pointer;
@@ -1439,7 +1440,7 @@ section {
 .cart-total {
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid var(--border-white-light);
+    border-top: 1px solid var(--border-light);
     display: flex;
     justify-content: space-between;
     font-size: 20px;
@@ -1478,7 +1479,7 @@ section {
     display: flex;
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .favorites-item-img {
@@ -1584,7 +1585,7 @@ section {
 
 .remove-from-favorites {
     background: none;
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     color: var(--primary);
     padding: 8px 12px;
     border-radius: 6px;
@@ -1600,7 +1601,7 @@ section {
 
 .remove-from-favorites:hover {
     background: var(--bg-white-10);
-    border-color: var(--border-white-strong);
+    border-color: var(--border-strong);
 }
 
 .empty-favorites {
@@ -1668,7 +1669,7 @@ footer {
 .mobile-menu-btn {
     background: none;
     border: none;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     font-size: 24px;
     cursor: pointer;
     min-height: 44px;
@@ -2004,7 +2005,7 @@ footer {
     padding: 15px 0;
     width: 100%;
     text-align: left;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
     place-content: center;
     min-height: 44px;
     display: flex;
@@ -2018,7 +2019,7 @@ footer {
 .mobile-cart-favorites {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid var(--border-white-medium);
+    border-top: 1px solid var(--border-medium);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -2030,7 +2031,7 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     background: var(--bg-white-05);
     border-radius: 8px;
     margin: 0 20px;
@@ -2067,7 +2068,7 @@ footer {
 .mobile-auth-section {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid var(--border-white-medium);
+    border-top: 1px solid var(--border-medium);
 }
 
 .mobile-login-btn {
@@ -2075,7 +2076,7 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: none;
     background: var(--bg-white-05);
     border-radius: 8px;
@@ -2098,9 +2099,9 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     cursor: pointer;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-user-info i.fa-chevron-down {
@@ -2117,7 +2118,7 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: none;
     background: var(--bg-primary-10);
     border-radius: 8px;
@@ -2136,7 +2137,7 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: none;
     background: var(--bg-error-10);
     border-radius: 8px;
@@ -2148,7 +2149,7 @@ footer {
 
 .mobile-logout-btn:hover {
     background: var(--bg-error-20);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .mobile-user-dropdown {
@@ -2156,7 +2157,7 @@ footer {
     background: var(--bg-white-05);
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .mobile-user-dropdown-item {
@@ -2164,7 +2165,7 @@ footer {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: none;
     -webkit-transition: all 0.3s ease;
     transition: all 0.3s ease;
@@ -2177,11 +2178,11 @@ footer {
 
 .mobile-user-dropdown-item:hover {
     background: var(--bg-white-10);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .mobile-user-dropdown-item.admin-item {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     padding: 0 12px 0 12px !important;
     width: fit-content !important;
     justify-content: start !important;
@@ -2189,11 +2190,11 @@ footer {
 
 .mobile-user-dropdown-item.admin-item:hover {
     background: var(--bg-primary-10);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .mobile-user-dropdown-item.logout-item {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     padding: 0 12px 0 12px !important;
     width: fit-content !important;
     justify-content: start !important;
@@ -2201,7 +2202,7 @@ footer {
 
 .mobile-user-dropdown-item.logout-item:hover {
     background: var(--bg-error-10);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .mobile-user-dropdown-item i {
@@ -2214,7 +2215,7 @@ footer {
     display: none;
     background: none;
     border: none;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     font-size: 20px;
     cursor: pointer;
     padding: 10px;
@@ -2258,7 +2259,7 @@ footer {
     width: 100%;
     padding: 15px 20px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     color: var(--primary);
     text-decoration: none;
@@ -2271,7 +2272,7 @@ footer {
 
 .mobile-nav-btn:hover {
     background: var(--bg-white-10);
-    border-color: var(--border-white-medium);
+    border-color: var(--border-medium);
 }
 
 .mobile-nav-btn.logout-btn {
@@ -2287,7 +2288,7 @@ footer {
 .mobile-side-menu .cart-icon {
     margin-top: 20px;
     padding: 15px 0;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2338,7 +2339,7 @@ footer {
     width: 100%;
     padding: 15px 20px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     border-radius: 10px;
     color: var(--text-main);
     font-size: 16px;
@@ -2442,7 +2443,7 @@ textarea.form-control {
     flex: 1;
     max-width: 400px;
     backdrop-filter: blur(10px);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     -webkit-transition: all 0.3s ease;
     transition: all 0.3s ease;
     position: relative;
@@ -2485,7 +2486,7 @@ textarea.form-control {
     padding: 40px 20px;
     text-align: center;
     backdrop-filter: blur(10px);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     -webkit-transition: all 0.3s ease;
     transition: all 0.3s ease;
 }
@@ -2569,10 +2570,6 @@ textarea.form-control {
     }
 }
 
-#contact {
-    background: var(--background);
-}
-
 .login-container {
     min-height: 100vh;
     display: flex;
@@ -2588,7 +2585,7 @@ textarea.form-control {
     -webkit-border-radius: 15px;
     border-radius: 15px;
     padding: 40px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     max-width: 400px;
     width: 100%;
     text-align: center;
@@ -2608,7 +2605,7 @@ textarea.form-control {
     width: 100%;
     padding: 15px 20px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     border-radius: 10px;
     color: var(--text-main);
     font-size: 16px;
@@ -2648,13 +2645,13 @@ textarea.form-control {
 
 .btn-primary:hover {
     background: transparent;
-    color: var(--background-mod-4);
+    color: var(--background);
 }
 
 .btn-secondary {
     background: var(--bg-white-10);
     color: var(--text-main);
-    border: 2px solid var(--border-white-medium);
+    border: 2px solid var(--border-medium);
 }
 
 .btn-secondary:hover {
@@ -2690,18 +2687,18 @@ textarea.form-control {
 
 .btn-link {
     margin: 0;
-    background: var(--bg-gray-20);
+    background: var(--background-secondary);
     color: var(--text-main);
-    border: 1px solid var(--bg-gray-30);
+    border: 1px solid var(--border-medium);
 }
 
 .btn-link:hover {
-    background: var(--bg-gray-30);
+    background: var(--background-additional);
 }
 
 .button-item {
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
@@ -2731,7 +2728,7 @@ textarea.form-control {
     display: flex;
     place-content: center;
     background: none;
-    border: 2px solid var(--background-mod-3);
+    border: 2px solid var(--background);
     color: var(--text-main);
     font-size: 14px;
     cursor: pointer;
@@ -2801,7 +2798,7 @@ textarea.form-control {
 }
 
 .form-control:hover {
-    border-color: var(--border-white-strong);
+    border-color: var(--border-strong);
     background: var(--bg-white-08);
 }
 
@@ -2813,7 +2810,7 @@ textarea.form-control {
     padding: 8px 12px;
     border-radius: 20px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     transition: all 0.3s ease;
     position: relative;
     overflow: visible;
@@ -2822,7 +2819,7 @@ textarea.form-control {
 
 .user-menu:hover {
     background: var(--bg-white-10);
-    border-color: var(--border-white-medium);
+    border-color: var(--border-medium);
 }
 
 .user-avatar {
@@ -2830,8 +2827,8 @@ textarea.form-control {
     height: 32px;
     border-radius: 50%;
     background: var(--bg-black-75);
-    border: 1px solid rgba(255, 215, 0, 0.35);
-    color: var(--header-gold);
+    border: var(--border-medium);
+    color: var(--header-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2839,7 +2836,7 @@ textarea.form-control {
 }
 
 .user-name {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     font-weight: 500;
     font-size: 14px;
 }
@@ -2858,10 +2855,11 @@ textarea.form-control {
     top: 87px;
     right: 495px;
     left: auto;
-    background: linear-gradient(135deg, var(--bg-black-98) 0%, var(--bg-black-98) 100%);
-    backdrop-filter: blur(10px);
+    background: var(--background-secondary);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 12px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     min-width: 250px;
     z-index: 2000;
@@ -2872,7 +2870,7 @@ textarea.form-control {
     -webkit-filter: none !important;
     isolation: isolate;
     transform: none;
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 @media (max-width: 768px) {
@@ -2884,7 +2882,7 @@ textarea.form-control {
 
 .user-menu-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .user-info {
@@ -2898,8 +2896,8 @@ textarea.form-control {
     height: 48px;
     border-radius: 50%;
     background: var(--bg-black-75);
-    border: 1px solid rgba(255, 215, 0, 0.35);
-    color: var(--header-gold);
+    border: var(--border-primary-light);
+    color: var(--header-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2911,14 +2909,14 @@ textarea.form-control {
 }
 
 .user-name-large {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     font-weight: 600;
     font-size: 16px;
     margin-bottom: 4px;
 }
 
 .user-role {
-    color: var(--text-gold-75);
+    color: var(--text-additional);
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -2934,7 +2932,7 @@ textarea.form-control {
     place-content: unset !important;
     gap: 12px;
     padding: 12px 20px;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: none;
     -webkit-transition: all 0.3s ease;
     transition: all 0.3s ease;
@@ -2947,7 +2945,7 @@ textarea.form-control {
 
 .user-menu-item:hover {
     background: var(--bg-white-05);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .user-menu-item i {
@@ -2957,21 +2955,21 @@ textarea.form-control {
 }
 
 .user-menu-item.admin-item {
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .user-menu-item.admin-item:hover {
     background: var(--bg-white-08);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .user-menu-item.logout-item {
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .user-menu-item.logout-item:hover {
     background: var(--bg-white-08);
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .user-menu-mobile {
@@ -2979,13 +2977,13 @@ textarea.form-control {
     align-items: center;
     gap: 8px;
     padding: 15px 0;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     cursor: pointer;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .user-menu-mobile:hover {
-    color: var(--header-gold);
+    color: var(--header-secondary);
 }
 
 .mobile-side-menu {
@@ -3021,7 +3019,7 @@ textarea.form-control {
     padding: 15px 0;
     width: 100%;
     text-align: left;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-side-menu .nav-links a:last-child {
@@ -3031,7 +3029,7 @@ textarea.form-control {
 .mobile-side-menu .cart-icon {
     margin-top: 20px;
     padding: 15px 0;
-    border-bottom: 1px solid var(--border-white-light);
+    border-bottom: 1px solid var(--border-light);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -3127,7 +3125,7 @@ textarea.form-control {
     top: -2px;
     right: -2px;
     background: var(--bg-black-75);
-    color: var(--header-gold);
+    color: var(--header-secondary);
     border: 1px solid var(--border-gold-medium);
     box-shadow: 0 0 8px var(--bg-gold-shadow-35);
     border-radius: 50%;
@@ -3157,7 +3155,7 @@ textarea.form-control {
     top: -2px;
     right: -2px;
     background: var(--bg-black-75);
-    color: var(--header-gold);
+    color: var(--header-secondary);
     border: 1px solid var(--border-gold-medium);
     box-shadow: 0 0 8px var(--bg-gold-shadow-35);
     border-radius: 50%;
@@ -3450,7 +3448,7 @@ textarea.form-control {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: var(--text-black) 0 0 20px;
-    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background-mod-8) 100%);
+    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background) 100%);
     padding: 20px;
 }
 
@@ -3606,12 +3604,12 @@ textarea.form-control {
 }
 
 .product-title:hover {
-    color: var(--gold-hover);
+    color: var(--text-hover);
     text-shadow: var(--primary) 0 0 20px;
 }
 
 .product-title-hover {
-    color: var(--gold-hover);
+    color: var(--text-hover);
     text-shadow: var(--primary) 0 0 20px;
 }
 
@@ -3628,7 +3626,7 @@ textarea.form-control {
 }
 
 .product-material i {
-    color: var(--gold);
+    color: var(--text-simple);
 }
 
 .product-description {
@@ -3679,7 +3677,7 @@ textarea.form-control {
 
 .peculiarities-editor {
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 15px;
 }
@@ -3696,14 +3694,14 @@ textarea.form-control {
     padding: 8px;
     background: var(--bg-white-05);
     border-radius: 6px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .peculiarity-input {
     flex: 1;
     padding: 8px 12px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     border-radius: 6px;
     color: var(--text-main);
     font-size: 14px;
@@ -3830,9 +3828,9 @@ textarea.form-control {
 .quantity-btn {
     width: 40px;
     height: 40px;
-    border: 2px solid var(--gold);
+    border: 2px solid var(--text-simple);
     background: transparent;
-    color: var(--gold);
+    color: var(--text-simple);
     border-radius: 50%;
     cursor: pointer;
     -webkit-transition: all 0.3s ease;
@@ -3843,7 +3841,7 @@ textarea.form-control {
 }
 
 .quantity-btn:hover:not(:disabled) {
-    background: var(--gold);
+    background: var(--text-simple);
     color: var(--text-dark);
 }
 
@@ -3882,7 +3880,7 @@ textarea.form-control {
     padding: 6px 18px;
     font-size: 0.9rem;
     font-weight: 400;
-    background: linear-gradient(135deg, var(--gold) 0%, var(--warning-orange-dark) 100%);
+    background: linear-gradient(135deg, var(--text-simple) 0%, var(--warning-dark) 100%);
     color: var(--text-dark);
     border: none;
     border-radius: 50px;
@@ -3904,7 +3902,7 @@ textarea.form-control {
 }
 
 .add-to-cart-btn-option {
-    background: linear-gradient(135deg, var(--gold) 0%, var(--warning-orange-dark) 100%);
+    background: linear-gradient(135deg, var(--text-simple) 0%, var(--warning-dark) 100%);
     color: var(--text-dark);
     padding: 6px 18px;
     border: none;
@@ -3931,8 +3929,8 @@ textarea.form-control {
     font-size: 0.9rem;
     font-weight: 400;
     background: transparent;
-    color: var(--gold);
-    border: 2px solid var(--gold);
+    color: var(--text-simple);
+    border: 2px solid var(--text-simple);
     border-radius: 50px;
     cursor: pointer;
     -webkit-transition: all 0.3s ease;
@@ -3944,17 +3942,17 @@ textarea.form-control {
 }
 
 .wishlist-btn:hover {
-    background: var(--gold);
+    background: var(--text-simple);
     color: var(--text-dark);
 }
 
 .wishlist-btn.active {
-    background: var(--gold);
+    background: var(--text-simple);
     color: var(--text-dark);
 }
 
 .product-features {
-    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background-mod-8) 100%);
+    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background) 100%);
     padding: 30px;
     border-radius: 20px;
     border: 1px solid var(--color-4e4e4e);
@@ -3980,7 +3978,7 @@ textarea.form-control {
 }
 
 .product-features li i {
-    color: var(--gold);
+    color: var(--text-simple);
     font-size: 1.2rem;
 }
 
@@ -3996,7 +3994,7 @@ textarea.form-control {
 
 .loading-spinner {
     font-size: 3rem;
-    color: var(--gold);
+    color: var(--text-simple);
     margin-bottom: 20px;
 }
 
@@ -4004,7 +4002,7 @@ textarea.form-control {
     text-align: center;
     max-width: 500px;
     padding: 40px;
-    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background-mod-8) 100%);
+    background: linear-gradient(135deg, var(--background-additional) 0%, var(--background) 100%);
     border-radius: 20px;
     border: 1px solid var(--color-4e4e4e);
 }
@@ -4062,7 +4060,7 @@ textarea.form-control {
 }
 
 .additional-images-container {
-    border: 1px solid var(--background-mod-6);
+    border: 1px solid var(--background);
     border-radius: 8px;
     padding: 15px;
     background: var(--bg-white-05);
@@ -4080,7 +4078,7 @@ textarea.form-control {
     border-radius: 8px;
     overflow: hidden;
     background: var(--bg-white-10);
-    border: 1px solid var(--background-mod-6);
+    border: 1px solid var(--background);
 }
 
 .additional-image-preview {
@@ -4152,7 +4150,7 @@ textarea.form-control {
     overflow-x: auto;
     padding-bottom: 5px;
     scrollbar-width: thin;
-    scrollbar-color: var(--border-gray) var(--background-mod-5);
+    scrollbar-color: var(--border-gray) var(--background);
 }
 
 .gallery-thumbnails::-webkit-scrollbar {
@@ -4160,7 +4158,7 @@ textarea.form-control {
 }
 
 .gallery-thumbnails::-webkit-scrollbar-track {
-    background: var(--background-mod-5);
+    background: var(--background);
     border-radius: 3px;
 }
 
@@ -4293,7 +4291,7 @@ textarea.form-control {
     background: var(--bg-white-05);
     border-radius: 10px;
     padding: 20px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .content-section h4 {
@@ -4388,7 +4386,7 @@ textarea.form-control {
 }
 
 .btn-success:disabled {
-    background: var(--color-6c757d);
+    background: var(--success-dark);
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -4420,7 +4418,7 @@ textarea.form-control {
 }
 
 .text-block {
-    padding: 80px 0;
+    padding: 12vh 0;
     background: var(--bg-white-02);
 }
 
@@ -4609,7 +4607,7 @@ textarea.form-control {
 
 .social-link:hover {
     background: var(--primary);
-    color: var(--background-mod-3);
+    color: var(--background);
     transform: translateY(-3px);
 }
 
@@ -4634,7 +4632,7 @@ textarea.form-control {
     background: var(--bg-white-05);
     border-radius: 12px;
     transition: all 0.3s ease;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .stat-item:hover {
@@ -4666,11 +4664,6 @@ textarea.form-control {
     font-style: italic;
 }
 
-.actual-block {
-    padding: 100px 0;
-    background: var(--background);
-}
-
 .actual-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -4682,7 +4675,7 @@ textarea.form-control {
     background: var(--bg-white-05);
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     transition: all 0.3s ease;
 }
 
@@ -4774,7 +4767,7 @@ textarea.form-control {
     padding: 0.75rem;
     background: var(--bg-white-05);
     border-radius: 12px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     text-decoration: none;
     color: inherit;
     transition: all 0.25s ease;
@@ -4846,10 +4839,6 @@ textarea.form-control {
 }
 
 @media (max-width: 768px) {
-    .actual-block {
-        padding: 60px 0;
-    }
-
     .actual-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -4903,7 +4892,7 @@ textarea.form-control {
 
 .social-input input {
     padding: 0.75rem;
-    border: 1px solid var(--background-mod-6);
+    border: 1px solid var(--background);
     border-radius: 4px;
     background: var(--bg-white-05);
     color: var(--text-main);
@@ -5084,8 +5073,8 @@ textarea.form-control {
     justify-content: space-between;
     align-items: center;
     padding: 4px 30px;
-    border-bottom: 1px solid var(--header-gold);
-    background: var(--background-mod-5);
+    border-bottom: 1px solid var(--header-secondary);
+    background: var(--background);
     box-shadow: 0 4px 20px 0 var(--text-black);
 }
 
@@ -5100,7 +5089,7 @@ textarea.form-control {
 }
 
 .order-summary {
-    background: var(--background-mod-5);
+    background: var(--background);
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 30px;
@@ -5124,7 +5113,7 @@ textarea.form-control {
     align-items: center;
     gap: 15px;
     padding: 10px 0;
-    border-bottom: 1px solid var(--background-mod-6);
+    border-bottom: 1px solid var(--background);
 }
 
 .order-item:last-child {
@@ -5235,15 +5224,15 @@ textarea.form-control {
 .order-total {
     display: flex;
     justify-content: center;
-    background: var(--background-mod-6);
+    background: var(--background);
     text-align: right;
-    border-top: 1px solid var(--background-mod-6);
+    border-top: 1px solid var(--background);
     border-radius: 8px;
     padding: 16px;
 }
 
 .order-total span {
-    background: var(--background-mod-7);
+    background: var(--background);
     color: var(--primary);
     font-size: 18px;
     font-weight: 600;
@@ -5258,7 +5247,7 @@ textarea.form-control {
 }
 
 .form-section {
-    background: var(--background-mod-5);
+    background: var(--background);
     border-radius: 10px;
     padding: 20px;
 }
@@ -5289,7 +5278,7 @@ textarea.form-control {
 .form-group select {
     width: 100%;
     padding: 12px;
-    background: var(--background-mod-6);
+    background: var(--background);
     border: 1px solid var(--border-gray);
     border-radius: 8px;
     color: var(--primary);
@@ -5331,14 +5320,14 @@ textarea.form-control {
     align-items: center;
     cursor: pointer;
     padding: 15px;
-    background: var(--background-mod-6);
+    background: var(--background);
     border: 2px solid var(--border-gray);
     border-radius: 10px;
     transition: all 0.3s ease;
 }
 
 .delivery-option:hover {
-    background: var(--background-mod-7);
+    background: var(--background);
     border-color: var(--text-additional);
 }
 
@@ -5352,7 +5341,7 @@ textarea.form-control {
 
 .delivery-option input[type="radio"]:checked~.delivery-option-content,
 .delivery-option:has(input[type="radio"]:checked) {
-    background: var(--background-mod-7);
+    background: var(--background);
     border-color: var(--primary);
 }
 
@@ -5383,7 +5372,7 @@ textarea.form-control {
 
 .delivery-details,
 .pickup-details {
-    background: var(--background-mod-6);
+    background: var(--background);
     border-radius: 10px;
     padding: 20px;
     margin-top: 15px;
@@ -5441,12 +5430,12 @@ textarea.form-control {
 }
 
 .btn-secondary {
-    background: var(--border-gray);
+    background: var(--background-secondary);
     color: var(--primary);
 }
 
 .btn-secondary:hover {
-    background: var(--color-777);
+    background: var(--background-additional);
 }
 
 .btn-primary {
@@ -5459,8 +5448,8 @@ textarea.form-control {
 }
 
 .btn-primary:disabled {
-    background: var(--border-gray);
-    color: var(--color-999);
+    background: var(--border-medium);
+    color: var(--text-additional-dark);
     cursor: not-allowed;
 }
 
@@ -5539,10 +5528,10 @@ textarea.form-control {
 }
 
 .order-card {
-    background: var(--background-mod-5);
+    background: var(--background);
     border-radius: 12px;
     padding: 20px;
-    border: 1px solid var(--background-mod-6);
+    border: 1px solid var(--background);
     transition: all 0.3s ease;
 }
 
@@ -5555,7 +5544,7 @@ textarea.form-control {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--background-mod-6);
+    border-bottom: 1px solid var(--background);
 }
 
 .order-info h3 {
@@ -5654,8 +5643,8 @@ textarea.form-control {
 }
 
 .status-pending {
-    background: var(--warning-orange);
-    border-color: var(--warning-orange);
+    background: var(--warning);
+    border-color: var(--warning);
     color: var(--text-main);
     transition: all 0.3s ease;
 }
@@ -5675,8 +5664,8 @@ textarea.form-control {
 }
 
 .status-shipped {
-    background: var(--warning-orange-dark);
-    border-color: var(--warning-orange-dark);
+    background: var(--warning-dark);
+    border-color: var(--warning-dark);
     color: var(--text-main);
     transition: all 0.3s ease;
 }
@@ -5705,7 +5694,7 @@ textarea.form-control {
 .order-delivery,
 .order-items,
 .order-notes {
-    background: var(--background-mod-6);
+    background: var(--background);
     padding: 15px;
     border-radius: 8px;
 }
@@ -5746,7 +5735,7 @@ textarea.form-control {
     align-items: center;
     gap: 12px;
     padding: 10px;
-    background: var(--background-mod-7);
+    background: var(--background);
     border-radius: 6px;
 }
 
@@ -5870,7 +5859,7 @@ textarea.form-control {
 }
 
 .autocomplete-status.warning {
-    color: var(--color-ffcc80);
+    color: var(--warning);
 }
 
 .input-hint {
@@ -6011,7 +6000,7 @@ textarea.form-control {
 
 .minimized-modal-item {
     padding: 4px 8px;
-    background: var(--background-mod-8);
+    background: var(--background);
     border: 2px solid var(--secondary);
     border-radius: 16px;
     box-shadow: var(--secondary) 0 0 5px;
@@ -6260,7 +6249,7 @@ header.scrolled {
 }
 
 .form-control.delivery-time option {
-    background: var(--background-mod-6);
+    background: var(--background);
 }
 
 .options-section {
@@ -6274,7 +6263,7 @@ header.scrolled {
     background: var(--bg-white-05);
     padding: 20px;
     border-radius: 10px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
 }
 
 .options-group h3 {
@@ -6327,7 +6316,7 @@ header.scrolled {
     flex: 1;
     padding: 10px;
     background: var(--bg-white-10);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     border-radius: 5px;
     color: var(--primary);
     font-size: 14px;
@@ -6467,7 +6456,7 @@ label.checkbox-label {
 .virtual-page .page-title {
     font-size: 2.5rem;
     font-weight: 600;
-    color: var(--header-gold);
+    color: var(--header-secondary);
     margin-bottom: 40px;
     text-align: center;
     line-height: 1.3;
@@ -6504,7 +6493,7 @@ label.checkbox-label {
 .virtual-page .page-body h4,
 .virtual-page .page-body h5,
 .virtual-page .page-body h6 {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     margin-top: 0.5vh;
     margin-bottom: 0.5vh;
     text-align: left;
@@ -6539,7 +6528,7 @@ label.checkbox-label {
 .virtual-page .page-body blockquote {
     margin: 1.5em 0;
     padding-left: 1.5em;
-    border-left: 3px solid var(--header-gold);
+    border-left: 3px solid var(--header-secondary);
     font-style: italic;
     text-align: left;
 }
@@ -6552,18 +6541,18 @@ label.checkbox-label {
 }
 
 .virtual-page .page-body a {
-    color: var(--header-gold);
+    color: var(--header-secondary);
     text-decoration: underline;
 }
 
 .virtual-page .page-body a:hover {
-    color: var(--header-gold-highlight);
+    color: var(--header-main);
 }
 
 .virtual-page .page-body strong,
 .virtual-page .page-body b {
     font-weight: 600;
-    color: var(--header-gold-highlight);
+    color: var(--header-main);
 }
 
 .virtual-page .page-body em,
@@ -6657,7 +6646,7 @@ label.checkbox-label {
     justify-content: space-between;
     align-items: center;
     padding: 20px 30px;
-    border-bottom: 1px solid var(--background-mod-6);
+    border-bottom: 1px solid var(--background);
 }
 
 .option-selector-header h3 {
@@ -6680,7 +6669,7 @@ label.checkbox-label {
 .option-value-btn {
     padding: 12px 24px;
     background: var(--bg-white-05);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
     border-radius: 8px;
     color: var(--primary);
     font-size: 16px;
@@ -6699,7 +6688,7 @@ label.checkbox-label {
     justify-content: space-between;
     align-items: center;
     padding: 20px 30px;
-    border-bottom: 1px solid var(--background-mod-6);
+    border-bottom: 1px solid var(--background);
 }
 
 .order-modal-header h2 {
@@ -6725,7 +6714,7 @@ label.checkbox-label {
 }
 
 .order-modal-body a:hover {
-    color: var(--gold);
+    color: var(--text-simple);
 }
 
 .buttons-row {
@@ -6960,7 +6949,7 @@ label.checkbox-label {
     }
 
     .swiper-pagination-bullet-active {
-        background: var(--header-gold);
+        background: var(--header-secondary);
         opacity: 1;
     }
 
@@ -7118,14 +7107,14 @@ label.checkbox-label {
     align-items: center;
     cursor: pointer;
     padding: 15px;
-    background: var(--background-mod-6);
+    background: var(--background);
     border: 2px solid var(--border-gray);
     border-radius: 10px;
     transition: all 0.3s ease;
 }
 
 .payment-option:hover {
-    background: var(--background-mod-7);
+    background: var(--background);
     border-color: var(--text-additional);
 }
 
@@ -7142,7 +7131,7 @@ label.checkbox-label {
 }
 
 .payment-option input[type="radio"]:checked~.payment-option-content, .payment-option:has(input[type="radio"]:checked) {
-    background: var(--background-mod-7);
+    background: var(--background);
     border-color: var(--primary);
 }
 

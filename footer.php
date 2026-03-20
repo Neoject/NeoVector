@@ -1,1 +1,9 @@
+<?php
+var_dump('ALLAH');
+?>
+ALLAH
+        <footer>
+            test
+        </footer>
+    </body>
 </html>

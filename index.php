@@ -2,6 +2,7 @@
 
 use NeoVector\ApiController;
 use NeoVector\Database;
+use NeoVector\Log;
 use NeoVector\PageBlock;
 use NeoVector\Params;
 use NeoVector\Router;
@@ -47,20 +48,20 @@ try {
     $isExcluded = false;
 
     foreach ($excludedPaths as $excluded) {
-        if (strpos($uri, $excluded) === 0) {
+        if (str_starts_with($uri, $excluded)) {
             $isExcluded = true;
             break;
         }
     }
 
-    if (strpos($uri, '/api/') === 0) {
+    if (str_starts_with($uri, '/api/')) {
         $result = $router->dispatch($method, $uri);
         echo $result;
         exit;
     }
 } catch (Exception $e) {
-    error_log('Request handling error: ' . $e->getMessage());
-    error_log('Stack trace: ' . $e->getTraceAsString());
+    Log::error('Request handling error: ', $e->getMessage());
+    Log::error('Stack trace: ', $e->getTraceAsString());
     http_response_code(500);
     die('Internal Server Error');
 }
@@ -82,89 +83,10 @@ try {
     error_log('Hero image retrieval error: ' . $e->getMessage());
 }
 ?>
-
 <body>
     <div id="app">
-        <header class="scrolled">
-            <div class="container nav-container">
-                <div class="nav-left">
-                    <button v-if="currentProduct" class="mobile-menu-btn" @click="closeProductPage"
-                        style="margin-right: 10px;">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <button v-else class="mobile-menu-btn" @click="toggleMobileMenu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <a class="logo" href="#"
-                        @click.prevent="currentProduct ? closeProductPage() : goHome()">
-                        <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
-                    </a>
-                    <div class="mobile-cart-icon" @click="toggleCart">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" v-if="cartItems.length > 0">{{ getCartItemsCount() }}</span>
-                    </div>
-                    <div class="mobile-favorites-icon" @click="toggleFavorites()">
-                        <i class="fas fa-heart"></i>
-                        <span class="cart-count" v-if="wishlist.length > 0">{{ getWishlistCount() }}</span>
-                    </div>
-                </div>
-                <nav class="nav-links" :key="'nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
-                    <template v-if="isMainPage">
-                        <a v-for="(button, index) in navigationButtons" :key="'nav-' + index" href="#"
-                            @click="handleNavigationClick($event, button.target)">
-                            {{ button.label }}
-                        </a>
-                    </template>
-                    <template v-else>
-                        <a href="#" class="btn btn-outline" style="width:auto;" @click.prevent="goHome({ updateHistory: true, scrollToTop: true })">На главную</a>
-                    </template>
-                    <div class="cart-icon" @click="toggleCart">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" v-if="cartItems.length > 0">{{ getCartItemsCount() }}</span>
-                    </div>
-                    <div class="favorites-icon" @click="toggleFavorites()">
-                        <i class="fas fa-heart"></i>
-                        <span class="cart-count" v-if="wishlist.length > 0">{{ getWishlistCount() }}</span>
-                    </div>
-                    <template v-if="auth.role === 'admin'">
-                        <a v-if="!auth.authenticated" href="#" @click.prevent="openLogin">Войти</a>
-                        <div v-else class="user-menu" @click="toggleUserMenu">
-                            <div class="user-avatar">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <span class="user-name">{{ auth.username }}</span>
-                            <i class="fas fa-chevron-down" :class="{ 'rotated': userMenuOpen }"></i>
-                            <div v-if="userMenuOpen" class="user-menu-popup" @click.stop>
-                                <div class="user-menu-header">
-                                    <div class="user-info">
-                                        <div class="user-avatar-large">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="user-details">
-                                            <div class="user-name-large">{{ auth.username }}</div>
-                                            <div class="user-role">{{ auth.role === 'admin' ? 'Администратор' : 'Клиент'
-                                                }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="user-menu-items">
-                                    <a v-if="auth.role === 'admin'" href="admin/?page=admin"
-                                        class="user-menu-item admin-item">
-                                        <i class="fas fa-cog"></i>
-                                        <span>Администрирование</span>
-                                    </a>
-                                    <a href="#" @click.prevent="logout" class="user-menu-item logout-item">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        <span>Выйти</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </nav>
-            </div>
-            <div class="header-bottom"></div>
-        </header>
+        {{currentVirtualPage}}
+        <?php require_once 'NV/main/page/navbar.php'; ?>
         <div class="mobile-side-menu" :class="{ 'active': mobileMenuOpen }" @touchstart="handleTouchStart"
             @touchmove="handleTouchMove" @touchend="handleTouchEnd">
             <button class="mobile-menu-close" @click="closeMobileMenu">
@@ -173,7 +95,7 @@ try {
             <nav class="nav-links" :key="'mobile-nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
                 <template v-if="isMainPage">
                     <a v-for="(button, index) in navigationButtons" :key="'mobile-nav-' + index" href="#"
-                        @click="handleNavigationClick($event, button.target)">
+                        @click="navClick($event, button.target)">
                         {{ button.label }}
                     </a>
                 </template>
@@ -202,17 +124,79 @@ try {
                 </div>
             </nav>
         </div>
-        <template v-if="!currentVirtualPage && !currentProduct && !virtualPageError">
-            <template v-for="(block, blockIndex) in (sortedPageBlocks || []).filter(b => b)" :key="block ? block.id : 'block-' + blockIndex">
-                <template v-if="block">
-                <?php
-                $homeSections = ['hero', 'features', 'history', 'stats', 'actual', 'text', 'buttons', 'products', 'info_buttons', 'footer', 'contact'];
-                foreach ($homeSections as $section) include __DIR__ . '/src/home/sections/' . $section . '.html';
-                ?>
-                </template>
-            </template>
+        <template
+            v-if="!currentVirtualPage && !virtualPageError"
+            v-for="(block, blockIndex) in (sortedPageBlocks || []).filter(b => b)"
+            :key="block && (block.id ?? null) !== null ? block.id : 'block-' + blockIndex"
+        >
+            <hero
+                v-if="block.type === 'hero'"
+                :block="block"
+                :is-in-view="isInView"
+                :nav-click="navClick"
+            ></hero>
+            <actual
+                    v-if="block.type === 'actual'"
+                    :block="block"
+                    :is-in-view="isInView"
+            ></actual>
+            <products
+                v-if="block.type === 'products'"
+                :block="block"
+                :products="products"
+                :cart-items="cartItems"
+                :wish-list="wishlist"
+                :is-in-view="isInView"
+                :is-image-loading="isImageLoading"
+                :is-video="isVideo"
+                :get-current-product-image="getCurrentProductImage"
+                :get-base-path="getBasePath"
+            ></products>
+            <features
+                v-if="block.type === 'features'"
+                :block="block"
+                :is-in-view="isInView"
+            ></features>
+            <buttons
+                v-if="block.type === 'buttons'"
+                :block="block"
+                :is-in-view="isInView"
+                :open-virtual-page="openVirtualPage"
+                :get-base-path="getBasePath"
+            ></buttons>
+            <history
+                v-if="block.type === 'history'"
+                :block="block"
+                :is-in-view="isInView"
+            ></history>
+            <text-block
+                v-if="block.type === 'text'"
+                :block="block"
+                :is-in-view="isInView"
+            ></text-block>
+            <stats
+                v-if="block.type === 'stats'"
+                :block="block"
+                :is-in-view="isInView"
+            ></stats>
+            <contact
+                v-if="block.type === 'contact'"
+                :block="block"
+                :is-in-view="isInView"
+            ></contact>
+            <info-buttons
+                v-if="block.type === 'info_buttons'"
+                :block="block"
+                :is-in-view="isInView"
+            ></info-buttons>
+            <?php
+            $homeSections = ['footer', 'contact'];
+            foreach ($homeSections as $section) {
+                include __DIR__ . '/src/home/sections/' . $section . '.html';
+            }
+            ?>
         </template>
-        <section v-if="currentVirtualPage && !currentProduct" class="virtual-page">
+        <section v-if="currentVirtualPage" class="virtual-page">
             <div class="container">
                 <article class="page-content">
                     <h1 class="page-title">{{ currentVirtualPage.title }}</h1>
@@ -220,184 +204,6 @@ try {
                 </article>
             </div>
         </section>
-        <section v-if="currentProduct" class="product-detail-container">
-            <div class="container">
-                <div class="product-detail">
-                    <div class="product-images">
-                        <div class="main-image">
-                            <transition :name="productSlideDirection === 'next' ? 'slide-fade-next' : 'slide-fade-prev'"
-                                mode="out-in">
-                                <img v-if="!isVideo(currentProductImage) && currentProductImage"
-                                    :key="'img-' + currentProductImageIndex" class="product-main-img"
-                                    :src="currentProductImage" :alt="currentProduct.name" @click="openProductViewModal">
-                                <video v-else-if="isVideo(currentProductImage) && currentProductImage"
-                                    :key="'video-' + currentProductImageIndex" class="product-main-video"
-                                    :src="currentProductImage" @click.prevent="openProductViewModal" controls muted loop
-                                    playsinline></video>
-                            </transition>
-                            <div
-                                v-if="currentProduct.additional_images.length || currentProduct.additional_videos.length">
-                                <button @click="previousProductImage" class="gallery-nav-btn prev-btn"
-                                    :disabled="currentProductImageIndex === 0">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <button @click="nextProductDetailImage" class="gallery-nav-btn next-btn"
-                                    :disabled="currentProductImageIndex === allProductMedia.length - 1">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="image-gallery" v-if="allProductMedia.length > 1">
-                            <div class="gallery-thumbnails">
-                                <div v-for="(item, index) in allProductMedia" :key="index" class="thumbnail-item"
-                                    :class="{ 'active': currentProductImageIndex === index }"
-                                    @click="setCurrentProductImage(index)">
-                                    <img v-if="!isVideoItem(item)" :src="item" :alt="currentProduct.name"
-                                        class="thumbnail-img">
-                                    <div v-else class="thumbnail-video-wrapper">
-                                        <video :src="item" class="thumbnail-img thumbnail-video" preload="metadata"
-                                            muted playsinline>
-                                        </video>
-                                        <i class="fas fa-play thumbnail-play-icon"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="gallery-navigation" v-if="allProductMedia.length > 1">
-                                <span class="gallery-counter">{{ currentProductImageIndex + 1 }} / {{
-                                    allProductMedia.length }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="product-info">
-                        <div class="product-header">
-                            <h1 class="product-page title">{{ currentProduct.name }}</h1>
-                            <div class="product-price">
-                                <span v-if="currentProduct.price_sale" class="price-old">{{ currentProduct.price }}
-                                    руб.</span>
-                                <span v-if="currentProduct.price_sale" class="price-sale">{{ currentProduct.price_sale
-                                    }} руб.</span>
-                                <span v-else class="price-current">{{ currentProduct.price }} руб.</span>
-                            </div>
-                        </div>
-
-                        <div class="product-meta">
-                            <div class="product-material">
-                                <i class="fas fa-gem"></i>
-                                <span>{{ currentProduct.material }}</span>
-                            </div>
-                        </div>
-                        <div class="product-description" v-if="currentProduct.description">
-                            <h3>Описание</h3>
-                            <p>{{ currentProduct.description }}</p>
-                        </div>
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <td class="product-buy-quantity"><label>Количество:</label></td>
-                                </tr>
-                                <tr>
-                                    <td class="quantity-cell">
-                                        <div class="quantity-selector">
-                                            <div class="quantity-controls">
-                                                <button @click="productQuantity > 1 ? productQuantity-- : null"
-                                                    :disabled="productQuantity <= 1" class="quantity-btn">-</button>
-                                                <span class="quantity-display">{{ productQuantity }}</span>
-                                                <button @click="productQuantity++" class="quantity-btn">+</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="actions-cell" colspan="2">
-                                        <div class="action-buttons">
-                                            <div class="product-options" v-if="showOptionSelector && currentOptionType">
-                                                <span class="option-selector-question">
-                                                    Выберите {{ (currentOptionType.name || 'опцию').toLowerCase() }}:
-                                                </span>
-                                                <div class="option-selector">
-                                                    <button v-for="(valueOption, optIndex) in currentOptionType.values"
-                                                        :key="`option-${optIndex}-${valueOption}`"
-                                                        @click.prevent="chooseProductOptionValue(valueOption)"
-                                                        class="btn btn-outline add-to-cart-btn-option">
-                                                        {{ valueOption }}
-                                                    </button>
-                                                </div>
-                                                <button class="btn btn-outline" style="width: auto"
-                                                    @click="cancelProductAddToCart()">Отмена</button>
-                                            </div>
-                                            <button v-if="!showOptionSelector"
-                                                @click="startProductHandSelection('buyNow', $event)"
-                                                class="btn btn-outline add-to-cart-btn">
-                                                <i class="fas fa-shopping-bag"></i>
-                                                Купить сейчас
-                                            </button>
-                                            <template v-if="isCurrentProductInCart">
-                                                <button @click="toggleCart" class="btn btn-outline add-to-cart-btn">
-                                                    <i class="fas fa-shopping-cart"></i>
-                                                    В корзине
-                                                </button>
-                                                <button @click="startProductHandSelection('addToCart', $event)"
-                                                    class="btn btn-outline add-to-cart-btn">
-                                                    + в корзину
-                                                </button>
-                                            </template>
-                                            <button @click="startProductHandSelection('addToCart', $event)"
-                                                class="btn btn-outline add-to-cart-btn">
-                                                <i class="fas fa-shopping-cart"></i>
-                                                Добавить в корзину
-                                            </button>
-                                            <button @click="toggleCurrentProductWishlist"
-                                                class="btn btn-outline wishlist-btn"
-                                                :class="{ 'active': isCurrentProductInWishlist }">
-                                                <i class="fas fa-heart"></i>
-                                                {{ isCurrentProductInWishlist ? 'В избранном' : 'В избранное' }}
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="product-actions">
-                            <div class="product-actions-left">
-                            </div>
-                            <div class="product-actions-right">
-                            </div>
-                        </div>
-
-                        <div class="product-features"
-                            v-if="currentProduct.peculiarities && currentProduct.peculiarities.length > 0">
-                            <h3>Особенности</h3>
-                            <ul>
-                                <li v-for="(peculiarity, index) in currentProduct.peculiarities" :key="index">
-                                    <i class="fas fa-check"></i> {{ peculiarity }}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <div v-if="contentView && currentProduct" class="content-view container" @click="closeProductViewModal">
-            <div class="content-view content" @click.stop>
-                <button class="gallery-nav-btn btn-close-view" @click="closeProductViewModal">
-                    <i class="fas fa-times"></i>
-                </button>
-                <img v-if="!isVideo(currentProductImage) && currentProductImage"
-                    :key="'img-view-' + currentProductImageIndex" class="content-view image" :src="currentProductImage"
-                    :alt="currentProduct.name">
-                <video v-else-if="isVideo(currentProductImage) && currentProductImage"
-                    :key="'video-view-' + currentProductImageIndex" class="content-view video"
-                    :src="currentProductImage" @click.prevent controls muted loop autoplay playsinline></video>
-                <button @click="previousProductImage" class="content-view gallery-nav-btn prev-btn"
-                    :disabled="currentProductImageIndex === 0">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button @click="nextProductDetailImage" class="content-view gallery-nav-btn next-btn"
-                    :disabled="currentProductImageIndex === allProductMedia.length - 1">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
         <section v-if="sortedPageBlocks.length === 0 && !currentVirtualPage && !currentProduct && !virtualPageError" class="empty-state">
             <div class="container">
                 <div class="empty-content">
@@ -415,7 +221,7 @@ try {
                 </div>
             </div>
         </section>
-
+        <!--модальные окна-->
         <div class="cart-modal" :class="{ 'active': cartOpen }">
             <div class="cart-content" @click.stop>
                 <div class="cart-header">
@@ -462,7 +268,7 @@ try {
                 <div v-else class="empty-cart">
                     <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
                     <p>Ваша корзина пуста</p>
-                    <a href="#" class="btn btn-primary" @click="handleNavigationClick($event, 'products')">Перейти к
+                    <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
                         товарам</a>
                 </div>
             </div>
@@ -514,13 +320,12 @@ try {
                         </template>
                         <button v-if="cartItems.length" class="btn btn-primary"
                             @click="fromWishlistToCart(product.id)">В корзину</button>
-                        <a href="#" class="btn btn-primary" @click="handleNavigationClick($event, 'products')">Перейти к
+                        <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
                             товарам</a>
                     </div>
                 </div>
             </div>
         </div>
-
         <!-- Option Selector Modal -->
         <div v-if="showOptionSelector" class="option-selector-modal" @click.self="cancelProductAddToCart">
             <div class="option-selector-content">
@@ -540,18 +345,16 @@ try {
                 </div>
             </div>
         </div>
-
         <!-- Overlay -->
         <div class="overlay" :class="{ 'active': cartOpen || favoritesOpen || orderModalOpen || showOptionSelector }"
             @click="closeAllModals"></div>
-
         <?php
         $hasAutocomplete = true;
         include __DIR__ . '/order_modal.php';
         ?>
     </div>
+    <script src="src/scripts/sections.js"></script>
     <script src="src/scripts/main.js"></script>
-</body>
 <?php
-require_once $HOME_URL . 'footer.php';
+include $HOME_URL . 'footer.php';
 ?>

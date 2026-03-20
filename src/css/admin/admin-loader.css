@@ -22,7 +22,7 @@
     color: #0000;
     -webkit-text-stroke: 1px #000;
     background:
-            linear-gradient(-60deg,#000 45%,var(--header-gold) 0 55%,#000 0)
+            linear-gradient(-60deg,#000 45%,var(--header-secondary) 0 55%,#000 0)
             0/300% 100% no-repeat text;
     animation: l3 2s linear infinite;
 }
@@ -51,7 +51,7 @@
 .admin-block-loader {
     width: 60px;
     aspect-ratio: 1;
-    border: 15px solid var(--background-mod-1);
+    border: 15px solid var(--background);
     border-radius: 50%;
     position: relative;
     transform: rotate(45deg);
@@ -61,7 +61,7 @@
     position: absolute;
     inset: -15px;
     border-radius: 50%;
-    border: 15px solid var(--header-gold);
+    border: 15px solid var(--header-secondary);
     animation: l18 0.8s infinite linear;
 }
 @keyframes l18 {

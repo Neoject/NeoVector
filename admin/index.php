@@ -1,31 +1,18 @@
 <?php
 require_once __DIR__ . '/../config.php';
 
-global $HOME_URL;
+global $HOME_URL, $scripts;
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-    if (PHP_VERSION_ID >= 70300) {
-        session_set_cookie_params([
-            'lifetime' => 30 * 24 * 60 * 60,
-            'path' => '/',
-            'secure' => $isSecure,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    } else {
-        session_set_cookie_params(30 * 24 * 60 * 60, '/');
-    }
-    session_start();
-}
-
+use NeoVector\API;
 use NeoVector\Auth;
 use NeoVector\Database;
 use NeoVector\Params;
 use NeoVector\Service;
 
+API::setupSession();
+
 $db = Database::getInstance()->getConnection();
-$auth = new Auth($db);
+$auth = new Auth();
 $loginError = '';
 
 if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'logout') {
@@ -33,8 +20,6 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'logout') {
     header('Location: ../');
     exit;
 }
-
-$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'users', 'profile'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $username = trim((string) ($_POST['username'] ?? ''));
@@ -55,31 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     $loginError = ($result['role'] ?? '') !== 'admin' ? 'Недостаточно прав' : ($result['error'] ?? 'Неверные учетные данные');
-} ?>
-<!doctype html>
-<html lang="ru" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="msapplication-tap-highlight" content="no">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../src/scripts/script.js"></script>
-    <script src="<?=$HOME_URL?>src/scripts/admin/pages/admin-dashboard.js"></script>
-    <?php foreach ($scripts as $script): ?>
-    <script src="<?=$HOME_URL?>src/scripts/admin/pages/<?=$script?>.js"></script>
-    <?php endforeach; ?>
-    <link rel="icon" href="../favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <title>Админ панель - <?= Params::getTitle() ?></title>
-</head>
-<?php if (!$auth->isAdmin()): ?>
+require_once ROOT_PATH . '/NV/main/admin/header.php';
+
+if (!$auth->isAdmin()): ?>
     <body>
         <div class="login-container">
             <div class="login-form" style="text-align:center;">
@@ -111,10 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </form>
             </div>
         </div>
-    </body>
-
-    </html>
-    <?php
+<?php
     else:
 $adminUser = $auth->getCurrentUser();
 ?>
@@ -430,16 +392,16 @@ $adminUser = $auth->getCurrentUser();
     <script type="text/x-template" id="<?=$script?>-template">
         <?php include __DIR__.'/pages/'.$script.'.html'; ?>
     </script>
-    <?php endforeach; ?>
-</body>
-<?php endif;
+<?php
+endforeach;
+endif;
 Service::adminJS('components/service');
+
+require_once ROOT_PATH . '/NV/main/admin/footer.php';
 
 $pages = ['settings'];
 
 foreach ($pages as $page) {
     Service::adminJS('pages/'.$page);
 }
-
-require_once $HOME_URL . 'footer.php';
 ?>

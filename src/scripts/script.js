@@ -1,318 +1,2656 @@
-const NV = {
-    hostname: 'window.location.hostname',
-    ready: (callback) => {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', callback);
-        } else {
-            callback();
-        }
-    },
-    loadCart() {
-        const savedCart = localStorage.getItem('cart');
+NV.ready(() => {
+    const { createApp } = Vue;
 
-        if (!savedCart) {
-            return [];
-        }
+    const heroMixin = (typeof window !== 'undefined' && window.__HOME_HERO_MIXIN__) ? window.__HOME_HERO_MIXIN__ : {};
+    const featuresMixin = (typeof window !== 'undefined' && window.__HOME_FEATURES_MIXIN__) ? window.__HOME_FEATURES_MIXIN__ : {};
+    const historyMixin = (typeof window !== 'undefined' && window.__HOME_HISTORY_MIXIN__) ? window.__HOME_HISTORY_MIXIN__ : {};
+    const statsMixin = (typeof window !== 'undefined' && window.__HOME_STATS_MIXIN__) ? window.__HOME_STATS_MIXIN__ : {};
+    const textMixin = (typeof window !== 'undefined' && window.__HOME_TEXT_MIXIN__) ? window.__HOME_TEXT_MIXIN__ : {};
+    const buttonsMixin = (typeof window !== 'undefined' && window.__HOME_BUTTONS_MIXIN__) ? window.__HOME_BUTTONS_MIXIN__ : {};
+    const productsMixin = (typeof window !== 'undefined' && window.__HOME_PRODUCTS_MIXIN__) ? window.__HOME_PRODUCTS_MIXIN__ : {};
 
-        try {
-            const parsed = JSON.parse(savedCart);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            console.error('Failed to parse cart from storage:', error);
-            return [];
-        }
-    },
-    addToCart(product, event) {
-        const cart = this.loadCart();
+    createApp({
+        mixins: [heroMixin, featuresMixin, historyMixin, statsMixin, textMixin, buttonsMixin, productsMixin],
+        components: {
+            'hero': Hero,
+            'actual': Actual,
+            'products': Products,
+            'features': Features,
+            'buttons': Buttons,
+            'history': History,
+            'text-block': Text,
+            'stats': Stats,
+            'contact': Contact,
+            'info-buttons': InfoButtons
+        },
+        data() {
+            return {
+                auth: NV.getAuth(),
+                showLogin: false,
+                userMenuOpen: false,
+                loginData: { username: '', password: '', remember: false },
+                loginLoading: false,
+                loginError: '',
+                isScrolled: false,
+                mobileMenuOpen: false,
+                cartOpen: false,
+                favoritesOpen: false,
+                orderModalOpen: false,
+                buyNowPressed: false,
+                addToCartPressed: false,
+                isMobileDevice: false,
+                hand: null,
+                productOptions: [],
+                selectedProductOptions: [],
+                optionSelectionIndex: 0,
+                showHandSelector: false,
+                showOptionSelector: false,
+                selectingHandProductId: null,
+                selectingHandAction: null,
+                selectingFromFavorites: false,
+                wishlist: [],
+                cartItems: [],
+                orderForm: {
+                    customer_name: '',
+                    customer_phone: '',
+                    customer_email: '',
+                    delivery_type: 'pickup',
+                    delivery_city: '',
+                    delivery_street: '',
+                    delivery_building: '',
+                    delivery_date: '',
+                    delivery_time: '',
+                    delivery_price: 0,
+                    payment_type: 'cash',
+                    notes: ''
+                },
+                dadataToken: '7c958262d9f01a263e77984b8ee106c01816709a',
+                citySuggestions: [],
+                streetSuggestions: [],
+                citySearchLoading: false,
+                streetSearchLoading: false,
+                citySearchTimeout: null,
+                streetSearchTimeout: null,
+                citySearchAbortController: null,
+                streetSearchAbortController: null,
+                deliveryCityValid: false,
+                deliveryStreetValid: false,
+                selectedCityData: null,
+                selectedStreetData: null,
+                deliveryCityError: '',
+                deliveryStreetError: '',
+                orderLoading: false,
+                orderError: '',
+                orderSuccess: '',
+                fieldErrors: {
+                    customer_name: '',
+                    customer_phone: '',
+                    delivery_city: '',
+                    delivery_street: '',
+                    delivery_building: '',
+                    policy: ''
+                },
+                currentOrderProduct: null,
+                touchStartX: 0,
+                touchEndX: 0,
+                touchStartY: 0,
+                touchEndY: 0,
+                page: 'main',
 
-        const options = product.options || [];
-        const optionKey = this.buildOptionKey(options);
-
-        const existingItem = cart.find(item => {
-            const itemOptionKey = item.optionKey || this.buildOptionKey(item.options || []);
-            return item.id === product.id && itemOptionKey === optionKey;
-        });
-
-        if (existingItem) {
-            existingItem.quantity = (existingItem.quantity || 1) + 1;
-        } else {
-            const cartProduct = {
-                ...product,
-                price: product.price_sale || product.price,
-                options: options,
-                optionKey: optionKey,
-                quantity: 1
-            };
-            cart.push(cartProduct);
-        }
-
-        this.saveCart(cart);
-
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
-    },
-    saveCart(cartItems) {
-        localStorage.setItem('cart', JSON.stringify(cartItems));
-    },
-    loadWishlist() {
-        const savedWishlist = localStorage.getItem('wishlist');
-        return savedWishlist ? JSON.parse(savedWishlist) : [];
-    },
-
-    saveWishlist(wishlist) {
-        localStorage.setItem('wishlist', JSON.stringify(wishlist));
-    },
-    async loadProductOptions() {
-        try {
-            const basePath = this.getBasePath ? this.getBasePath() : '/';
-            const response = await fetch(basePath + 'api.php?action=product_options', {
-                credentials: 'same-origin'
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return Array.isArray(data) ? data : [];
+                products: [],
+                animatedProducts: [],
+                features: [],
+                elementStates: {},
+                homeContent: {
+                    features: [],
+                    history: []
+                },
+                pageBlocks: [],
+                sortedPageBlocks: [],
+                currentVirtualPage: null,
+                virtualPageError: null,
+                headerNavigation: {
+                    main: [],
+                    other: []
+                },
+                imageInfo: {},
+                policyYes: false,
+                policyNo: false,
+                deliveryAvailable: true,
+                productImageIndices: {},
+                productImageTouchStart: {},
+                productImageMouseStart: {},
+                productImageNavigating: {},
+                imageLoadingStates: {},
+                currentProduct: null,
+                productLoading: false,
+                productError: null,
+                productQuantity: 1,
+                currentProductImageIndex: 0,
+                productSlideDirection: 'next',
+                contentView: false,
+                productMinSwipeDistance: 50,
+                title: '',
+                description: '',
+                imageMetaTags: '',
+                pickupAddress: '',
+                workHours: '',
+                storePhone: '',
+                deliveryBel: '',
+                deliveryRus: '',
             }
-            return [];
-        } catch (error) {
-            console.error('Error loading product options:', error);
-            return [];
-        }
-    },
-    async loadProducts() {
-        try {
-            const basePath = this.getBasePath ? this.getBasePath() : '/';
-            const response = await fetch(basePath + 'api.php?action=products', {
-                credentials: 'same-origin'
-            });
+        },
+        computed: {
+            policy() {
+                return !!this.policyYes && !this.policyNo;
+            },
 
-            if (response.ok) {
-                const data = await response.json();
-                return Array.isArray(data) ? data : [];
-            }
-
-            return [];
-        } catch (error) {
-            console.error('Error loading products:', error);
-            return [];
-        }
-    },
-    normalizeMediaUrl(url) {
-        if (!url) return '';
-
-        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
-            return url;
-        }
-
-        const basePath = this.getBasePath ? this.getBasePath() : '/';
-        return basePath + url;
-    },
-    getBasePath() {
-        const path = window.location.pathname;
-        const parts = path.split('/');
-
-        if (parts.includes('nv')) {
-            const index = parts.indexOf('nv');
-            return '/' + parts.slice(1, index + 1).join('/') + '/';
-        }
-
-        return '/';
-    },
-    buildOptionKey(options) {
-        if (!options || !Array.isArray(options) || options.length === 0) {
-            return '';
-        }
-
-        return options
-            .map(opt => `${opt.slug || opt.name}:${opt.value}`)
-            .sort()
-            .join('|');
-    },
-    getCartItemsCount(cartItems) {
-        if (!cartItems || !Array.isArray(cartItems)) {
-            return 0;
-        }
-
-        return cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
-    },
-    getWishlistCount(wishlist) {
-        return wishlist ? wishlist.length : 0;
-    },
-    getApiUrl() {
-        try {
-            const scriptEl = document.querySelector('script[src*="script.js"]');
-
-            if (scriptEl && scriptEl.src) {
-                const url = new URL(scriptEl.src, window.location.origin);
-                const pathSegments = url.pathname.split('/').filter(s => s);
-
-                if (pathSegments.includes('src') && pathSegments.includes('scripts')) {
-                    return '/api.php';
+            cartTotal() {
+                if (!this.cartItems || !Array.isArray(this.cartItems)) {
+                    return 0;
+                }
+                return this.cartItems.reduce((total, item) => {
+                    return total + (item.price * item.quantity);
+                }, 0);
+            },
+            isMobile() {
+                return window.innerWidth <= 768;
+            },
+            currentOptionType() {
+                if (!this.productOptions || !this.productOptions.length) {
+                    return null;
                 }
 
-                const basePath = '../'.repeat(2);
-                return basePath + 'api.php';
+                return this.productOptions[this.optionSelectionIndex] || null;
+            },
+            selectingHandProduct() {
+                if (!this.selectingHandProductId) return null;
+                return this.products.find(p => p.id === this.selectingHandProductId) || null;
+            },
+            favoriteProducts() {
+                return this.products.filter(product => this.wishlist.includes(product.id));
+            },
+            formattedPageContent() {
+                if (!this.currentVirtualPage || !this.currentVirtualPage.content) {
+                    return '';
+                }
+                let content = this.currentVirtualPage.content;
+
+                if (content.includes('<') && content.includes('>')) {
+                    return content;
+                }
+
+                content = content.trim();
+
+                const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+
+                return paragraphs.map(p => {
+                    const formatted = p.trim().replace(/\n/g, '<br>');
+                    return `<p>${formatted}</p>`;
+                }).join('');
+            },
+            isMainPage() {
+                if (this.currentVirtualPage || this.currentProduct) {
+                    return false;
+                }
+
+                let path = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
+
+                if (path.startsWith('nv/')) {
+                    path = path.replace('nv/', '');
+                } else if (path === 'nv') {
+                    path = '';
+                }
+
+                return !path || path === '' || path === 'index.php';
+            },
+            navigationButtons() {
+                if (this.isMainPage) {
+                    const buttons = [];
+                    if (this.hasBlockType('products')) {
+                        buttons.push({ label: 'Товары', target: 'products', linkType: 'section' });
+                    }
+                    if (this.hasBlockType('features')) {
+                        buttons.push({ label: 'Преимущества', target: 'features', linkType: 'section' });
+                    }
+                    if (this.hasBlockType('history')) {
+                        buttons.push({ label: 'История', target: 'history', linkType: 'section' });
+                    }
+                    if (this.hasBlockType('contact')) {
+                        buttons.push({ label: 'Контакты', target: 'contact', linkType: 'section' });
+                    }
+                    return buttons;
+                } else {
+                    return this.headerNavigation.other || [];
+                }
+            },
+            deliveryAddressPreview() {
+                if (this.orderForm.delivery_type !== 'delivery') {
+                    return '';
+                }
+                return this.buildDeliveryAddress();
+            },
+            today() {
+                return new Date().toISOString().split('T')[0];
+            },
+            allProductImages() {
+                if (!this.currentProduct) return [];
+                const images = [];
+
+                const main = this.normalizeMediaUrl(this.currentProduct.image);
+                if (main) {
+                    images.push(main);
+                }
+
+                if (Array.isArray(this.currentProduct.additional_images)) {
+                    images.push(
+                        ...this.currentProduct.additional_images
+                            .map((img) => this.normalizeMediaUrl(img))
+                            .filter(Boolean)
+                    );
+                }
+
+                return images;
+            },
+            allProductVideos() {
+                if (!this.currentProduct) return [];
+                if (!Array.isArray(this.currentProduct.additional_videos)) {
+                    return [];
+                }
+
+                return this.currentProduct.additional_videos
+                    .map((vid) => this.normalizeMediaUrl(vid))
+                    .filter(Boolean);
+            },
+            allProductMedia() {
+                if (!this.currentProduct) return [];
+                const media = [];
+                media.push(...this.allProductImages);
+                media.push(...this.allProductVideos);
+                return media;
+            },
+            currentProductImage() {
+                if (!this.currentProduct || this.allProductMedia.length === 0) return '';
+                const image = this.allProductMedia[this.currentProductImageIndex] || this.allProductMedia[0] || '';
+                if (!image || image.trim() === '') return '';
+                return image;
+            },
+            isCurrentProductInWishlist() {
+                if (!this.currentProduct) return false;
+                return this.wishlist.includes(this.currentProduct.id);
+            },
+            isCurrentProductInCart() {
+                if (!this.currentProduct) return false;
+                return this.cartItems.some(item => item.id === this.currentProduct.id);
             }
-        } catch (e) {
-            console.error(e);
-        }
-
-        return '/api.php';
-    },
-    getAuth() {
-        try {
-            const auth = localStorage.getItem('global_auth');
-            return auth ? JSON.parse(auth) : { authenticated: false, role: null, username: null };
-        } catch (e) {
-            return { authenticated: false, role: null, username: null };
-        }
-    },
-    setAuth(authData) {
-        localStorage.setItem('global_auth', JSON.stringify(authData));
-    },
-    clearAuth() {
-        localStorage.removeItem('global_auth');
-    },
-    isAuthenticated() {
-        const auth = this.getAuth();
-        return auth.authenticated === true;
-    },
-    isAdmin() {
-        const auth = this.getAuth();
-        return auth.authenticated === true && auth.role === 'admin';
-    },
-    getUserRole() {
-        const auth = this.getAuth();
-        return auth.role;
-    },
-    getUsername() {
-        const auth = this.getAuth();
-        return auth.username;
-    },
-    async checkUserAuth() {
-        try {
-            const apiUrl = this.getApiUrl();
-            const response = await fetch(apiUrl + '?action=user', { credentials: 'same-origin' });
-
-            if (response.ok) {
-                const me = await response.json();
-                this.setAuth(me);
-                return me;
-            } else {
-                this.clearAuth();
-                return { authenticated: false, role: null, username: null };
+        },
+        watch: {
+            orderModalOpen(newVal) {
+                if (newVal) {
+                    this.$nextTick(() => {
+                        this.fillPickupParams();
+                    });
+                }
             }
-        } catch (e) {
-            this.clearAuth();
-            return { authenticated: false, role: null, username: null };
-        }
-    },
-    async login(username, password, remember = false) {
-        try {
-            const apiUrl = this.getApiUrl();
-            const form = new FormData();
+        },
+        mounted() {
+            this.init();
+            this.initVideoAutoplay();
 
-            form.append('action', 'login');
-            form.append('username', username);
-            form.append('password', password);
+            window.addEventListener('cartUpdated', this.handleCartUpdated);
+        },
+        beforeUnmount() {
+            window.removeEventListener('scroll', this.handleScroll);
+            window.removeEventListener('resize', this.handleResize);
+            window.removeEventListener('popstate', this.handlePopState);
+            document.removeEventListener('touchstart', this.handleDocumentTouchStart);
+            document.removeEventListener('touchmove', this.handleDocumentTouchMove);
+            document.removeEventListener('touchend', this.handleDocumentTouchEnd);
+            document.removeEventListener('mouseup', this.handleGlobalMouseUp);
+            document.removeEventListener('mousemove', this.handleGlobalMouseMove);
+            window.removeEventListener('cartUpdated', this.handleCartUpdated);
+        },
+        methods: {
+            init() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        if (this.contentView) {
+                            this.closeProductViewModal();
+                        } else if (this.currentProduct) {
+                            this.closeProductPage();
+                        } else {
+                            this.closeFavorites();
+                            this.closeAllMenus();
+                            this.closeCart();
+                            this.closeLogin();
+                            this.closeOrderModal();
+                            this.closeMobileMenu();
+                            this.closeOtherMenus();
+                        }
+                    }
+                    if (e.key === 'ArrowLeft' && this.contentView && this.currentProduct) {
+                        this.previousProductImage();
+                    }
+                    if (e.key === 'ArrowRight' && this.contentView && this.currentProduct) {
+                        this.nextProductDetailImage();
+                    }
+                });
 
-            if (remember) {
-                form.append('remember', '1');
-            }
+                this.checkMe().then(r => null);
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                body: form,
-                credentials: 'same-origin'
-            });
+                const savedUser = localStorage.getItem('remember_username');
 
-            const data = await response.json();
+                if (savedUser) {
+                    this.loginData.username = savedUser;
+                    this.loginData.remember = true;
+                }
 
-            if (response.ok && data.success) {
-                const userInfo = await this.checkUserAuth();
-                this.setAuth(userInfo);
-                return { success: true, role: userInfo.role, username: userInfo.username };
-            } else {
-                return { success: false, error: data.error || 'Login failed' };
-            }
-        } catch (e) {
-            return { success: false, error: 'Network error' };
-        }
-    },
-    async logout() {
-        try {
-            const apiUrl = this.getApiUrl();
-            const form = new FormData();
+                window.addEventListener('scroll', this.handleScroll);
+                window.addEventListener('resize', this.handleResize);
+                document.addEventListener('touchstart', this.handleDocumentTouchStart, { passive: false });
+                document.addEventListener('touchmove', this.handleDocumentTouchMove, { passive: false });
+                document.addEventListener('mouseup', this.handleGlobalMouseUp);
+                document.addEventListener('mousemove', this.handleGlobalMouseMove);
+                document.addEventListener('touchend', this.handleDocumentTouchEnd, { passive: false });
 
-            form.append('action', 'logout');
+                if (this.isMainPage) {
+                    this.currentVirtualPage = null;
+                    this.virtualPageError = null;
+                }
 
-            await fetch(apiUrl, { method: 'POST', body: form, credentials: 'same-origin' });
-        } catch (e) {
-            console.log('Logout error:', e);
-        }
+                this.initScrollAnimations();
+                this.updateSortedPageBlocks();
+                this.loadProducts().then(r => null);
+                this.loadHomeContent().then(r => null);
+                this.loadCategories().then(r => null);
+                this.loadProductOptions().then(r => null);
+                this.loadParams().then(r => null);
+                this.loadPageBlocks().then(() => {
+                    this.updateSortedPageBlocks();
+                    // Page blocks are loaded asynchronously; reveal/animate newly rendered elements
+                    // after Vue has updated the DOM.
+                    this.$nextTick(() => {
+                        this.showAllElementsOnLoad();
+                        this.checkScrollAnimations();
+                    });
+                });
 
-        document.querySelector('.overlay.active')?.classList.remove('active');
-        this.clearAuth();
-    },
-    async getPaymentToken(orderForm, cartItems, cartTotal) {
-        const payload = {
-            orderForm,
-            cartItems,
-            cartTotal,
-        };
+                this.loadCart();
+                this.loadWishlist();
+                if (typeof this.initProductImageNavigation === 'function') {
+                    this.initProductImageNavigation();
+                }
+                if (typeof this.initProductLinkHandlers === 'function') {
+                    this.initProductLinkHandlers();
+                }
+                this.checkVirtualPage().then(r => null);
+                this.checkProductFromURL();
 
-        const apiUrl = this.getApiUrl ? this.getApiUrl() : '/api.php';
+                if (window.history && window.history.replaceState) {
+                    const basePath = this.getBasePath();
+                    const path = this.getRelativePathFromBase();
 
-        const response = await fetch(apiUrl + '?action=payment', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+                    if (!path || path === '' || path === 'index.php') {
+                        window.history.replaceState({ page: null }, '', basePath);
+                    } else if (!path.startsWith('product') && !path.startsWith('admin') && !path.startsWith('api.php') && !path.startsWith('assets')) {
+                        const slug = path.split('/').pop();
 
-        if (response.ok) {
-            return await response.json();
-        } else {
-            const errorData = await response.json().catch(() => ({ error: 'Неизвестная ошибка' }));
-            console.error('Payment token error:', response.status, response.statusText, errorData);
-            return null;
-        }
-    },
-    payment(orderData, onSuccess) {
-        if (!orderData) {
-            console.error('No order data provided for payment');
-            return;
-        }
+                        if (slug) {
+                            window.history.replaceState({ page: slug }, '', basePath + slug);
+                        }
+                    }
+                }
 
-        if (!orderData.orderForm) {
-            console.error('Order form data is missing');
-            alert('Ошибка: данные формы заказа отсутствуют');
-            return;
-        }
+                window.addEventListener('popstate', this.handlePopState);
 
-        if (!orderData.orderForm.customer_email || !orderData.orderForm.customer_email.trim()) {
-            console.error('Customer email is required for online payment');
-            alert('Email обязателен для онлайн-оплаты');
-            return;
-        }
+                document.addEventListener('click',e => {
+                    if (e.target.classList.contains('active')) {
+                        this.closeOrderModal();
+                    }
+                });
+            },
+            async checkMe() {
+                try {
+                    this.auth = await NV.checkUserAuth();
+                } catch (e) {
+                    console.error('Auth error:', e);
+                    this.auth = { authenticated: false, role: null, username: null };
+                    localStorage.removeItem('global_auth');
+                }
+            },
+            openLogin() {
+                this.loginError = '';
+                this.showLogin = true;
+                this.closeMobileMenu();
+            },
+            closeLogin() {
+                this.showLogin = false;
+                this.loginData = { username: '', password: '' };
+                this.loginError = '';
+            },
+            async doLogin() {
+                this.loginError = '';
+                this.loginLoading = true;
+                try {
+                    const result = await NV.login(
+                        this.loginData.username,
+                        this.loginData.password,
+                        this.loginData.remember
+                    );
 
-        if (!orderData.cartItems || !Array.isArray(orderData.cartItems) || orderData.cartItems.length === 0) {
-            console.error('Cart items are missing or empty');
-            alert('Ошибка: корзина пуста');
-            return;
-        }
+                    if (result.success) {
+                        this.auth = await NV.checkUserAuth();
 
-        if (!orderData.cartTotal || orderData.cartTotal <= 0) {
-            console.error('Cart total is invalid:', orderData.cartTotal);
-            alert('Ошибка: некорректная сумма заказа');
-            return;
-        }
+                        if (this.loginData.remember) {
+                            localStorage.setItem('remember_username', this.loginData.username);
+                        } else {
+                            localStorage.removeItem('remember_username');
+                        }
+                        this.closeLogin();
+                    } else {
+                        this.loginError = result.error || 'Ошибка входа';
+                    }
+                } catch (err) {
+                    this.loginError = err.message || 'Ошибка входа';
+                }
 
-        this.getPaymentToken(orderData.orderForm, orderData.cartItems, orderData.cartTotal).then(r => {
-            if (r && r.checkout) {
-                const redirectUrl = r.checkout.redirect_url;
-                const token = r.checkout.token;
+                this.loginLoading = false;
+            },
+            async logout() {
+                await NV.logout();
+                this.auth = NV.getAuth();
+            },
+            handleScroll() {
+                this.isScrolled = window.scrollY > 50;
+                this.checkScrollAnimations();
 
-                const params = {
+                if (this.userMenuOpen) {
+                    this.positionUserMenu();
+                }
+            },
+            handleResize() {
+
+                if (this.userMenuOpen) {
+                    this.positionUserMenu();
+                }
+            },
+            toggleMobileMenu() {
+                this.mobileMenuOpen = !this.mobileMenuOpen;
+            },
+            closeMobileMenu() {
+                this.mobileMenuOpen = false;
+            },
+            closeAllMenus() {
+                this.mobileMenuOpen = false;
+                this.cartOpen = false;
+                this.userMenuOpen = false;
+                this.favoritesOpen = false;
+                this.orderModalOpen = false;
+            },
+            closeOtherMenus() {
+                this.mobileMenuOpen = false;
+                this.cartOpen = false;
+                this.favoritesOpen = false;
+            },
+            toggleUserMenu() {
+                this.userMenuOpen = !this.userMenuOpen;
+                if (this.userMenuOpen) {
+                    this.$nextTick(() => {
+                        this.positionUserMenu();
+                    });
+                }
+            },
+            positionUserMenu() {
+                const userMenu = document.querySelector('.user-menu');
+                const userMenuPopup = document.querySelector('.user-menu-popup');
+                if (userMenu && userMenuPopup) {
+                    const rect = userMenu.getBoundingClientRect();
+
+                    if (window.innerWidth <= 768) {
+                        userMenuPopup.style.top = (rect.bottom + 8) + 'px';
+                        userMenuPopup.style.left = '50%';
+                        userMenuPopup.style.right = 'auto';
+                        userMenuPopup.style.transform = 'translateX(-50%)';
+                    } else {
+
+                        userMenuPopup.style.top = (rect.bottom + 8) + 'px';
+                        userMenuPopup.style.right = (window.innerWidth - rect.right) + 'px';
+                        userMenuPopup.style.left = 'auto';
+                        userMenuPopup.style.transform = 'none';
+                    }
+                }
+            },
+            toggleFavorites() {
+                this.closeOtherMenus();
+
+                if (this.mobileMenuOpen) {
+                    this.mobileMenuOpen = false;
+                    setTimeout(() => {
+                        this.favoritesOpen = true;
+                    }, 300);
+                } else {
+                    this.favoritesOpen = true;
+                }
+            },
+            closeFavorites() {
+                this.favoritesOpen = false;
+            },
+
+            closeCart() {
+                this.cartOpen = false;
+            },
+
+
+
+
+            startHandSelection(product, action, point, event) {
+                return this.startOptionSelection(product, action, point, event);
+            },
+            chooseOptionValue(product, value) {
+                const optionType = this.currentOptionType;
+                if (!optionType) {
+                    return;
+                }
+                const slug = optionType.slug || this.slugifyOptionName(optionType.name) || `option-${this.optionSelectionIndex}`;
+                this.selectedProductOptions.push({
+                    slug,
+                    name: optionType.name || `Опция ${this.optionSelectionIndex + 1}`,
+                    value
+                });
+                this.optionSelectionIndex += 1;
+
+                if (this.optionSelectionIndex >= this.productOptions.length) {
+                    this.showOptionSelector = false;
+                    this.finishOptionSelection(product);
+                }
+            },
+            finishOptionSelection(product) {
+                const optionsSnapshot = this.selectedProductOptions.map(option => ({ ...option }));
+                const optionKey = this.buildOptionKey(optionsSnapshot);
+
+                if (this.selectingHandAction === 'buy') {
+                    this.currentOrderProduct = {
+                        ...product,
+                        options: optionsSnapshot,
+                        optionKey,
+                        quantity: 1
+                    };
+                    this.openOrderModal();
+                } else if (this.selectingHandAction === 'cart') {
+                    this.addToCartInternal(product, optionsSnapshot);
+
+                    if (this.selectingFromFavorites) {
+                        this.wishlist = this.wishlist.filter(id => id !== product.id);
+                        this.saveWishlist();
+                        this.closeFavorites();
+                        this.toCart();
+                        this.selectingFromFavorites = false;
+                    }
+                }
+
+                this.selectingHandProductId = null;
+                this.selectingHandAction = null;
+                this.buyNowPressed = false;
+                this.addToCartPressed = false;
+                this.resetOptionSelectionState();
+            },
+            addToCartInternal(product, options = []) {
+                const optionKey = this.buildOptionKey(options);
+                const existingItem = this.cartItems.find(item =>
+                    item.id === product.id &&
+                    (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
+                );
+
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    const cartProduct = {
+                        ...product,
+                        price: product.price_sale || product.price,
+                        options,
+                        optionKey,
+                        quantity: 1
+                    };
+                    this.cartItems.push(cartProduct);
+                }
+                this.saveCart();
+            },
+            saveCart() {
+                localStorage.setItem('cart', JSON.stringify(this.cartItems));
+            },
+            loadCart() {
+                const savedCart = localStorage.getItem('cart');
+
+                if (!savedCart) {
+                    this.cartItems = [];
+                    return;
+                }
+
+                try {
+                    const parsed = JSON.parse(savedCart);
+                    this.cartItems = Array.isArray(parsed) ? parsed.map(item => this.normalizeCartItem(item)) : [];
+                } catch (error) {
+                    console.error('Failed to parse cart from storage:', error);
+                    this.cartItems = [];
+                }
+            },
+            handleCartUpdated() {
+                this.loadCart();
+            },
+            saveWishlist() {
+                localStorage.setItem('wishlist', JSON.stringify(this.wishlist));
+            },
+            loadWishlist() {
+                const savedWishlist = localStorage.getItem('wishlist');
+                this.wishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+            },
+            smoothScrollTo(targetId) {
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            },
+            navClick(event, targetId) {
+                event.preventDefault();
+                this.closeAllMenus();
+
+                if (this.isMainPage) {
+                    this.smoothScrollTo(targetId);
+                    return;
+                }
+
+                const slug = targetId.toLowerCase().replace(/\s+/g, '-');
+
+                this.openVirtualPage(slug, { updateHistory: true, scrollToTop: true }).then((page) => {
+                    if (!page) {
+                        this.goHome({ updateHistory: true, scrollToTop: false });
+                        this.$nextTick(() => {
+                            this.smoothScrollTo(targetId);
+                        });
+                    }
+                }).catch(() => {
+                    this.goHome({ updateHistory: true, scrollToTop: false });
+                    this.$nextTick(() => {
+                        this.smoothScrollTo(targetId);
+                    });
+                });
+            },
+            normalizeVirtualSlug(slug) {
+                const nSlug = (slug || '').replace(/^\//, '').replace(/\/$/, '');
+                if (!nSlug) return '';
+                return nSlug.replace(/^nv\//, '').replace(/^nv$/, '');
+            },
+            async openVirtualPage(slug, options = {}) {
+                const { updateHistory = true, scrollToTop = true } = options;
+                const normalizedSlug = this.normalizeVirtualSlug(slug);
+                if (!normalizedSlug) {
+                    this.goHome({ updateHistory, scrollToTop });
+                    return null;
+                }
+
+                try {
+                    const page = await this.loadVirtualPage(normalizedSlug);
+                    if (!page) {
+                        this.currentVirtualPage = null;
+                        this.virtualPageError = 'Страница не найдена';
+                        return null;
+                    }
+
+                    this.currentVirtualPage = page;
+                    this.virtualPageError = null;
+                    this.currentProduct = null;
+
+                    this.headerNavigation.other = (page.navigation_buttons && Array.isArray(page.navigation_buttons))
+                        ? page.navigation_buttons
+                        : [];
+
+                    document.title = page.meta_title || page.title;
+
+                    if (scrollToTop) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+
+                    const basePath = this.getBasePath();
+                    if (updateHistory && window.history && window.history.pushState) {
+                        window.history.pushState({ page: normalizedSlug }, '', basePath + normalizedSlug);
+                    }
+
+                    this.$nextTick(() => this.$forceUpdate());
+                    return page;
+                } catch (error) {
+                    console.error('Error opening page:', error);
+                    this.currentVirtualPage = null;
+                    this.virtualPageError = 'Ошибка загрузки страницы';
+                    return null;
+                }
+            },
+            async checkVirtualPage() {
+                const path = this.getRelativePathFromBase();
+                if (!path || path === '' || path === 'index.php') return;
+                if (path.startsWith('product') || path.startsWith('admin') || path.startsWith('api.php') || path.startsWith('assets')) return;
+
+                const slug = path.split('/').filter(Boolean).join('/') || path.split('/').pop();
+                const normalizedSlug = this.normalizeVirtualSlug(slug);
+                if (!normalizedSlug) return;
+
+                const page = await this.loadVirtualPage(normalizedSlug);
+                if (page) {
+                    this.currentVirtualPage = page;
+                    this.virtualPageError = null;
+                    this.currentProduct = null;
+                    this.headerNavigation.other = (page.navigation_buttons && Array.isArray(page.navigation_buttons))
+                        ? page.navigation_buttons
+                        : [];
+                    document.title = page.meta_title || page.title;
+                    this.$nextTick(() => this.$forceUpdate());
+                    return;
+                }
+
+                this.currentVirtualPage = null;
+                this.currentProduct = null;
+                this.virtualPageError = 'Страница не найдена';
+                document.title = 'Страница не найдена';
+                this.$nextTick(() => this.$forceUpdate());
+            },
+            async loadVirtualPage(slug) {
+                try {
+                    const basePath = this.getBasePath();
+                    const apiUrl = basePath + 'api.php?action=page&slug=' + encodeURIComponent(slug);
+                    const response = await fetch(apiUrl, { credentials: 'same-origin' });
+
+                    if (response.ok) {
+                        const page = await response.json();
+                        if (page && !page.error) return page;
+                        return null;
+                    }
+                    if (response.status === 404) return null;
+
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Error loading page:', errorData.error || 'Unknown error');
+                    return null;
+                } catch (error) {
+                    console.error('Error loading page:', error);
+                    return null;
+                }
+            },
+            checkProductFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const productId = urlParams.get('product');
+                if (productId) {
+                    this.loadProductFromURL(productId);
+                }
+            },
+            async loadProductFromURL(productId) {
+                if (!productId) return;
+
+                if (!this.products || this.products.length === 0) {
+                    await this.loadProducts();
+                }
+
+                const product = this.products.find(p => p.id === productId);
+
+                if (product) {
+                    this.openProductPage(product);
+                } else {
+                    const basePath = this.getBasePath();
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({ type: 'main' }, '', basePath);
+                    }
+                }
+            },
+            openProductDetail(product) {
+                if (!product || !product.id) return;
+                this.openProductPage(product);
+                const basePath = this.getBasePath();
+                const normalizedBasePath = basePath.endsWith('/') ? basePath : basePath + '/';
+                const url = new URL(window.location.href);
+                url.pathname = normalizedBasePath;
+                url.search = '?product=' + encodeURIComponent(product.id);
+                if (window.history && window.history.pushState) {
+                    window.history.pushState({ productId: product.id, type: 'product' }, '', url.toString());
+                }
+            },
+            removeFromCart(cartItem) {
+                if (confirm(`Вы действительно хотите удалить ${cartItem.name} из корзины?`)) {
+                    this.cartItems = this.cartItems.filter(item => item !== cartItem);
+                    this.saveCart();
+                    if (this.cartItems.length === 0 && this.orderModalOpen) {
+                        this.closeOrderModal();
+                    }
+                }
+            },
+            increaseQuantity(cartItem) {
+                if (cartItem) {
+                    cartItem.quantity += 1;
+                }
+                this.saveCart();
+            },
+            decreaseQuantity(cartItem) {
+                if (cartItem && cartItem.quantity > 1) {
+                    cartItem.quantity -= 1;
+                } else {
+                    this.removeFromCart(cartItem);
+                }
+                this.saveCart();
+            },
+            increaseCurrentOrderQuantity() {
+                if (!this.currentOrderProduct) return;
+                const currentQty = Number(this.currentOrderProduct.quantity || 1) || 1;
+                this.currentOrderProduct.quantity = currentQty + 1;
+            },
+            decreaseCurrentOrderQuantity() {
+                if (!this.currentOrderProduct) return;
+                const currentQty = Number(this.currentOrderProduct.quantity || 1) || 1;
+                if (currentQty <= 1) {
+                    return;
+                }
+                this.currentOrderProduct.quantity = currentQty - 1;
+            },
+
+            handleProductCardClick(event, product) {
+                if (this.isMobile) {
+                    const isButtonClick = event.target.closest('button') !== null;
+                    if (!isButtonClick) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                    }
+                }
+            },
+            handleTouchStart(e) {
+                this.touchStartX = e.changedTouches[0].screenX;
+                this.touchStartY = e.changedTouches[0].screenY;
+            },
+            handleTouchMove(e) {
+                e.preventDefault();
+            },
+            handleTouchEnd(e) {
+                this.touchEndX = e.changedTouches[0].screenX;
+                this.touchEndY = e.changedTouches[0].screenY;
+                this.handleSwipe();
+            },
+            handleFavoritesTouchStart(e) {
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+            },
+            handleFavoritesTouchMove(e) {
+                if (e.target.closest('.favorites-content')) {
+                    return;
+                }
+                e.preventDefault();
+            },
+            handleFavoritesTouchEnd(e) {
+                this.touchEndX = e.changedTouches[0].clientX;
+                this.touchEndY = e.changedTouches[0].clientY;
+                this.handleFavoritesSwipe();
+            },
+            handleFavoritesSwipe() {
+                const diffX = this.touchEndX - this.touchStartX;
+                const diffY = Math.abs(this.touchEndY - this.touchStartY);
+
+                if (diffX > 50 && diffY < 100) {
+                    this.closeFavorites();
+                }
+            },
+            handleDocumentTouchStart(e) {
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+            },
+            handleDocumentTouchMove(e) {
+                if (!this.mobileMenuOpen && this.touchStartX < 50) {
+                    e.preventDefault();
+                }
+            },
+            handleDocumentTouchEnd(e) {
+                this.touchEndX = e.changedTouches[0].clientX;
+                this.touchEndY = e.changedTouches[0].clientY;
+
+                if (this.touchStartX < 50) {
+                    this.handleDocumentSwipe();
+                }
+            },
+            handleSwipe() {
+                const diffX = this.touchStartX - this.touchEndX;
+                const diffY = Math.abs(this.touchStartY - this.touchEndY);
+
+                if (Math.abs(diffX) > 50 && diffY < 100) {
+                    if (diffX > 0) {
+                        this.closeMobileMenu();
+                    }
+                }
+            },
+            handleDocumentSwipe() {
+                const diffX = this.touchEndX - this.touchStartX;
+                const diffY = Math.abs(this.touchEndY - this.touchStartY);
+
+                if (diffX > 50 && diffY < 100) {
+                    this.mobileMenuOpen = true;
+                }
+            },
+            initScrollAnimations() {
+                document.querySelectorAll('.section-title, .tagline, .description, .hero-buttons, .filters, .form-group, .social-link, .copyright, .timeline-item, .stat-item').forEach(el => {
+                    el.classList.add('scroll-animate');
+                });
+
+                this.showAllElementsOnLoad();
+
+                setTimeout(() => {
+                    this.checkScrollAnimations();
+                }, 100);
+            },
+            showAllElementsOnLoad() {
+                document.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale, .product-card, .feature-card, .timeline-item, .stat-item').forEach(el => {
+                    el.classList.remove('hidden');
+                    el.classList.add('animated');
+                    const elementId = el.id || this.generateElementId(el);
+                    this.elementStates[elementId] = 'animated';
+                });
+            },
+            checkScrollAnimations() {
+                document.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale, .product-card, .feature-card, .timeline-item, .stat-item').forEach(el => {
+                    this.checkIfElementInView(el);
+                });
+            },
+            checkIfElementInView(element) {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementBottom = element.getBoundingClientRect().bottom;
+                const windowHeight = window.innerHeight;
+                const elementId = element.id || this.generateElementId(element);
+                const isProductCard = element.classList.contains('product-card');
+
+                if (elementTop < windowHeight * 0.9 && elementBottom > 0) {
+                    if (!element.classList.contains('animated') || this.elementStates[elementId] === 'hidden') {
+                        element.classList.remove('hidden');
+                        element.classList.add('animated');
+                        this.elementStates[elementId] = 'animated';
+                    }
+                } else {
+                    if (!isProductCard) {
+                        if (element.classList.contains('animated') || this.elementStates[elementId] === 'animated') {
+                            element.classList.remove('animated');
+                            element.classList.add('hidden');
+                            this.elementStates[elementId] = 'hidden';
+                        }
+                    }
+                }
+
+                if (elementId.includes('product-') && !this.animatedProducts.includes(elementId)) {
+                    let container = element.querySelector('.product-img-container');
+                    if (container) {
+                        const enableHover = () => {return element.querySelector('h3')?.classList.add('product-title-hover');}
+                        const disableHover = () => {return element.querySelector('h3')?.classList.remove('product-title-hover');}
+
+                        container.removeEventListener('mouseover', enableHover);
+                        container.addEventListener('mouseover', enableHover);
+
+                        container.removeEventListener('mouseout', disableHover);
+                        container.addEventListener('mouseout', disableHover);
+                    }
+                }
+            },
+            isInView(id) {
+                const element = document.getElementById(id);
+                if (!element) return false;
+
+                const rect = element.getBoundingClientRect();
+
+                return (
+                    rect.bottom > 0 &&
+                    rect.right > 0 &&
+                    rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
+                    rect.left < (window.innerWidth || document.documentElement.clientWidth)
+                );
+            },
+            generateElementId(element) {
+                if (!element.id) {
+                    element.id = 'element-' + Math.random().toString(36).substr(2, 9);
+                }
+                return element.id;
+            },
+            async loadProductOptions() {
+                try {
+                    let response;
+                    const typeId = this.selectingHandProduct ? this.selectingHandProduct.product_type_id : null;
+                    const query = typeId ? `api.php?action=product_options&type_id=${encodeURIComponent(typeId)}` : 'api.php?action=product_options';
+
+                    if (typeof fetch !== 'undefined') {
+                        response = await fetch(query, { credentials: 'same-origin' });
+                    } else {
+                        response = await this.fetchWithXHR(query);
+                    }
+
+                    if (response && response.ok) {
+                        const data = await response.json();
+                        const options = Array.isArray(data.options) ? data.options : [];
+                        this.productOptions = this.normalizeOptionTypes(options);
+                    } else {
+                        console.warn('Failed to load product options, using defaults');
+                    }
+                } catch (error) {
+                    console.error('Error loading product options:', error);
+                }
+            },
+            async loadCategories() {
+                try {
+                    let response;
+                    if (typeof fetch !== 'undefined') {
+                        response = await fetch('api.php?action=categories', { credentials: 'same-origin' });
+                    } else {
+                        response = await this.fetchWithXHR('api.php?action=categories');
+                    }
+
+                    if (response && response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            this.categories = data.map(cat => ({
+                                id: cat.slug || String(cat.id),
+                                name: cat.name,
+                                _id: cat.id,
+                                sort_order: cat.sort_order || 0
+                            }));
+                        } else {
+                            console.warn('No categories in response, using default');
+                            this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+                        }
+                    } else {
+                        console.warn('Failed to load categories, using default');
+                        this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+                    }
+                } catch (error) {
+                    console.error('Error loading categories:', error);
+                    this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+                }
+            },
+            async loadProducts() {
+                try {
+                    let response;
+                    if (typeof fetch !== 'undefined') {
+                        response = await fetch('api.php?action=products', { credentials: 'same-origin' });
+                    } else {
+                        response = await this.fetchWithXHR('api.php?action=products');
+                    }
+
+                    if (response.ok) {
+                        const incoming = await response.json();
+                        const list = Array.isArray(incoming) ? incoming : [];
+                        this.products = list
+                            .filter(Boolean)
+                            .map((product) => {
+                                const p = { ...product };
+                                p.image = this.normalizeMediaUrl(p.image);
+                                p.additional_images = Array.isArray(p.additional_images)
+                                    ? p.additional_images.map((img) => this.normalizeMediaUrl(img)).filter(Boolean)
+                                    : [];
+                                p.additional_videos = Array.isArray(p.additional_videos)
+                                    ? p.additional_videos.map((vid) => this.normalizeMediaUrl(vid)).filter(Boolean)
+                                    : [];
+                                return p;
+                            });
+
+                        this.products.forEach((product) => {
+                            if (product && product.id) {
+                                this.imageLoadingStates[product.id] = true;
+                            }
+                        });
+
+                        this.$nextTick(() => {
+                            this.initProductLinkHandlers();
+                        });
+                    } else {
+                        this.products = [];
+                    }
+
+                } catch (error) {
+                    console.error('Error loading products:', error);
+                    this.products = [];
+                }
+            },
+            async loadHomeContent() {
+                try {
+                    let response;
+
+                    if (typeof fetch !== 'undefined') {
+                        response = await fetch('api.php?action=home_content', { credentials: 'same-origin' });
+                    } else {
+                        response = await this.fetchWithXHR('api.php?action=home_content');
+                    }
+
+                    if (response.ok) {
+                        const content = await response.json();
+
+                        this.homeContent.features = content
+                            .filter(item => item.section === 'features')
+                            .map(item => ({
+                                icon: this.getFeatureIcon(item.sort_order),
+                                title: item.title,
+                                description: item.content
+                            }));
+
+                        this.homeContent.history = content
+                            .filter(item => item.section === 'history')
+                            .map(item => {
+                                const parts = item.content.split('\n');
+                                return {
+                                    year: item.title,
+                                    title: parts[0] || '',
+                                    description: parts.slice(1).join('\n') || item.content
+                                };
+                            });
+
+                        if (this.homeContent.features.length === 0) {
+                            this.homeContent.features = this.features;
+                        }
+
+                        if (this.homeContent.history.length === 0) {
+                            this.homeContent.history = [];
+                        }
+
+                        this.features = this.homeContent.features;
+                    } else {
+                        console.error('No home content found, using defaults');
+                    }
+
+                } catch (error) {
+                    console.error('Error loading home content:', error);
+                    this.homeContent.history = [];
+                }
+            },
+            async loadParams() {
+                try {
+                    await NV.loadParams();
+
+                    this.title = NV.title || '';
+                    this.description = NV.description || '';
+                    this.imageMetaTags = NV.imageMetaTags || '';
+                    this.pickupAddress = NV.pickupAddress || '';
+                    this.workHours = NV.workHours || '';
+                    this.storePhone = NV.storePhone || '';
+                    this.deliveryBel = NV.deliveryBel || '';
+                    this.deliveryRus = NV.deliveryRus || '';
+                } catch (error) {
+                    console.error('Error loading params:', error);
+                }
+            },
+            getFeatureIcon(index) {
+                const icons = ['fas fa-gem', 'fas fa-tools', 'fas fa-award', 'fas fa-heart', 'fas fa-star', 'fas fa-shield-alt'];
+                return icons[index] || 'fas fa-check';
+            },
+            hasProductsBlock() {
+                return this.pageBlocks.some(block => block.type === 'products');
+            },
+
+            getBasePath() {
+                try {
+                    const scriptEl = document.querySelector('script[src*="script.js"]');
+                    if (scriptEl && scriptEl.src) {
+                        const url = new URL(scriptEl.src, window.location.origin);
+                        const pathname = url.pathname || '/';
+                        const idx = pathname.lastIndexOf('/');
+                        if (idx >= 0) {
+                            const basePath = pathname.substring(0, idx + 1);
+                            if (window.location.pathname.startsWith(basePath)) {
+                                return basePath;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+
+                let path = window.location.pathname;
+
+                if (path.endsWith('/') && path.length > 1) {
+                    path = path.slice(0, -1);
+                }
+
+                if (path !== '/' && path !== '') {
+                    const parts = path.split('/').filter(p => p);
+                    if (parts.length > 0) {
+                        const lastPart = parts[parts.length - 1];
+
+                        if (lastPart.includes('.php') || lastPart === 'product' || lastPart === 'admin' || lastPart === 'index.php') {
+                            if (parts.length > 1) {
+                                return '/' + parts.slice(0, -1).join('/') + '/';
+                            }
+                            return '/';
+                        }
+                        if (parts.length > 1) {
+                            return '/' + parts.slice(0, -1).join('/') + '/';
+                        }
+
+                        return '/';
+                    }
+                }
+                return '/';
+            },
+            normalizeMediaUrl(path) {
+                if (!path || typeof path !== 'string') {
+                    return '';
+                }
+
+                let p = path.trim();
+                if (!p) {
+                    return '';
+                }
+
+                if (/^https?:\/\//i.test(p)) {
+                    return p;
+                }
+
+                const basePath = this.getBasePath();
+                const baseNoTrailing = basePath === '/' ? '' : basePath.slice(0, -1);
+
+                if (basePath !== '/' && p.startsWith(basePath)) {
+                    return p;
+                }
+
+                if (baseNoTrailing && p.startsWith(baseNoTrailing + '/')) {
+                    return p;
+                }
+
+                if (p.startsWith('../')) {
+                    p = p.substring(3);
+                }
+
+                if (p.startsWith('/')) {
+                    return baseNoTrailing + p;
+                }
+
+                return basePath + p;
+            },
+            getRelativePathFromBase() {
+                const basePath = this.getBasePath();
+                let pathname = window.location.pathname || '/';
+
+                if (basePath !== '/' && pathname.startsWith(basePath)) {
+                    pathname = pathname.slice(basePath.length);
+                } else if (pathname.startsWith('/')) {
+                    pathname = pathname.substring(1);
+                }
+
+                pathname = pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+
+                return pathname;
+            },
+            goHome(options = {}) {
+                const { updateHistory = true, scrollToTop = true } = options;
+                this.currentVirtualPage = null;
+                this.virtualPageError = null;
+                this.currentProduct = null;
+                this.headerNavigation.other = [];
+
+                if (scrollToTop) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+
+                const basePath = this.getBasePath();
+                if (updateHistory && window.history && window.history.pushState) {
+                    window.history.pushState({ page: null }, '', basePath);
+                }
+
+                this.loadPageBlocks().then(() => {
+                    this.updateSortedPageBlocks();
+
+                    this.$nextTick(() => {
+                        this.showAllElementsOnLoad();
+                        this.checkScrollAnimations();
+                    });
+                });
+            },
+            handlePopState(e) {
+                const state = e.state;
+
+                if (state && state.page) {
+                    this.openVirtualPage(state.page, {updateHistory: false, scrollToTop: false}).then(r => null);
+                } else if (state && state.type === 'product' && state.productId) {
+                    const product = this.products.find(p => p.id === state.productId);
+                    if (product) this.openProductPage(product);
+                } else {
+                    this.goHome({ updateHistory: false, scrollToTop: false });
+                }
+            },
+
+
+
+            handleNavButtonClick(event, button) {
+                if (button.linkType === 'page') {
+                    event.preventDefault();
+                    const target = button.target || button.link;
+
+                    if (!target || target === '') {
+                        this.goHome({ updateHistory: true, scrollToTop: true });
+                        return;
+                    }
+
+                    const normalizedTarget = target.startsWith('/') ? target.substring(1) : target;
+                    this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
+                        if (!page) {
+                            this.virtualPageError = 'Страница не найдена';
+                            document.title = 'Страница не найдена';
+                        }
+                    }).catch(() => {
+                        this.virtualPageError = 'Ошибка загрузки страницы';
+                        document.title = 'Ошибка загрузки';
+                    });
+                } else if (button.linkType === 'section') {
+                    event.preventDefault();
+                    this.smoothScrollTo(button.target);
+                } else if (button.linkType === 'url') {
+                    window.location.href = button.target;
+                }
+            },
+            updateSortedPageBlocks() {
+                if (!Array.isArray(this.pageBlocks)) {
+                    this.sortedPageBlocks = [];
+                    return;
+                }
+
+                const regularBlocks = this.pageBlocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons' && b.is_active).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+                const infoButtonsBlocks = this.pageBlocks.filter(b => b.type === 'info_buttons' && b.is_active);
+                const footerBlocks = this.pageBlocks.filter(b => b.type === 'footer' && b.is_active);
+
+                let sorted = [...regularBlocks];
+
+                if (infoButtonsBlocks.length > 0) {
+                    const infoButtons = infoButtonsBlocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0];
+                    sorted.push(infoButtons);
+                }
+
+                if (footerBlocks.length > 0) {
+                    const footer = footerBlocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0];
+                    sorted.push(footer);
+                }
+
+                this.sortedPageBlocks = sorted;
+            },
+            async loadPageBlocks() {
+                try {
+                    let response;
+                    if (typeof fetch !== 'undefined') {
+                        response = await fetch('api.php?action=page_blocks', { credentials: 'same-origin' });
+                    } else {
+                        response = await this.fetchWithXHR('api.php?action=page_blocks');
+                    }
+
+                    if (response.ok) {
+                        this.pageBlocks = await response.json();
+                        this.updateSortedPageBlocks();
+                    } else {
+                        this.pageBlocks = [];
+                        this.updateSortedPageBlocks();
+                    }
+                } catch (error) {
+                    console.error('Error loading page blocks:', error);
+                    this.pageBlocks = [];
+                    this.updateSortedPageBlocks();
+                }
+            },
+            fetchWithXHR(url) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve({
+                                    ok: true,
+                                    json: () => Promise.resolve(JSON.parse(xhr.responseText))
+                                });
+                            } else {
+                                reject(new Error('Request failed'));
+                            }
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Network error'));
+                    xhr.send();
+                });
+            },
+            hasBlockType(type) {
+                return this.pageBlocks.some(block => block.type === type && block.is_active);
+            },
+            getNavigationButtons() {
+                return this.navigationButtons;
+            },
+            getProductById(productId) {
+                return this.products.find(product => product.id === productId);
+            },
+
+            toCart() {
+                this.closeFavorites();
+                setTimeout(() => {
+                    this.toggleCart();
+                }, 200);
+            },
+            getCartItemsCount() {
+                let count = 0;
+                for (let p in this.cartItems) {
+                    count += this.cartItems[p].quantity;
+                }
+                return count;
+            },
+            getWishlistCount() {
+                return this.wishlist.length;
+            },
+            fromWishlistToCart(productId, event) {
+                const product = this.products.find(p => p.id == productId);
+                if (product) {
+                    NV.addToCart(product, event);
+                    this.loadCart();
+                    this.wishlist = this.wishlist.filter(id => id !== productId);
+                    this.saveWishlist();
+                    this.toCart();
+                }
+            },
+            addFromFavoritesToCart(product, event) {
+                if (!product) return;
+                this.selectingFromFavorites = true;
+                this.startHandSelection(product, 'cart', 'addToCart', event);
+            },
+            openOrderModal() {
+                if (this.currentOrderProduct) {
+                    this.orderModalOpen = true;
+                    this.closeCart();
+                    this.orderError = '';
+                    this.orderSuccess = '';
+                } else if (this.cartItems.length === 0) {
+                    alert('Корзина пуста');
+                } else {
+                    this.orderModalOpen = true;
+                    this.closeCart();
+                    this.orderError = '';
+                    this.orderSuccess = '';
+                }
+            },
+            fillPickupParams() {
+                const pickupAddressEl = document.getElementById('pickup_address');
+                const workHoursEl = document.getElementById('work_hours');
+                const storePhoneEl = document.getElementById('store_phone');
+
+                if (pickupAddressEl && NV.pickupAddress) {
+                    pickupAddressEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${NV.pickupAddress}`;
+                }
+                if (workHoursEl && NV.workHours) {
+                    workHoursEl.innerHTML = `<i class="fas fa-clock"></i> ${NV.workHours}`;
+                }
+                if (storePhoneEl && NV.storePhone) {
+                    storePhoneEl.innerHTML = `<i class="fas fa-phone"></i> ${NV.storePhone}`;
+                }
+            },
+            closeOrderModal() {
+                this.orderModalOpen = false;
+                this.orderError = '';
+                this.orderSuccess = '';
+                this.currentOrderProduct = null;
+                this.resetOptionSelectionState();
+                this.selectingHandProductId = null;
+            },
+            onCityInput() {
+                this.deliveryCityError = '';
+                this.fieldErrors.delivery_city = '';
+                this.deliveryCityValid = false;
+                this.selectedCityData = null;
+                this.resetStreetData();
+
+                const query = (this.orderForm.delivery_city || '').trim();
+
+                if (this.citySearchTimeout) clearTimeout(this.citySearchTimeout);
+
+                if (!query || query.length < 2) {
+                    this.citySuggestions = [];
+                    return;
+                }
+
+                this.citySearchTimeout = setTimeout(() => {
+                    this.searchCity(query).then(r => null);
+                }, 300);
+            },
+            onCityBlur() {
+                if (!this.orderForm.delivery_city.trim()) {
+                    this.deliveryCityError = 'Укажите город доставки';
+                    this.citySuggestions = [];
+                    return;
+                }
+                if (!this.deliveryCityValid) {
+                    this.deliveryCityError = 'Выберите город из списка';
+                }
+                this.citySuggestions = [];
+            },
+            async searchCity(query) {
+                if (!this.dadataToken) {
+                    console.warn('Dadata token is missing. Cannot perform city search.');
+                    return;
+                }
+
+                if (!query || query.trim().length < 2) {
+                    this.citySuggestions = [];
+                    return;
+                }
+
+                this.citySearchLoading = true;
+
+                try {
+                    const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Authorization': `Token ${this.dadataToken}`
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            count: 10,
+                            locations: [
+                                { country: 'Беларусь' },
+                                { country_iso_code: 'BY' }
+                            ],
+                            restrict_value: true,
+                            from_bound: { value: 'city' },
+                            to_bound: { value: 'city' }
+                        })
+                    });
+
+                    const result = await response.json()
+
+                    this.citySuggestions = Array.isArray(result?.suggestions)
+                        ? result.suggestions.map(s => ({
+                            label: s.value,
+                            value: s.value,
+                            data: s.data,
+                            raw: s
+                        }))
+                        : [];
+
+                    if (!result.suggestions.length) {
+                        const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': `Token ${this.dadataToken}`
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                count: 10,
+                                locations: [
+                                    { country: 'Россия' },
+                                    { country_iso_code: 'RU' }
+                                ],
+                                restrict_value: true,
+                                from_bound: { value: 'city' },
+                                to_bound: { value: 'city' }
+                            })
+                        });
+
+                        const result = await response.json()
+
+                        this.citySuggestions = Array.isArray(result?.suggestions)
+                            ? result.suggestions.map(s => ({
+                                label: s.value,
+                                value: s.value,
+                                data: s.data,
+                                raw: s
+                            }))
+                            : [];
+                    }
+                } catch (err) {
+                    console.error('Dadata city error:', err);
+                    this.deliveryCityError = 'Ошибка поиска городов. Попробуйте позже.';
+                } finally {
+                    this.citySearchLoading = false;
+                }
+            },
+            formatCitySuggestion(place) {
+                if (!place || !place.address) {
+                    return null;
+                }
+
+                const label = this.normalizeCityName(place.address);
+
+                if (!label) {
+                    return null;
+                }
+                return {
+                    place_id: place.place_id,
+                    label,
+                    region: place.address.state || place.address.region || place.address.county || '',
+                    raw: place
+                };
+            },
+            selectCity(city) {
+                if (!city) return;
+
+                this.orderForm.delivery_city = city.label;
+                this.deliveryCityValid = true;
+                this.selectedCityData = city.data;  // тут вся инфа: kladr_id, fias_id, region, etc.
+                this.deliveryCityError = '';
+                this.citySuggestions = [];
+                this.resetStreetData();
+                // this.orderForm.delivery_postcode = city.data.postal_code || '';
+            },
+            onStreetInput() {
+                this.deliveryStreetError = '';
+                this.fieldErrors.delivery_street = '';
+                this.deliveryStreetValid = false;
+
+                const query = (this.orderForm.delivery_street || '').trim();
+
+                if (this.streetSearchTimeout) clearTimeout(this.streetSearchTimeout);
+
+                if (!query || query.length < 2) {
+                    this.streetSuggestions = [];
+                    return;
+                }
+
+                this.streetSearchTimeout = setTimeout(() => {
+                    this.searchStreet(query);
+                }, 300);
+            },
+            onStreetBlur() {
+                if (!this.orderForm.delivery_street.trim()) {
+                    this.deliveryStreetError = 'Укажите улицу доставки';
+                    this.streetSuggestions = [];
+                    return;
+                }
+                if (!this.deliveryStreetValid) {
+                    this.deliveryStreetError = 'Выберите улицу из списка';
+                }
+                this.streetSuggestions = [];
+            },
+            async searchStreet(query) {
+                if (!this.dadataToken) {
+                    console.warn('Dadata token is missing. Cannot perform street search.');
+                    this.streetSuggestions = [];
+                    return;
+                }
+
+                if (!this.selectedCityData) {
+                    this.streetSuggestions = [];
+                    return;
+                }
+
+                if (!query || query.trim().length < 2) {
+                    this.streetSuggestions = [];
+                    return;
+                }
+
+                this.streetSearchLoading = true;
+
+                try {
+                    const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Authorization': `Token ${this.dadataToken}`
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            count: 15,
+                            locations: [
+                                {
+                                    country: 'Беларусь',
+                                    region_fias_id: this.selectedCityData.region_fias_id,
+                                    area_fias_id: this.selectedCityData.area_fias_id || null,
+                                    city_fias_id: this.selectedCityData.city_fias_id || null,
+                                    settlement_fias_id: this.selectedCityData.settlement_fias_id || null
+                                }
+                            ],
+                            restrict_value: true,
+                            from_bound: { value: 'street' },
+                            to_bound: { value: 'street' }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    this.streetSuggestions = Array.isArray(result?.suggestions)
+                        ? result.suggestions.map(s => ({
+                            label: s.value,
+                            value: s.value,
+                            data: s.data,
+                            raw: s
+                        }))
+                        : [];
+
+                    if (!result.suggestions.length) {
+                        const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': `Token ${this.dadataToken}`
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                count: 15,
+                                locations: [
+                                    {
+                                        country: 'Россия',
+                                        region_fias_id: this.selectedCityData.region_fias_id,
+                                        area_fias_id: this.selectedCityData.area_fias_id || null,
+                                        city_fias_id: this.selectedCityData.city_fias_id || null,
+                                        settlement_fias_id: this.selectedCityData.settlement_fias_id || null
+                                    }
+                                ],
+                                restrict_value: true,
+                                from_bound: { value: 'street' },
+                                to_bound: { value: 'street' }
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        this.streetSuggestions = Array.isArray(result?.suggestions)
+                            ? result.suggestions.map(s => ({
+                                label: s.value,
+                                value: s.value,
+                                data: s.data,
+                                raw: s
+                            }))
+                            : [];
+                    }
+                } catch (err) {
+                    console.error('Dadata street error:', err);
+                    this.deliveryStreetError = 'Ошибка поиска улиц.';
+                } finally {
+                    this.streetSearchLoading = false;
+                }
+            },
+            formatStreetSuggestion(place) {
+                if (!place || !place.address) {
+                    return null;
+                }
+                const label = this.normalizeStreetName(place.address);
+                if (!label) {
+                    return null;
+                }
+                return {
+                    place_id: place.place_id,
+                    label,
+                    raw: place
+                };
+            },
+            selectStreet(street) {
+                if (!street) return;
+
+                this.orderForm.delivery_street = street.label.replace(/^ул\.?\s+/i, '');
+                this.deliveryStreetValid = true;
+                this.selectedStreetData = street.data;
+                this.deliveryStreetError = '';
+                this.streetSuggestions = [];
+            },
+            resetStreetData() {
+                this.orderForm.delivery_street = '';
+                this.deliveryStreetValid = false;
+                this.selectedStreetData = null;
+                this.streetSuggestions = [];
+                this.orderForm.delivery_building = '';
+                this.deliveryStreetError = '';
+            },
+            normalizeCityName(address) {
+                if (!address) {
+                    return '';
+                }
+                return address.city || address.town || address.village || address.hamlet || address.municipality || address.state || '';
+            },
+            normalizeStreetName(address) {
+                if (!address) {
+                    return '';
+                }
+                return address.road || address.residential || address.pedestrian || address.footway || address.cycleway || address.path || '';
+            },
+            buildDeliveryAddress() {
+                if (this.orderForm.delivery_type !== 'delivery') {
+                    return '';
+                }
+                const parts = [];
+                if (this.orderForm.delivery_city) {
+                    parts.push(this.orderForm.delivery_city);
+                }
+                if (this.orderForm.delivery_street) {
+                    parts.push(`ул. ${this.orderForm.delivery_street}`);
+                }
+                if (this.orderForm.delivery_building) {
+                    parts.push(this.orderForm.delivery_building);
+                }
+                return parts.join(', ');
+            },
+            onDeliveryTypeChange() {
+                if (this.orderForm.delivery_type === 'pickup') {
+                    this.orderForm.delivery_city = '';
+                    this.orderForm.delivery_street = '';
+                    this.orderForm.delivery_building = '';
+                    this.orderForm.delivery_date = '';
+                    this.orderForm.delivery_time = '';
+                    this.deliveryCityValid = false;
+                    this.deliveryStreetValid = false;
+                    this.selectedCityData = null;
+                    this.selectedStreetData = null;
+                    this.citySuggestions = [];
+                    this.streetSuggestions = [];
+                    this.deliveryCityError = '';
+                    this.deliveryStreetError = '';
+                }
+            },
+            async submitOrder() {
+                this.orderLoading = true;
+                this.orderError = '';
+                this.orderSuccess = '';
+
+                try {
+                    const email = (this.orderForm.customer_email || '').trim();
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                    if (!this.orderForm.customer_name.trim()) {
+                        this.orderLoading = false;
+                        this.scrollToField('customer_name', 'Имя обязательно для заполнения');
+                        return;
+                    }
+                    if (!this.orderForm.customer_phone.trim()) {
+                        this.orderLoading = false;
+                        this.scrollToField('customer_phone', 'Телефон обязателен для заполнения');
+                        return;
+                    }
+                    if (!this.validatePhoneFormat(this.orderForm.customer_phone.trim())) {
+                        this.orderLoading = false;
+                        this.scrollToField('customer_phone', 'Введите корректный номер телефона. Формат: +375 (XX) XXX-XX-XX или 8 (0XX) XXX-XX-XX');
+                        return;
+                    }
+                    if (this.orderForm.payment_type === 'online') {
+                        if (!email) {
+                            this.orderLoading = false;
+                            this.scrollToField('customer_email', 'Email обязателен для онлайн-оплаты');
+                            return;
+                        }
+                        if (!emailRegex.test(email)) {
+                            this.orderLoading = false;
+                            this.scrollToField('customer_email', 'Введите корректный email');
+                            return;
+                        }
+                    }
+                    if (this.orderForm.delivery_type === 'delivery') {
+                        if (!this.deliveryCityValid || !this.orderForm.delivery_city.trim()) {
+                            throw new Error('Выберите существующий город Беларуси из списка');
+                        }
+                        if (!this.deliveryStreetValid || !this.orderForm.delivery_street.trim()) {
+                            throw new Error('Выберите улицу в выбранном городе');
+                        }
+                        if (!this.orderForm.delivery_building.trim()) {
+                            throw new Error('Укажите номер дома или квартиры');
+                        }
+                    }
+
+                    const deliveryAddress = this.orderForm.delivery_type === 'delivery'
+                        ? this.buildDeliveryAddress()
+                        : '';
+
+                    const orderData = {
+                        action: 'create_order',
+                        customer_name: this.orderForm.customer_name.trim(),
+                        customer_phone: this.orderForm.customer_phone.trim(),
+                        customer_email: email,
+                        delivery_type: this.orderForm.delivery_type,
+                        delivery_address: deliveryAddress,
+                        delivery_date: this.orderForm.delivery_date,
+                        delivery_time: this.orderForm.delivery_time,
+                        payment_type: this.orderForm.payment_type || 'cash',
+                        order_items: JSON.stringify(this.currentOrderProduct ? [this.currentOrderProduct] : this.cartItems),
+                        total_amount: this.currentOrderProduct ? this.currentOrderProduct.price * this.currentOrderProduct.quantity : this.cartTotal,
+                        notes: this.orderForm.notes.trim()
+                    };
+
+                    const formData = new FormData();
+                    Object.keys(orderData).forEach(key => {
+                        formData.append(key, orderData[key]);
+                    });
+
+                    const response = await fetch('api.php', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.orderSuccess = 'Ващ заказ успешно оформлен!';
+
+                        if (!this.currentOrderProduct) {
+                            this.cartItems = [];
+                            this.saveCart();
+                        }
+
+                        this.orderForm = {
+                            customer_name: '',
+                            customer_phone: '',
+                            customer_email: '',
+                            delivery_type: 'pickup',
+                            delivery_city: '',
+                            delivery_street: '',
+                            delivery_building: '',
+                            delivery_date: '',
+                            delivery_time: '',
+                            payment_type: 'cash',
+                            notes: ''
+                        };
+                        this.deliveryCityValid = false;
+                        this.deliveryStreetValid = false;
+                        this.selectedCityData = null;
+                        this.selectedStreetData = null;
+                        this.citySuggestions = [];
+                        this.streetSuggestions = [];
+                        this.deliveryCityError = '';
+                        this.deliveryStreetError = '';
+                        this.hand = null;
+                        this.showHandSelector = false;
+                        this.resetOptionSelectionState();
+                        this.selectingHandProductId = null;
+
+                        setTimeout(() => {
+                            this.closeOrderModal();
+                        }, 3000);
+                    } else {
+                        this.orderError = result.error || 'Ошибка при оформлении заказа';
+                    }
+                } catch (error) {
+                    this.orderError = error.message || 'Произошла ошибка при оформлении заказа';
+                }
+
+                this.orderLoading = false;
+            },
+            clearFieldErrors() {
+                this.fieldErrors = {
+                    customer_name: '',
+                    customer_phone: '',
+                    delivery_city: '',
+                    delivery_street: '',
+                    delivery_building: '',
+                    policy: ''
+                };
+            },
+            scrollToField(fieldId, errorMessage) {
+                this.$nextTick(() => {
+                    const field = document.getElementById(fieldId);
+
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            const formGroup = field.closest('.form-group');
+
+                            if (formGroup) {
+                                formGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        } else {
+                            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            field.focus();
+                        }
+                        const errorKey = fieldId === 'privacy-policy' ? 'policy' : fieldId;
+                        this.fieldErrors[errorKey] = errorMessage;
+
+                        setTimeout(() => {
+                            if (this.fieldErrors[errorKey] === errorMessage) {
+                                this.fieldErrors[errorKey] = '';
+                            }
+                        }, 5000);
+                    }
+                });
+            },
+            validatePhoneFormat(phone) {
+                if (!phone || !phone.trim()) {
+                    return false;
+                }
+
+                const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+
+                if (/^\+375\d{9}$/.test(cleaned)) {
+                    return true;
+                }
+
+                if (/^375\d{9}$/.test(cleaned)) {
+                    return true;
+                }
+
+                if (/^8\d{9}$/.test(cleaned)) {
+                    return true;
+                }
+
+                return /^0\d{9}$/.test(cleaned);
+
+
+            },
+            validateOrderForm() {
+                this.clearFieldErrors();
+                this.orderError = '';
+
+                const email = (this.orderForm.customer_email || '').trim();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (!this.orderForm.customer_name.trim()) {
+                    this.scrollToField('customer_name', 'Имя обязательно для заполнения');
+                    return false;
+                }
+
+                if (!this.orderForm.customer_phone.trim()) {
+                    this.scrollToField('customer_phone', 'Телефон обязателен для заполнения');
+                    return false;
+                }
+
+                if (!this.validatePhoneFormat(this.orderForm.customer_phone.trim())) {
+                    this.scrollToField('customer_phone', 'Введите корректный номер телефона. Формат: +375 (XX) XXX-XX-XX или 8 (0XX) XXX-XX-XX');
+                    return false;
+                }
+
+                if (this.orderForm.payment_type === 'online') {
+                    if (!email) {
+                        this.scrollToField('customer_email', 'Email обязателен для онлайн-оплаты');
+                        return false;
+                    }
+
+                    if (!emailRegex.test(email)) {
+                        this.scrollToField('customer_email', 'Введите корректный email');
+                        return false;
+                    }
+                }
+
+                if (this.orderForm.delivery_type === 'delivery') {
+                    if (!this.deliveryCityValid || !this.orderForm.delivery_city.trim()) {
+                        this.scrollToField('delivery_city', 'Выберите существующий город Беларуси из списка');
+                        return false;
+                    }
+
+                    if (!this.deliveryStreetValid || !this.orderForm.delivery_street.trim()) {
+                        this.scrollToField('delivery_street', 'Выберите улицу в выбранном городе');
+                        return false;
+                    }
+
+                    if (!this.orderForm.delivery_building.trim()) {
+                        this.scrollToField('delivery_building', 'Укажите номер дома или квартиры');
+                        return false;
+                    }
+                }
+
+                if (!this.policy) {
+                    this.scrollToField('privacy-policy', 'Необходимо согласие с политикой обработки персональных данных');
+                    return false;
+                }
+
+                return true;
+            },
+
+            handleOnlinePayment() {
+                if (this.validateOrderForm()) {
+                    this.orderForm.delivery_price = this.currentOrderProduct
+                        ? this.orderForm.delivery_type === 'delivery'
+                            ? this.orderForm.delivery_city && this.orderForm.delivery_city.includes('Беларусь')
+                                ? this.deliveryBel
+                                : this.orderForm.delivery_city
+                                    ? this.deliveryRus
+                                    : 0
+                            : 0
+                        : 0;
+
+                    const orderData = {
+                        orderForm: { ...this.orderForm },
+                        cartItems: this.currentOrderProduct ? [this.currentOrderProduct] : [...this.cartItems],
+                        cartTotal: (this.currentOrderProduct
+                            ? (this.currentOrderProduct.price * this.currentOrderProduct.quantity)
+                            : this.cartTotal) + this.orderForm.delivery_price,
+                        currentOrderProduct: this.currentOrderProduct
+                    };
+
+                    NV.payment(orderData, async () => {
+                        try {
+                            await this.submitOrder();
+                        } finally {
+                            this.closeOrderModal();
+                        }
+                    });
+                }
+            },
+            getImageUrl(url) {
+                if (!url) return '';
+                return url;
+            },
+            orderProduct(product, event) {
+                if (this.isMobile && event) {
+                    event.stopPropagation();
+                }
+
+                this.currentOrderProduct = {
+                    ...product,
+                    options: this.selectedProductOptions.map(option => ({ ...option })),
+                    optionKey: this.buildOptionKey(this.selectedProductOptions),
+                    quantity: 1
+                };
+                this.openOrderModal();
+            },
+            isVideo(url) {
+                if (!url || typeof url !== 'string') {
+                    return false;
+                }
+                const u = url.toLowerCase();
+                return /\.(mp4|webm|ogg|m4v|mov|avi|flv)(\?|#|$)/i.test(u);
+            },
+            buildOptionKey(options = []) {
+                if (!options || !options.length) {
+                    return '';
+                }
+                return options
+                    .map(option => `${option.slug || option.name}:${option.value}`)
+                    .join('|');
+            },
+            normalizeOptionTypes(types) {
+                return types
+                    .map((type, index) => {
+                        const name = (type.name || '').trim() || `Опция ${index + 1}`;
+                        const slug = type.slug || this.slugifyOptionName(name) || `option-${index}`;
+                        const values = Array.isArray(type.values)
+                            ? type.values
+                                .map(value => (value !== null && value !== undefined ? String(value).trim() : ''))
+                                .filter(Boolean)
+                            : [];
+                        return {
+                            id: type.id || null,
+                            name,
+                            slug,
+                            values
+                        };
+                    })
+                    .filter(type => type.values.length);
+            },
+            getDefaultOptionTypes() {
+                return [
+                ];
+            },
+            slugifyOptionName(name) {
+                if (!name) {
+                    return '';
+                }
+                return name
+                    .toString()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-zA-Z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .toLowerCase();
+            },
+            resetOptionSelectionState() {
+                this.selectedProductOptions = [];
+                this.optionSelectionIndex = 0;
+                this.showOptionSelector = false;
+                this.hand = null;
+            },
+            normalizeCartItem(item) {
+                const normalized = { ...item };
+                if (!Array.isArray(normalized.options)) {
+                    const fallback = [];
+                    if (normalized.size) {
+                        fallback.push({ slug: 'sizes', name: 'Размер', value: normalized.size });
+                    }
+                    if (normalized.model) {
+                        fallback.push({ slug: 'models', name: 'Модель', value: normalized.model });
+                    }
+                    normalized.options = fallback;
+                }
+                normalized.optionKey = normalized.optionKey || this.buildOptionKey(normalized.options);
+                if (normalized.image && typeof normalized.image === 'string') {
+                    normalized.image = this.normalizeMediaUrl(normalized.image);
+                }
+                return normalized;
+            },
+
+
+
+
+
+
+
+            isImageLoading(product) {
+                if (!product || !product.id) return false;
+                return this.imageLoadingStates[product.id] === true;
+            },
+            initVideoAutoplay() {
+                this.$nextTick(() => {
+                    const videos = document.querySelectorAll('video[autoplay]');
+
+                    videos.forEach(video => {
+                        const container = video.closest('.product-img-container');
+                        if (container) {
+                            const productCard = container.closest('.product-card');
+                            if (productCard) {
+                                const productId = productCard.id.replace('product-', '');
+                                if (productId) {
+                                    this.imageLoadingStates[productId] = true;
+                                }
+                            }
+                        }
+
+                        video.addEventListener('loadeddata', () => {
+                            const container = video.closest('.product-img-container');
+                            if (container) {
+                                const productCard = container.closest('.product-card');
+                                if (productCard) {
+                                    const productId = productCard.id.replace('product-', '');
+                                    if (productId) {
+                                        this.imageLoadingStates[productId] = false;
+                                    }
+                                }
+                            }
+                        });
+
+                        video.addEventListener('error', () => {
+                            const container = video.closest('.product-img-container');
+                            if (container) {
+                                const productCard = container.closest('.product-card');
+                                if (productCard) {
+                                    const productId = productCard.id.replace('product-', '');
+                                    if (productId) {
+                                        this.imageLoadingStates[productId] = false;
+                                    }
+                                }
+                            }
+                        });
+                    });
+
+                    if ('IntersectionObserver' in window) {
+                        const observer = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                    entry.target.play().catch(e => console.warn('prevented:', e));
+                                } else {
+                                    entry.target.pause();
+                                }
+                            });
+                        }, { threshold: 0.1 });
+
+                        videos.forEach(video => {
+                            observer.observe(video);
+                        });
+                    } else {
+                        videos.forEach(video => {
+                            video.play().catch(e => console.warn('prevented:', e));
+                        });
+                    }
+                });
+            },
+            clearInput(field) {
+                if (field) {
+                    let input = document.querySelector('#delivery_'+field);
+                    if (input) {
+                        input.value = '';
+                        if (field === 'city') {
+                            this.orderForm.delivery_city = '';
+                            this.orderForm.delivery_street = '';
+                            this.orderForm.delivery_building = '';
+                        } else {
+                            this.orderForm.delivery_street = '';
+                            this.orderForm.delivery_building = '';
+                        }
+                    }
+                }
+            },
+            getProductImage(product) {
+                return product.image
+            },
+
+            getCurrentProductImage(product) {
+                if (!product) return '';
+                const allImages = this.getAllProductImages(product);
+                if (allImages.length === 0) return '';
+
+                const currentIndex = this.productImageIndices[product.id] || 0;
+                return allImages[currentIndex] || allImages[0] || '';
+            },
+
+
+
+
+
+            updateImageContainerStyle(product) {
+                if (!product) return;
+                this.$nextTick(() => {
+                    const containerRef = this.$refs[`img-container-${product.id}`];
+                    let container = null;
+
+                    if (Array.isArray(containerRef)) {
+                        container = containerRef[0];
+                    } else if (containerRef) {
+                        container = containerRef;
+                    }
+
+                    if (container && this.isNarrowImage(product)) {
+                        const currentImage = this.getCurrentProductImage(product);
+                        container.style.setProperty('--bg-image', `url(${currentImage})`);
+                    }
+                });
+            },
+
+            handleGlobalMouseUp(event) {
+                Object.keys(this.productImageMouseStart).forEach(productId => {
+                    delete this.productImageMouseStart[productId];
+                });
+            },
+            handleGlobalMouseMove(event) {
+
+            },
+            handleProductLinkClick(product, event) {
+                if (this.productImageTouchStart[product.id] || this.productImageMouseStart[product.id]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+
+                const clickedElement = event.target;
+
+                if (clickedElement.closest('.product-image-nav-btn') ||
+                    clickedElement.closest('.product-image-dot') ||
+                    clickedElement.classList.contains('product-image-nav-btn') ||
+                    clickedElement.classList.contains('product-image-dot') ||
+                    clickedElement.closest('.product-image-nav')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                this.openProductDetail(product);
+            },
+            initProductLinkHandlers() {
+                this.$nextTick(() => {
+                    const productLinks = document.querySelectorAll('.product-link, .product-title');
+
+                    productLinks.forEach(link => {
+                        const href = link.getAttribute('href');
+
+                        if (href && (href.includes('/product/') || href.includes('product/?id='))) {
+                            link.addEventListener('click', (event) => {
+                                const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+                                sessionStorage.setItem('mainPageScrollPosition', scrollPosition.toString());
+                            });
+                        }
+                    });
+                });
+            },
+            restoreScrollPosition() {
+                const savedPosition = sessionStorage.getItem('mainPageScrollPosition');
+
+                if (savedPosition === null || !this.isMainPage) {
+                    return;
+                }
+
+                const referrer = document.referrer;
+
+                const isFromProductPage = referrer && (
+                    referrer.includes('/product/') ||
+                    referrer.includes('product/?id=') ||
+                    referrer.includes('product/index.php')
+                );
+
+                if (isFromProductPage) {
+                    const position = parseInt(savedPosition, 10);
+
+                    if (!isNaN(position) && position >= 0) {
+                        this.$nextTick(() => {
+                            setTimeout(() => {
+                                window.scrollTo({
+                                    top: position,
+                                    behavior: 'auto'
+                                });
+                                sessionStorage.removeItem('mainPageScrollPosition');
+                            }, 300);
+                        });
+                    } else {
+                        sessionStorage.removeItem('mainPageScrollPosition');
+                    }
+                } else if (savedPosition !== null) {
+                    sessionStorage.removeItem('mainPageScrollPosition');
+                }
+            },
+            openProductPage(product) {
+                if (!product) return;
+                this.currentProduct = product;
+                this.productQuantity = 1;
+                this.productError = null;
+                this.resetOptionSelectionState();
+                this.currentVirtualPage = null;
+                this.$nextTick(() => {
+                    const media = this.allProductMedia;
+                    if (media.length > 0) {
+                        this.currentProductImageIndex = 0;
+                    } else {
+                        this.currentProductImageIndex = 0;
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (this.currentProduct.meta_title) {
+                        document.title = this.currentProduct.meta_title;
+                    } else {
+                        document.title = this.currentProduct.name;
+                    }
+                    this.setupProductSwipeHandlers();
+                });
+            },
+            closeProductPage() {
+                this.currentProduct = null;
+                this.productQuantity = 1;
+                this.currentProductImageIndex = 0;
+                this.contentView = false;
+                this.resetOptionSelectionState();
+
+                const basePath = this.getBasePath();
+                if (window.history && window.history.pushState) {
+                    window.history.pushState({ type: 'main' }, '', basePath);
+                }
+            },
+            setCurrentProductImage(index) {
+                if (!this.currentProduct) return;
+                const media = this.allProductMedia;
+                if (media.length === 0) return;
+                if (index >= 0 && index < media.length) {
+                    this.productSlideDirection = index > this.currentProductImageIndex ? 'next' : 'prev';
+                    this.currentProductImageIndex = index;
+                }
+            },
+            nextProductDetailImage() {
+                if (!this.currentProduct) return;
+                const media = this.allProductMedia;
+                if (media.length === 0) return;
+                if (this.currentProductImageIndex < media.length - 1) {
+                    this.productSlideDirection = 'next';
+                    this.currentProductImageIndex++;
+                }
+            },
+            previousProductImage() {
+                if (!this.currentProduct) return;
+                const media = this.allProductMedia;
+                if (media.length === 0) return;
+                if (this.currentProductImageIndex > 0) {
+                    this.productSlideDirection = 'prev';
+                    this.currentProductImageIndex--;
+                }
+            },
+            openProductViewModal() {
+                this.contentView = true;
+                this.$nextTick(() => {
+                    this.setupProductSwipeHandlers();
+                });
+            },
+            closeProductViewModal() {
+                this.contentView = false;
+            },
+            setupProductSwipeHandlers() {
+                if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+                    return;
+                }
+
+                this.$nextTick(() => {
+                    const mainImageContainer = document.querySelector('.product-detail .main-image');
+
+                    if (mainImageContainer && !mainImageContainer._swipeHandlers) {
+                        const handlers = {
+                            start: (e) => this.handleProductDetailTouchStart(e),
+                            move: (e) => this.handleProductDetailTouchMove(e),
+                            end: (e) => this.handleProductDetailTouchEnd(e)
+                        };
+
+                        mainImageContainer._swipeHandlers = handlers;
+                        mainImageContainer.addEventListener('touchstart', handlers.start, { passive: true });
+                        mainImageContainer.addEventListener('touchmove', handlers.move, { passive: true });
+                        mainImageContainer.addEventListener('touchend', handlers.end, { passive: true });
+                    }
+
+                    const contentViewContainer = document.querySelector('.content-view.content');
+
+                    if (contentViewContainer && !contentViewContainer._swipeHandlers) {
+                        const handlers = {
+                            start: (e) => this.handleProductDetailTouchStart(e),
+                            move: (e) => this.handleProductDetailTouchMove(e),
+                            end: (e) => this.handleProductDetailTouchEnd(e)
+                        };
+                        contentViewContainer._swipeHandlers = handlers;
+                        contentViewContainer.addEventListener('touchstart', handlers.start, { passive: true });
+                        contentViewContainer.addEventListener('touchmove', handlers.move, { passive: true });
+                        contentViewContainer.addEventListener('touchend', handlers.end, { passive: true });
+                    }
+                });
+            },
+            handleProductDetailTouchStart(e) {
+                const touch = e.touches[0];
+
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+            },
+            handleProductDetailTouchMove(e) {
+                const touch = e.touches[0];
+                const deltaY = Math.abs(touch.clientY - this.touchStartY);
+                const deltaX = Math.abs(touch.clientX - this.touchStartX);
+
+                if (deltaY > deltaX) {
+                    return;
+                }
+            },
+            handleProductDetailTouchEnd(e) {
+                const touch = e.changedTouches[0];
+                this.touchEndX = touch.clientX;
+                this.touchEndY = touch.clientY;
+                this.handleProductDetailSwipe();
+            },
+            handleProductDetailSwipe() {
+                const deltaX = this.touchEndX - this.touchStartX;
+                const deltaY = this.touchEndY - this.touchStartY;
+                if (Math.abs(deltaX) < Math.abs(deltaY)) {
+                    return;
+                }
+                if (Math.abs(deltaX) < this.productMinSwipeDistance) {
+                    return;
+                }
+                if (deltaX < 0) {
+                    this.nextProductDetailImage();
+                } else if (deltaX > 0) {
+                    this.previousProductImage();
+                }
+            },
+            addProductToCartInternal(options = []) {
+                if (!this.currentProduct) return;
+
+                const optionKey = this.buildOptionKey(options);
+
+                const existingItem = this.cartItems.find(item =>
+                    item.id === this.currentProduct.id &&
+                    (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
+                );
+
+                if (existingItem) {
+                    existingItem.quantity += this.productQuantity;
+                } else {
+                    this.cartItems.push({
+                        ...this.currentProduct,
+                        price: this.currentProduct.price_sale || this.currentProduct.price,
+                        options,
+                        optionKey,
+                        quantity: this.productQuantity
+                    });
+                }
+
+                this.saveCart();
+            },
+            toggleCurrentProductWishlist() {
+                if (!this.currentProduct) return;
+                if (this.isCurrentProductInWishlist) {
+                    this.wishlist = this.wishlist.filter(id => id !== this.currentProduct.id);
+                } else {
+                    this.wishlist.push(this.currentProduct.id);
+                }
+                this.saveWishlist();
+            },
+            chooseProductOptionValue(value) {
+                const option = this.currentOptionType;
+
+                if (!option) {
+                    return;
+                }
+
+                this.selectedProductOptions.push({
+                    name: option.name || `Опция ${this.optionSelectionIndex + 1}`,
+                    value
+                });
+
+                this.optionSelectionIndex += 1;
+
+                if (this.optionSelectionIndex >= this.productOptions.length) {
+                    this.showOptionSelector = false;
+                    this.$nextTick(() => {
+                        this.finishProductOptionSelection();
+                    });
+                }
+            },
+            cancelProductAddToCart() {
+                this.showOptionSelector = false;
+                this.selectingHandAction = null;
+                this.selectingHandProductId = null;
+                this.selectedProductOptions = [];
+                this.optionSelectionIndex = 0;
+                this.buyNowPressed = false;
+                this.addToCartPressed = false;
+                this.selectingFromFavorites = false;
+            },
+            closeAllModals() {
+                this.cartOpen = false;
+                this.favoritesOpen = false;
+                this.orderModalOpen = false;
+                this.showOptionSelector = false;
+                this.selectingHandAction = null;
+                this.selectingHandProductId = null;
+                this.selectedProductOptions = [];
+                this.optionSelectionIndex = 0;
+            },
+            isVideoItem(item) {
+                if (typeof item === 'string') {
+                    return this.isVideo(item);
+                }
+                return item.type === 'video';
+            },
+            policyChange(value) {
+                this.fieldErrors.policy = '';
+
+                if (value === 'yes') {
+                    this.policyNo = false;
+                    this.deliveryAvailable = true;
+                } else if (value === 'no') {
+                    this.policyNotify();
+                    this.orderForm.delivery_type = 'pickup';
+                    this.policyYes = false;
+                    this.deliveryAvailable = false;
+                }
+            },
+            policyNotify() {
+                NV.notifyPolicyReject();
+            },
+            /*payment() {
+                var params ={
                     checkout_url: "https://checkout.bepaid.by",
                     fromWebview: true,
                     checkout: {
@@ -320,7 +2658,7 @@ const NV = {
                         test: true,
                         transaction_type: "payment"
                     },
-                    token: token,
+                    token: "8765a020e1bfe88780943461769f09e0f6ed576431a14a7165ccf6827adf9377",
                     closeWidget: function(status) {
                         // возможные значения status
                         // successful - операция успешна
@@ -329,67 +2667,82 @@ const NV = {
                         // redirected - пользователь отправлен на внешнюю платежную систему
                         // error - ошибка (в параметрах/сети и тд)
                         // null - виджет закрыли без запуска оплаты
-                        console.log(status);
-                        console.debug('close widget callback');
-
-                        if (status === 'successful' && typeof onSuccess === 'function') {
-                            onSuccess(status);
-                        }
+                        console.debug('close widget callback')
                     }
                 };
 
                 new BeGateway(params).createWidget();
-            } else {
-                console.error('Payment token response is invalid', r);
-                const errorMsg = r && r.error ? r.error : 'Не удалось получить токен платежа. Проверьте данные и попробуйте снова.';
-                alert(errorMsg);
-            }
-        }).catch(error => {
-            console.error('Payment token request failed:', error);
-            alert('Ошибка при запросе токена платежа. Попробуйте позже.');
-        });
-    },
-    async loadParams() {
-        try {
-            const basePath = this.getBasePath ? this.getBasePath() : '/';
-            const response = await fetch(basePath + 'api.php?action=get_params', {
-                credentials: 'same-origin'
-            });
+            }*/
+            /*async payment(data) {
+                const checkoutData = {
+                    checkout: {
+                        test: true,
+                        transaction_type: "payment",
+                        attempts: 3,
+                        settings: {
+                            return_url: "http://127.0.0.1:4567/return",
+                            success_url: "http://127.0.0.1:4567/success",
+                            decline_url: "http://127.0.0.1:4567/decline",
+                            fail_url: "http://127.0.0.1:4567/fail",
+                            cancel_url: "http://127.0.0.1:4567/cancel",
+                            notification_url: "http://your_shop.com/notification",
+                            button_next_text: "Вернуться в магазин",
+                            language: "en",
+                            card_notification_url: "https://your-card-notification-url.com",
+                            customer_fields: {
+                                visible: ["first_name", "last_name"],
+                                read_only: ["email"]
+                            },
+                            credit_card_fields: {
+                                holder: data.cardName,
+                                read_only: ["holder"]
+                            }
+                        },
+                        payment_method: {
+                            types: ["credit_card", "bank_transfer"],
+                            bank_transfer: {
+                                account: "DE89370400440532013000"
+                            },
+                            excluded_brands: ["visa", "google_pay"]
+                        },
+                        order: {
+                            currency: "BYN",
+                            amount: data.amount,
+                            description: "Order description"
+                        },
+                        customer: {
+                            address: data.address,
+                            country: "Belarus",
+                            city: data.city,
+                            email: data.email
+                        }
+                    }
+                };
 
-            if (response.ok) {
-                const data = await response.json();
+                try {
+                    const response = await fetch('https://checkout.bepaid.by/ctp/api/checkouts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer YOUR_API_KEY'
+                        },
+                        body: JSON.stringify(checkoutData)
+                    });
 
-                if (data.success) {
-                    this.title = data.title || '';
-                    this.description = data.description || '';
-                    this.imageMetaTags = data.image_meta_tags || '';
-                    this.pickupAddress = data.pickup_address ? 'Адрес магазина: ' + data.pickup_address : '';
-                    this.workHours = data.work_hours ? 'Время работы: ' + data.work_hours : '';
-                    this.storePhone = data.store_phone ? 'Мобильный телефон: ' + data.store_phone : '';
-                    this.deliveryBel = data.delivery_bel;
-                    this.deliveryRus = data.delivery_rus;
+                    if (!response.ok) {
+                        console.error(response);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Успешный ответ:', data);
+                    return data;
+
+                } catch (error) {
+                    console.error('Ошибка при отправке запроса:', error);
+                    throw error;
                 }
-            }
-        } catch (error) {
-            console.error('Error loading params:', error);
+            }*/
         }
-    },
-    notifyPolicyReject() {
-        Toastify({
-            text: "В случае несогласия оформить доставку товара не предоставится возможным.",
-            duration: 3000,
-            newWindow: true,
-            gravity: "bottom", // `top` or `bottom`
-            position: "center", // `left`, `center` or `right`
-            stopOnFocus: true, // Prevents dismissing of toast on hover
-            style: {
-                background: "var(--background)",
-            },
-            onClick: function(){} // Callback after click
-        }).showToast();
-    }
-};
-
-if (typeof window !== 'undefined') {
-    window.NV = NV;
-}
+    }).mount('#app');
+})

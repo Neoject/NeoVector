@@ -3203,7 +3203,6 @@ NV.ready(() => {
                     formData.append('action', 'delete_page');
                     formData.append('id', pageId);
 
-                    const apiUrl = window.location.origin + '/aeternum/api.php';
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         body: formData,

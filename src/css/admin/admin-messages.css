@@ -44,7 +44,7 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, var(--header-gold, #ffd700) 0%, rgba(255, 215, 0, 0.5) 100%);
+    background: linear-gradient(180deg, var(--header-secondary, #ffd700) 0%, rgba(255, 215, 0, 0.5) 100%);
 }
 
 .reply-item:hover {
@@ -66,13 +66,13 @@
     flex: 1;
     min-width: 200px;
     font-size: 16px;
-    color: var(--header-gold, #ffd700);
+    color: var(--header-secondary, #ffd700);
     font-weight: 600;
     line-height: 1.4;
 }
 
 .reply-subject strong {
-    color: var(--header-gold, #ffd700);
+    color: var(--header-secondary, #ffd700);
     font-weight: 600;
 }
 
@@ -100,7 +100,7 @@
     font-size: 14px;
     white-space: pre-wrap;
     word-wrap: break-word;
-    border-left: 3px solid var(--header-gold, #ffd700);
+    border-left: 3px solid var(--header-secondary, #ffd700);
 }
 
 .reply-to {

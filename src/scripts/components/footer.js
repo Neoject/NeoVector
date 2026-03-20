@@ -1,0 +1,5 @@
+NV.ready(() => {
+    const Footer = {
+
+    }
+})

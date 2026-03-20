@@ -39,8 +39,8 @@
 }
 
 .header-actions .btn-primary {
-    background: linear-gradient(135deg, var(--header-gold) 0%, var(--header-gold) 100%);
-    color: var(--background-mod-3);
+    background: linear-gradient(135deg, var(--header-secondary) 0%, var(--header-secondary) 100%);
+    color: var(--background);
 }
 
 .header-actions .btn-primary:hover {
@@ -51,12 +51,12 @@
 .header-actions .btn-secondary {
     background: var(--bg-white-10);
     color: var(--text-main);
-    border: 1px solid var(--border-white-medium);
+    border: 1px solid var(--border-medium);
 }
 
 .header-actions .btn-secondary:hover:not(:disabled) {
     background: var(--bg-white-15);
-    border-color: var(--border-white-strong);
+    border-color: var(--border-strong);
 }
 
 .header-actions .btn:disabled {
@@ -70,7 +70,7 @@
     background: var(--bg-white-05);
     backdrop-filter: blur(10px);
     border-radius: 15px;
-    border: 1px solid var(--border-white-light);
+    border: 1px solid var(--border-light);
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
@@ -126,7 +126,7 @@
 }
 
 .users-table td:first-child {
-    color: var(--color-999);
+    color: var(--text-additional-dark);
     font-weight: 500;
     font-size: 13px;
     width: 80px;

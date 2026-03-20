@@ -37,6 +37,12 @@ if ($projectBasePath === '/' || $projectBasePath === '\\' || $projectBasePath ==
     $HOME_URL = rtrim($projectBasePath, "/\\\\") . '/';
 }
 
+// URL base prefix ('' for site root, '/subdir' for subdirectory deployment)
+define('ROOT', $HOME_URL === '/' ? '' : rtrim($HOME_URL, '/'));
+
+// Absolute filesystem path to project root, for require/include calls
+define('ROOT_PATH', __DIR__);
+
 //todo getdescription
 
 Params::getDescription();
