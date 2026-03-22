@@ -2366,11 +2366,6 @@ textarea.form-control {
     resize: vertical;
 }
 
-#history {
-    background: var(--background);
-    padding: 100px 0;
-}
-
 .history-content {
     max-width: 1000px;
     margin: 0 auto;

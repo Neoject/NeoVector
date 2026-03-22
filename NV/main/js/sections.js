@@ -5,6 +5,25 @@ const Props = {
                 main: [],
                 other: []
             },
+            isMobileDevice: false,
+        }
+    },
+    mounted() {
+        this.checkVirtualPage().then(r => null);
+
+        if (window.history && window.history.replaceState) {
+            const basePath = this.getBasePath();
+            const path = this.getRelativePathFromBase();
+
+            if (!path || path === '' || path === 'index.php') {
+                window.history.replaceState({ page: null }, '', basePath);
+            } else if (!path.startsWith('product') && !path.startsWith('admin') && !path.startsWith('api.php') && !path.startsWith('assets')) {
+                const slug = path.split('/').pop();
+
+                if (slug) {
+                    window.history.replaceState({ page: slug }, '', basePath + slug);
+                }
+            }
         }
     },
     methods: {
@@ -102,12 +121,6 @@ const Props = {
             return '#';
         },
         async openVirtualPage(slug, options = {}) {
-            // Delegate to root Vue instance so virtual page content updates in the main template.
-            const root = this.$parent && typeof this.$parent.openVirtualPage === 'function' ? this.$parent : null;
-            if (root && root !== this) {
-                return root.openVirtualPage(slug, options);
-            }
-
             const { updateHistory = true, scrollToTop = true } = options;
             const nSlug = (slug || '').replace(/^\//, '').replace(/\/$/, '');
             const normalizedSlug = nSlug.replace(/^nv\//, '').replace(/^nv$/, '');
@@ -162,13 +175,26 @@ const Props = {
                 return null;
             }
         },
-        async checkVirtualPage() {
-            const root = this.$parent && typeof this.$parent.checkVirtualPage === 'function' ? this.$parent : null;
-            if (root && root !== this) {
-                return root.checkVirtualPage();
+        getRelativePathFromBase() {
+            const basePath = this.getBasePath();
+            let pathname = window.location.pathname || '/';
+
+            if (basePath !== '/' && pathname.startsWith(basePath)) {
+                pathname = pathname.slice(basePath.length);
+            } else if (pathname.startsWith('/')) {
+                pathname = pathname.substring(1);
             }
 
-            // Fallback for standalone use
+            pathname = pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+
+            return pathname;
+        },
+        normalizeVirtualSlug(slug) {
+            const nSlug = (slug || '').replace(/^\//, '').replace(/\/$/, '');
+            if (!nSlug) return '';
+            return nSlug.replace(/^nv\//, '').replace(/^nv$/, '');
+        },
+        async checkVirtualPage() {
             const path = this.getRelativePathFromBase();
             if (!path || path === '' || path === 'index.php') return;
             if (path.startsWith('product') || path.startsWith('admin') || path.startsWith('api.php') || path.startsWith('assets')) return;
@@ -195,11 +221,6 @@ const Props = {
             this.$nextTick(() => this.$forceUpdate());
         },
         async loadVirtualPage(slug) {
-            const root = this.$parent && typeof this.$parent.loadVirtualPage === 'function' ? this.$parent : null;
-            if (root && root !== this) {
-                return root.loadVirtualPage(slug);
-            }
-
             try {
                 const basePath = this.getBasePath();
                 const apiUrl = basePath + 'api.php?action=page&slug=' + encodeURIComponent(slug);
@@ -222,6 +243,147 @@ const Props = {
                 console.error('Error loading page:', error);
                 return null;
             }
+        },
+        closeOtherMenus() {
+            this.mobileMenuOpen = false;
+            this.cartOpen = false;
+            this.favoritesOpen = false;
+        },
+    }
+}
+
+const Mobile = {
+    template: ``,
+    data() {
+        return {
+
+        }
+    },
+    methods: {
+
+    }
+}
+
+const Cart = {
+    template: ``,
+    data() {
+        return {
+            cartOpen: false
+        }
+    },
+    methods: {
+        toggleCart() {
+            this.closeOtherMenus();
+
+            if (this.mobileMenuOpen) {
+                this.mobileMenuOpen = false;
+                setTimeout(() => {
+                    this.cartOpen = true;
+                }, 300);
+            } else {
+                this.cartOpen = true;
+            }
+        },
+    }
+}
+
+const Favorites = {
+    template: `
+      <div class="favorites-modal" :class="{ 'active': favoritesOpen }" @touchstart="touchStart"
+           @touchmove="touchMove" @touchend="touchEnd">
+        <div class="favorites-content-wrapper" @click.stop>
+          <div class="favorites-header">
+            <div class="favorites-header-left">
+              <h3>Избранные товары</h3>
+            </div>
+            <button class="close-icon" @click="closeFavorites">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="favorites-content">
+            <div v-if="favoriteProducts.length > 0">
+              <div class="favorites-item" v-for="product in favoriteProducts" :key="product.id">
+                <img v-if="!isVideo(getCurrentProductImage(product))" :src="product.image"
+                     :alt="product.name" class="favorites-item-img" loading="lazy" decoding="async">
+                <video v-else :src="getCurrentProductImage(product)" class="cart-item-img"
+                       :class="{ 'loading': isImageLoading(product) }" muted loop playsinline autoplay
+                       @loadstart="onVideoLoadStart($event, product)"
+                       @loadeddata="onVideoLoadedData($event, product)"
+                       @error="onVideoError($event, product)"></video>
+                <div class="favorites-item-details">
+                  <h4 class="favorites-item-title">{{ product.name }}</h4>
+                  <p class="favorites-item-material">{{ product.material }}</p>
+                  <p class="favorites-item-price">{{ product.price }} руб.</p>
+                  <div class="favorites-item-actions">
+                    <button class="add-to-cart-btn fav-cart-btn"
+                            @click="addFromFavoritesToCart(product, $event)">
+                      <i class="fas fa-shopping-cart"></i>
+                      В корзину
+                    </button>
+                    <button class="remove-from-favorites" @click="toggleWishlist(product.id)">
+                      <i class="fas fa-heart-broken"></i>
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-favorites">
+              <i class="fas fa-heart" style="font-size: 50px; margin-bottom: 20px; color: #ccc;"></i>
+              <p>У вас пока нет избранных товаров</p>
+              <template v-if="cartItems.length">
+                <p>Но есть товары в корзине</p>
+              </template>
+              <button v-if="cartItems.length" class="btn btn-primary"
+                      @click="fromWishlistToCart(product.id)">В корзину
+              </button>
+              <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
+                товарам</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    data() {
+        return {
+            wishlist: [],
+        }
+    },
+    mounted() {
+        this.loadWishlist();
+    },
+    computed: {
+        favoriteProducts() {
+            if (!Array.isArray(this.products) || !Array.isArray(this.wishlist)) {
+                return [];
+            }
+
+            const wishlistIds = new Set(this.wishlist.map(id => String(id)));
+            console.log(this.products.filter(product => wishlistIds.has(product.id)))
+            return this.products.filter(product => wishlistIds.has(String(product.id)));
+        },
+    },
+    methods: {
+        saveWishlist() {
+            localStorage.setItem('wishlist', JSON.stringify(this.wishlist));
+        },
+        loadWishlist() {
+            this.wishlist = JSON.parse(localStorage.getItem('wishlist'))
+        },
+        touchStart(e) {
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+        },
+        touchMove(e) {
+            if (e.target.closest('.favorites-content')) {
+                return;
+            }
+            e.preventDefault();
+        },
+        touchEnd(e) {
+            this.touchEndX = e.changedTouches[0].clientX;
+            this.touchEndY = e.changedTouches[0].clientY;
+            this.handleFavoritesSwipe();
         },
     }
 }
@@ -286,6 +448,8 @@ const Hero = {
 }
 
 const Products = {
+    mixins: [nv],
+    emits: ['update:cart-items', 'update:wishlist', 'open-cart', 'open-favorites', 'close-favorites', 'open-order', 'start-option-selection'],
     template: `
       <section v-if="block && block.type === 'products'" id="products">
         <div class="container">
@@ -465,16 +629,24 @@ const Products = {
         return {
             activeFilter: 'all',
             categories: [],
-            imageInfo: {},
-            imageLoadingStates: {},
-            productImageIndices: {},
-            productImageNavigating: {},
-            productImageTouchStart: {},
-            productImageMouseStart: {},
-            cartItems: [],
-            wishlist: [],
+            imageInfo: { },
+            imageLoadingStates: { },
+            productImageIndices: { },
+            productImageNavigating: { },
+            productImageTouchStart: { },
+            productImageMouseStart: { },
+            localCartItems: [],
+            localWishlist: [],
             mobileMenuOpen: false,
             cartOpen: false,
+            hand: null,
+            productOptions: [],
+            selectedProductOptions: [],
+            optionSelectionIndex: 0,
+            showHandSelector: false,
+            showOptionSelector: false,
+            selectingHandProductId: null,
+            selectingHandAction: null,
         }
     },
     props: {
@@ -487,6 +659,10 @@ const Products = {
             }
         },
         products: {
+            type: Array,
+            default: []
+        },
+        elementStates: {
             type: Object,
             default: { }
         },
@@ -499,7 +675,6 @@ const Products = {
             default: { }
         },
         isInView: Function,
-        isImageLoading: Function,
         isVideo: Function,
         getCurrentProductImage: Function,
         getBasePath: Function
@@ -537,22 +712,111 @@ const Products = {
                 });
             }
         },
+        cartItems: {
+            handler(value) {
+                if (Array.isArray(value)) {
+                    this.localCartItems = [...value];
+                }
+            },
+            deep: true
+        },
+        wishlist: {
+            handler(value) {
+                if (Array.isArray(value)) {
+                    this.localWishlist = [...value];
+                }
+            },
+            deep: true
+        },
     },
     mounted() {
-        if (this.$parent) {
-            this.imageInfo = this.$parent.imageInfo || this.imageInfo;
-            this.imageLoadingStates = this.$parent.imageLoadingStates || this.imageLoadingStates;
-            this.productImageIndices = this.$parent.productImageIndices || this.productImageIndices;
-            this.productImageNavigating = this.$parent.productImageNavigating || this.productImageNavigating;
-            this.productImageTouchStart = this.$parent.productImageTouchStart || this.productImageTouchStart;
-            this.productImageMouseStart = this.$parent.productImageMouseStart || this.productImageMouseStart;
-        }
+        this.loadProducts().then(r => null);
+        this.loadCategories().then(r => null);
+        this.loadProductOptions().then(r => null);
+        this.localCartItems = Array.isArray(this.cartItems) ? [...this.cartItems] : this.getStoredCart();
+        this.localWishlist = Array.isArray(this.wishlist) ? [...this.wishlist] : this.getStoredWishlist();
+        this.initProductLinkHandlers();
 
         this.$nextTick(() => {
             this.checkLoadedImages();
         });
     },
     methods: {
+        async loadProducts() {
+            try {
+                let response;
+                if (typeof fetch !== 'undefined') {
+                    response = await fetch('api.php?action=products', { credentials: 'same-origin' });
+                } else {
+                    response = await this.fetchWithXHR('api.php?action=products');
+                }
+
+                if (response.ok) {
+                    const incoming = await response.json();
+                    const list = Array.isArray(incoming) ? incoming : [];
+                    this.products = list
+                        .filter(Boolean)
+                        .map((product) => {
+                            const p = { ...product };
+                            p.image = this.normalizeMediaUrl(p.image);
+                            p.additional_images = Array.isArray(p.additional_images)
+                                ? p.additional_images.map((img) => this.normalizeMediaUrl(img)).filter(Boolean)
+                                : [];
+                            p.additional_videos = Array.isArray(p.additional_videos)
+                                ? p.additional_videos.map((vid) => this.normalizeMediaUrl(vid)).filter(Boolean)
+                                : [];
+                            return p;
+                        });
+
+                    this.products.forEach((product) => {
+                        if (product && product.id) {
+                            this.imageLoadingStates[product.id] = true;
+                        }
+                    });
+
+                    this.$nextTick(() => {
+                        this.initProductLinkHandlers();
+                    });
+                } else {
+                    this.products = [];
+                }
+
+            } catch (error) {
+                console.error('Error loading products:', error);
+                this.products = [];
+            }
+        },
+        async loadCategories() {
+            try {
+                let response;
+                if (typeof fetch !== 'undefined') {
+                    response = await fetch('api.php?action=categories', { credentials: 'same-origin' });
+                } else {
+                    response = await this.fetchWithXHR('api.php?action=categories');
+                }
+
+                if (response && response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        this.categories = data.map(cat => ({
+                            id: cat.slug || String(cat.id),
+                            name: cat.name,
+                            _id: cat.id,
+                            sort_order: cat.sort_order || 0
+                        }));
+                    } else {
+                        console.warn('No categories in response, using default');
+                        this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+                    }
+                } else {
+                    console.warn('Failed to load categories, using default');
+                    this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                this.categories = [{ id: 'leather', name: 'Натуральная кожа' }];
+            }
+        },
         getImage(product) {
             try {
                 const ctx = this.$parent && this.$parent.getAllProductImages ? this.$parent : null;
@@ -563,7 +827,39 @@ const Products = {
             }
         },
         normalizeMediaUrl(path) {
-            return this.$parent?.normalizeMediaUrl?.(path) ?? path ?? '';
+            if (!path || typeof path !== 'string') {
+                return '';
+            }
+
+            let p = path.trim();
+            if (!p) {
+                return '';
+            }
+
+            if (/^https?:\/\//i.test(p)) {
+                return p;
+            }
+
+            const basePath = this.getBasePath();
+            const baseNoTrailing = basePath === '/' ? '' : basePath.slice(0, -1);
+
+            if (basePath !== '/' && p.startsWith(basePath)) {
+                return p;
+            }
+
+            if (baseNoTrailing && p.startsWith(baseNoTrailing + '/')) {
+                return p;
+            }
+
+            if (p.startsWith('../')) {
+                p = p.substring(3);
+            }
+
+            if (p.startsWith('/')) {
+                return baseNoTrailing + p;
+            }
+
+            return basePath + p;
         },
         getAllProductImages(product) {
             if (!product) return [];
@@ -708,23 +1004,40 @@ const Products = {
                 };
             }
         },
+        initProductLinkHandlers() {
+            this.$nextTick(() => {
+                const productLinks = document.querySelectorAll('.product-link, .product-title');
+
+                productLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+
+                    if (href && (href.includes('/product/') || href.includes('product/?id='))) {
+                        link.addEventListener('click', (event) => {
+                            const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+                            sessionStorage.setItem('mainPageScrollPosition', scrollPosition.toString());
+                        });
+                    }
+                });
+            });
+        },
         isProductInCart(id) {
-            const items = Array.isArray(this.cartItems) ? this.cartItems : [];
+            const items = Array.isArray(this.localCartItems) && this.localCartItems.length
+                ? this.localCartItems
+                : this.getStoredCart();
             const item = items.find(el => el && el.id === id);
             return !!item;
         },
         toggleCart() {
-            if (this.mobileMenuOpen) {
-                this.mobileMenuOpen = false;
-                setTimeout(() => {
-                    this.cartOpen = !this.cartOpen;
-                }, 300);
-            } else {
-                this.cartOpen = !this.cartOpen;
-            }
+            this.cartOpen = true;
+            this.$emit('open-cart');
+        },
+        closeFavorites() {
+            this.$emit('close-favorites');
         },
         isInWishlist(productId) {
-            const list = Array.isArray(this.wishlist) ? this.wishlist : [];
+            const list = Array.isArray(this.localWishlist) && this.localWishlist.length
+                ? this.localWishlist
+                : this.getStoredWishlist();
             return list.includes(productId);
         },
         toggleWishlist(productId, event) {
@@ -732,10 +1045,15 @@ const Products = {
                 event.stopPropagation();
             }
 
-            if (this.isInWishlist(productId)) {
-                this.wishlist = this.wishlist.filter(id => id !== productId);
+            const currentWishlist = Array.isArray(this.localWishlist)
+                ? [...this.localWishlist]
+                : this.getStoredWishlist();
+
+            if (currentWishlist.includes(productId)) {
+                this.localWishlist = currentWishlist.filter(id => id !== productId);
             } else {
-                this.wishlist.push(productId);
+                currentWishlist.push(productId);
+                this.localWishlist = currentWishlist;
             }
 
             this.saveWishlist();
@@ -744,6 +1062,13 @@ const Products = {
             if (this.isMobile && event) {
                 event.stopPropagation();
             }
+
+            this.$emit('start-option-selection', {
+                product,
+                action,
+                point
+            });
+            return;
 
             this.resetOptionSelectionState();
 
@@ -757,11 +1082,15 @@ const Products = {
 
             this.selectingHandAction = action; // 'buy' | 'cart'
 
-            await this.loadProductOptions();
-
-            if (this.productOptions.length > 0) {
-                this.showOptionSelector = true;
+            if (typeof this.loadProductOptions === 'function') {
+                await this.loadProductOptions();
             } else {
+                this.productOptions = [];
+            }
+
+            // This section component does not render an option-selector UI,
+            // so complete action immediately to keep product buttons responsive.
+            if (typeof this.finishOptionSelection === 'function') {
                 this.finishOptionSelection(product);
             }
         },
@@ -791,6 +1120,10 @@ const Products = {
             this.$nextTick(() => {
                 this.showAllProductCards();
             });
+        },
+        isImageLoading(product) {
+            if (!product || !product.id) return false;
+            return this.imageLoadingStates[product.id] === true;
         },
         onImageLoad(event, product) {
             const img = event.target;
@@ -1035,6 +1368,197 @@ const Products = {
             console.warn('Failed to load video:', event.target.src);
             if (product && product.id) {
                 this.imageLoadingStates[product.id] = false;
+            }
+        },
+        normalizeOptionTypes(types) {
+            return types
+                .map((type, index) => {
+                    const name = (type.name || '').trim() || `Опция ${index + 1}`;
+                    const values = Array.isArray(type.values)
+                        ? type.values
+                            .map(value => (value !== null && value !== undefined ? String(value).trim() : ''))
+                            .filter(Boolean)
+                        : [];
+                    return {
+                        id: type.id || null,
+                        name,
+                        values
+                    };
+                })
+                .filter(type => type.values.length);
+        },
+        async loadProductOptions() {
+            try {
+                let response;
+                const selectedProduct = this.selectingHandProduct();
+                const typeId = selectedProduct ? selectedProduct.product_type_id : null;
+                const query = typeId ? `api.php?action=product_options&type_id=${encodeURIComponent(typeId)}` : 'api.php?action=product_options';
+
+                if (typeof fetch !== 'undefined') {
+                    response = await fetch(query, { credentials: 'same-origin' });
+                } else {
+                    response = await this.fetchWithXHR(query);
+                }
+
+                if (response && response.ok) {
+                    const data = await response.json();
+                    const options = Array.isArray(data.options) ? data.options : [];
+                    this.productOptions = this.normalizeOptionTypes(options);
+                } else {
+                    console.warn('Failed to load product options, using defaults');
+                }
+            } catch (error) {
+                console.error('Error loading product options:', error);
+            }
+        },
+        currentOptionType() {
+            if (!this.productOptions || !this.productOptions.length) {
+                return null;
+            }
+
+            return this.productOptions[this.optionSelectionIndex] || null;
+        },
+        selectingHandProduct() {
+            if (!this.selectingHandProductId) return null;
+            return this.products.find(p => p.id === this.selectingHandProductId) || null;
+        },
+        startHandSelection(product, action, point, event) {
+            return this.startOptionSelection(product, action, point, event);
+        },
+        chooseOptionValue(product, value) {
+            const optionType = this.currentOptionType();
+            if (!optionType) {
+                return;
+            }
+            const slug = optionType.slug || this.slugifyOptionName(optionType.name) || `option-${this.optionSelectionIndex}`;
+            this.selectedProductOptions.push({
+                slug,
+                name: optionType.name || `Опция ${this.optionSelectionIndex + 1}`,
+                value
+            });
+            this.optionSelectionIndex += 1;
+
+            if (this.optionSelectionIndex >= this.productOptions.length) {
+                this.showOptionSelector = false;
+                this.finishOptionSelection(product);
+            }
+        },
+        finishOptionSelection(product) {
+            const optionsSnapshot = this.selectedProductOptions.map(option => ({ ...option }));
+            const optionKey = this.buildOptionKey(optionsSnapshot);
+
+            if (this.selectingHandAction === 'buy') {
+                this.currentOrderProduct = {
+                    ...product,
+                    options: optionsSnapshot,
+                    optionKey,
+                    quantity: 1
+                };
+                this.openOrderModal();
+            } else if (this.selectingHandAction === 'cart') {
+                this.addToCartInternal(product, optionsSnapshot);
+
+                if (this.selectingFromFavorites) {
+                    this.localWishlist = this.localWishlist.filter(id => id !== product.id);
+                    this.saveWishlist();
+                    this.closeFavorites();
+                    this.toCart();
+                    this.selectingFromFavorites = false;
+                }
+            }
+
+            this.selectingHandProductId = null;
+            this.selectingHandAction = null;
+            this.buyNowPressed = false;
+            this.addToCartPressed = false;
+            this.resetOptionSelectionState();
+        },
+        getStoredCart() {
+            try {
+                const saved = localStorage.getItem('cart');
+                const parsed = saved ? JSON.parse(saved) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        },
+        getStoredWishlist() {
+            try {
+                const saved = localStorage.getItem('wishlist');
+                const parsed = saved ? JSON.parse(saved) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        },
+        buildOptionKey(options = []) {
+            if (!Array.isArray(options) || options.length === 0) {
+                return '';
+            }
+            return options
+                .map(option => `${option.slug || option.name}:${option.value}`)
+                .join('|');
+        },
+        saveCart() {
+            const items = Array.isArray(this.localCartItems) ? this.localCartItems : this.getStoredCart();
+            localStorage.setItem('cart', JSON.stringify(items));
+            this.$emit('update:cart-items', [...items]);
+        },
+        saveWishlist() {
+            const list = Array.isArray(this.localWishlist) ? this.localWishlist : this.getStoredWishlist();
+            localStorage.setItem('wishlist', JSON.stringify(list));
+            this.$emit('update:wishlist', [...list]);
+        },
+        addToCartInternal(product, options = []) {
+            const currentCart = Array.isArray(this.localCartItems) ? [...this.localCartItems] : this.getStoredCart();
+            const optionKey = this.buildOptionKey(options);
+            const existingItem = currentCart.find(item =>
+                item &&
+                item.id === product.id &&
+                (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
+            );
+
+            if (existingItem) {
+                existingItem.quantity = (existingItem.quantity || 0) + 1;
+            } else {
+                currentCart.push({
+                    ...product,
+                    price: product.price_sale || product.price,
+                    options,
+                    optionKey,
+                    quantity: 1
+                });
+            }
+
+            this.localCartItems = currentCart;
+            this.saveCart();
+        },
+        openOrderModal() {
+            this.$emit('open-order');
+        },
+        toCart() {
+            this.$emit('close-favorites');
+            this.$emit('open-cart');
+        },
+        chooseProductOptionValue(value) {
+            const option = this.currentOptionType();
+
+            if (!option) {
+                return;
+            }
+
+            this.selectedProductOptions.push({
+                name: option.name || `Опция ${this.optionSelectionIndex + 1}`,
+                value
+            });
+
+            this.optionSelectionIndex += 1;
+
+            if (this.optionSelectionIndex >= this.productOptions.length) {
+                this.showOptionSelector = false;
+                this.$nextTick(() => {
+                    this.finishProductOptionSelection();
+                });
             }
         },
     }
@@ -1418,7 +1942,6 @@ const Contact = {
 const InfoButtons = {
     mixins: [Props],
     template: `
-      {{block}}
       <section
           v-if="block && block.type === 'info_buttons' && block.is_active && block.settings.buttons && block.settings.buttons.length > 0"
           class="info-buttons-block">

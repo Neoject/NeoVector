@@ -6,15 +6,11 @@ use NeoVector\Params;
 <header class="scrolled">
     <div class="container nav-container">
         <div class="nav-left">
-            <button v-if="currentProduct" class="mobile-menu-btn" @click="closeProductPage"
-                    style="margin-right: 10px;">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <button v-else class="mobile-menu-btn" @click="toggleMobileMenu">
+            <button v-else class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen">
                 <i class="fas fa-bars"></i>
             </button>
             <a class="logo" href="#"
-               @click.prevent="currentProduct ? closeProductPage() : goHome()">
+               @click.prevent="goHome()">
                 <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
             </a>
             <div class="mobile-cart-icon" @click="toggleCart">

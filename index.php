@@ -144,13 +144,20 @@ try {
                 v-if="block.type === 'products'"
                 :block="block"
                 :products="products"
+                :element-states="elementStates"
                 :cart-items="cartItems"
-                :wish-list="wishlist"
+                :wishlist="wishlist"
                 :is-in-view="isInView"
-                :is-image-loading="isImageLoading"
                 :is-video="isVideo"
                 :get-current-product-image="getCurrentProductImage"
                 :get-base-path="getBasePath"
+                @update:cart-items="cartItems = $event"
+                @update:wishlist="wishlist = $event"
+                @open-cart="closeFavorites(); cartOpen = true"
+                @open-favorites="closeCart(); favoritesOpen = true"
+                @close-favorites="favoritesOpen = false"
+                @open-order="openOrderModal()"
+                @start-option-selection="handleProductsOptionSelection($event)"
             ></products>
             <features
                 v-if="block.type === 'features'"
@@ -262,7 +269,6 @@ try {
                         <span>Итого:</span>
                         <span>{{ cartTotal }} руб.</span>
                     </div>
-
                     <button class="checkout-btn" @click="openOrderModal">Оформить заказ</button>
                 </div>
                 <div v-else class="empty-cart">

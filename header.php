@@ -105,6 +105,8 @@ if (!preg_match('~^https?://~i', $ogImage)) {
     <script type="text/javascript" src="https://js.bepaid.by/widget/be_gateway.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="<?=NV?>/main/js/nv_object.js"></script>
+    <script src="<?=NV?>/main/js/nv.js"></script>
+    <script src="<?=NV?>/main/js/order.js"></script>
     <script src="<?=NV?>/main/js/script.js"></script>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

@@ -643,10 +643,14 @@ const Modal = {
 
             if (restoreData.width && restoreData.width !== 'auto') {
                 modal.style.width = restoreData.width;
+            } else {
+                modal.style.width = '50vw';
             }
 
             if (restoreData.height && restoreData.height !== 'auto') {
                 modal.style.height = restoreData.height;
+            } else {
+                modal.style.height = '50vh';
             }
 
             if (restoreData.position) {

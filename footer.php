@@ -28,6 +28,5 @@
             </div>
         </footer>
         <script src="<?=NV?>/main/js/sections.js"></script>
-        <script src="<?=NV?>/main/js/main.js"></script>
     </body>
 </html>
