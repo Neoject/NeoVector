@@ -90,7 +90,6 @@ try {
             v-for="(block, blockIndex) in (sortedPageBlocks || []).filter(b => b)"
             :key="block && (block.id ?? null) !== null ? block.id : 'block-' + blockIndex"
     >
-        {{block}}
         <hero
                 v-if="block.type === 'hero'"
                 :block="block"
