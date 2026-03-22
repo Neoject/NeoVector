@@ -173,6 +173,16 @@ NV.ready(() => {
             favoriteProducts() {
                 return this.products.filter(product => this.wishlist.includes(product.id));
             },
+            footerBlock() {
+                if (!Array.isArray(this.pageBlocks)) {
+                    return null;
+                }
+                const footers = this.pageBlocks.filter(b => b && b.type === 'footer' && b.is_active);
+                if (!footers.length) {
+                    return null;
+                }
+                return footers.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0];
+            },
             formattedPageContent() {
                 if (!this.currentVirtualPage || !this.currentVirtualPage.content) {
                     return '';
@@ -1058,7 +1068,7 @@ NV.ready(() => {
                     }
                 }
             },
-            isElementInView(id) {
+            isInView(id) {
                 return this.elementStates[id] === 'animated';
             },
             generateElementId(element) {

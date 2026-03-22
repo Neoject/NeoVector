@@ -1350,7 +1350,6 @@ if (isset($product) && $product) {
             }).mount('#app');
         })
     </script>
-</body>
 <?php
 require_once $HOME_URL . 'footer.php';
 ?>

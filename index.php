@@ -85,8 +85,8 @@ try {
 ?>
 <div id="app">
     <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
+    <template v-if="!currentVirtualPage && !virtualPageError">
     <template
-            v-if="!currentVirtualPage && !virtualPageError"
             v-for="(block, blockIndex) in (sortedPageBlocks || []).filter(b => b)"
             :key="block && (block.id ?? null) !== null ? block.id : 'block-' + blockIndex"
     >
@@ -157,6 +157,7 @@ try {
                 :block="block"
                 :is-in-view="isInView"
         ></info-buttons>
+    </template>
     </template>
     <!-- Cart Selector Modal -->
     <div class="cart-modal" :class="{ 'active': cartOpen }">

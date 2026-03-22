@@ -593,7 +593,6 @@ const Products = {
         },
     },
     mounted() {
-        this.loadProducts().then(r => null);
         this.loadCategories().then(r => null);
         this.loadProductOptions().then(r => null);
         this.localCartItems = Array.isArray(this.cartItems) ? [...this.cartItems] : this.getStoredCart();
@@ -1030,7 +1029,7 @@ const Products = {
             const currentImage = this.getImage(product);
 
             return {
-                'background': 'url' +currentImage
+                background: 'url(' + currentImage + ')'
             };
         },
         checkLoadedImages() {
@@ -1908,5 +1907,42 @@ const Actual = {
             if (!promo || !promo.link) return;
             this.click(event, { linkType: promo.linkType || 'url', link: promo.link, target: promo.link });
         },
+    }
+}
+
+const Footer = {
+    template: `
+      <footer v-if="footerBlock && footerBlock.type === 'footer' && footerBlock.is_active" class="footer-block">
+        <div class="container" style="flex: 1">
+          <div class="paysystems">
+            <ul>
+              <li><img src="src/images/bepaid.png"></li>
+              <li><img src="src/images/erip.svg"></li>
+            </ul>
+            <ul>
+              <li><img src="src/images/visa.png"></li>
+              <li><img src="src/images/mastercard.png"></li>
+              <li><img src="src/images/belkart.png"></li>
+              <li><img src="src/images/apple-pay.webp"></li>
+              <li><img src="src/images/samsung-pay.png"></li>
+              <li><img src="src/images/google-pay.webp"></li>
+            </ul>
+          </div>
+          <div class="footer-content" :class="{ 'animated': isInView('footer-content-' + footerBlock.id) }"
+               :id="'footer-content-' + footerBlock.id" v-html="footerBlock.content"></div>
+          <div class="footer-copyright">
+            <div class="copyright-block">
+              Copyright © 2025, NeoVector — Все права защищены
+            </div>
+            <div class="neoject">
+              Сайт разработан
+              <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    `,
+    methods: {
+
     }
 }
