@@ -12,7 +12,7 @@
 }
 
 .stat-card {
-    background: var(--color-1e1e1e);
+    background: var(--background-secondary);
     border-radius: 8px;
     padding: 20px;
     display: flex;
@@ -42,7 +42,7 @@
 }
 
 .chart-card {
-    background: var(--color-1e1e1e);
+    background: var(--background-secondary);
     border-radius: 8px;
     padding: 20px;
 }
@@ -57,7 +57,7 @@
 }
 
 .table-card {
-    background: var(--color-1e1e1e);
+    background: var(--background-secondary);
     border-radius: 8px;
     padding: 20px;
 }
@@ -102,8 +102,8 @@
     transition: background-color 0.3s ease;
 }
 
-.analytics-table .column-resize-handle:hover { background: var(--bg-primary-50); }
-.analytics-table .column-resize-handle.active { background: var(--primary); box-shadow: 0 0 10px var(--bg-primary-50); }
+.analytics-table .column-resize-handle:hover { background: var(--background-additional); }
+.analytics-table .column-resize-handle.active { background: var(--background-additional); box-shadow: 0 0 10px var(--shadow-regular); }
 .analytics-table .column-resize-handle::before {
     content: '';
     position: absolute;
@@ -112,7 +112,7 @@
     transform: translate(-50%, -50%);
     width: 2px;
     height: 20px;
-    background: var(--bg-white-30);
+    background: var(--background-secondary);
     border-radius: 1px;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -154,13 +154,13 @@
     transition: background-color 0.2s;
 }
 
-.context-menu-item:hover { background-color: var(--color-f5f5f5); }
+.context-menu-item:hover { background-color: var(--hover-table); }
 .context-menu-item i { width: 16px; text-align: center; color: var(--text-additional-dark); }
-.context-menu-item-danger { color: var(--error-red-darker); }
-.context-menu-item-danger:hover { background-color: var(--color-fee); }
-.context-menu-item-danger i { color: var(--error-red-darker); }
+.context-menu-item-danger { color: var(--warning); }
+.context-menu-item-danger:hover { background-color: var(--warning-dark); }
+.context-menu-item-danger i { color: var(--warning-dark); }
 .context-menu-divider {
     height: 1px;
-    background-color: var(--color-e0e0e0);
+    background-color: var(--background-additional);
     margin: 4px 0;
 }

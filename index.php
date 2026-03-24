@@ -86,76 +86,6 @@ try {
 ?>
 <div id="app">
     <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
-    <div class="order-modal" :class="{ 'active': showLogin }" @click.self="closeLogin">
-        <div class="order-modal-content" style="max-width: 460px;">
-            <div class="order-modal-header">
-                <h2>Вход</h2>
-                <button class="close-icon" @click="closeLogin">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="order-modal-body">
-                <div class="form-group">
-                    <label>Логин</label>
-                    <input v-model.trim="loginData.username" type="text" placeholder="Введите логин">
-                </div>
-                <div class="form-group">
-                    <label>Пароль</label>
-                    <input v-model="loginData.password" type="password" placeholder="Введите пароль">
-                </div>
-                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-                    <input id="remember-me" v-model="loginData.remember" type="checkbox" style="width:auto;">
-                    <label for="remember-me" style="margin:0;">Запомнить меня</label>
-                </div>
-                <p v-if="loginError" class="error-message">{{ loginError }}</p>
-                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                    <button class="btn btn-outline" @click="closeLogin">Отмена</button>
-                    <button class="btn btn-primary" :disabled="loginLoading" @click="doLogin">
-                        {{ loginLoading ? 'Входим...' : 'Войти' }}
-                    </button>
-                </div>
-                <p style="margin-top:14px;">
-                    Нет аккаунта?
-                    <a href="#" @click.prevent="closeLogin(); openRegister();">Зарегистрироваться</a>
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="order-modal" :class="{ 'active': showRegister }" @click.self="closeRegister">
-        <div class="order-modal-content" style="max-width: 460px;">
-            <div class="order-modal-header">
-                <h2>Регистрация</h2>
-                <button class="close-icon" @click="closeRegister">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="order-modal-body">
-                <div class="form-group">
-                    <label>Логин</label>
-                    <input v-model.trim="registerData.username" type="text" placeholder="Придумайте логин">
-                </div>
-                <div class="form-group">
-                    <label>Пароль</label>
-                    <input v-model="registerData.password" type="password" placeholder="Минимум 6 символов">
-                </div>
-                <div class="form-group">
-                    <label>Подтвердите пароль</label>
-                    <input v-model="registerData.confirmPassword" type="password" placeholder="Повторите пароль">
-                </div>
-                <p v-if="registerError" class="error-message">{{ registerError }}</p>
-                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                    <button class="btn btn-outline" @click="closeRegister">Отмена</button>
-                    <button class="btn btn-primary" :disabled="registerLoading" @click="doRegister">
-                        {{ registerLoading ? 'Регистрируем...' : 'Зарегистрироваться' }}
-                    </button>
-                </div>
-                <p style="margin-top:14px;">
-                    Уже есть аккаунт?
-                    <a href="#" @click.prevent="closeRegister(); openLogin();">Войти</a>
-                </p>
-            </div>
-        </div>
-    </div>
     <component
             v-if="!currentVirtualPage && !virtualPageError"
             v-for="(block, blockIndex) in filteredBlocks"
@@ -164,14 +94,7 @@ try {
             v-bind="getBlockProps(block)"
     ></component>
     <!-- Order Modal -->
-    <script></script>
-    <?php
-    $hasAutocomplete = false;
-    $normalizeImageUrl = function($url) {
-        return Config::normalize_media_url($url, ROOT_PATH);
-    };
-    include NV . '/order_modal.php';
-    ?>
+    <order></order>
     <!-- Cart Selector Modal -->
     <div class="cart-modal" :class="{ 'active': cartOpen }">
         <div class="cart-content" @click.stop>

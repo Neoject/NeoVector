@@ -1,22 +1,3 @@
-<?php
-/**
- * Общий шаблон окна оформления заказа
- * Используется в index.php и product/index.php
- *
- * @var bool $hasAutocomplete Использовать ли автодополнение для адреса (DaData)
- * @var callable|null $normalizeImageUrl Функция для нормализации URL изображений (опционально)
- */
-
-if (!isset($hasAutocomplete)) {
-    $hasAutocomplete = false;
-}
-
-if (!isset($normalizeImageUrl)) {
-    $normalizeImageUrl = null;
-}
-
-$policyUrl = rtrim(ROOT, '/') . '/policy';
-?>
 <div class="order-modal" :class="{ 'active': orderModalOpen }" @click.self="closeOrderModal">
     <div class="order-modal-content">
         <div class="order-header">
@@ -127,7 +108,7 @@ $policyUrl = rtrim(ROOT, '/') . '/policy';
                     <h4>Способ получения</h4>
                     <div class="delivery-options">
                         <label class="delivery-option">
-                            <input type="radio" v-model="orderForm.delivery_type" value="pickup" <?php echo $hasAutocomplete ? '@change="onDeliveryTypeChange"' : ''; ?>>
+                            <input type="radio" v-model="orderForm.delivery_type" value="pickup" @change="onDeliveryTypeChange">
                             <div class="delivery-option-content">
                                 <i class="fas fa-store"></i>
                                 <div>
@@ -137,7 +118,7 @@ $policyUrl = rtrim(ROOT, '/') . '/policy';
                             </div>
                         </label>
                         <label class="delivery-option">
-                            <input type="radio" v-model="orderForm.delivery_type" value="delivery" <?php echo $hasAutocomplete ? '@change="onDeliveryTypeChange"' : ''; ?> :disabled="deliveryAvailable ? false : true">
+                            <input type="radio" v-model="orderForm.delivery_type" value="delivery" @change="onDeliveryTypeChange" :disabled="deliveryAvailable ? false : true">
                             <div class="delivery-option-content">
                                 <i class="fas fa-truck"></i>
                                 <div>
@@ -150,83 +131,64 @@ $policyUrl = rtrim(ROOT, '/') . '/policy';
                 </div>
                 <div v-if="orderForm.delivery_type === 'delivery'" class="form-section delivery-details">
                     <h4>Детали доставки</h4>
-                    <?php if ($hasAutocomplete): ?>
-                        <div class="form-group autocomplete">
-                            <label for="delivery_city">Город *</label>
-                            <div>
-                                <input type="text" id="delivery_city" v-model="orderForm.delivery_city" @input="onCityInput"
-                                    @blur="onCityBlur" autocomplete="off" placeholder="Введите свой город"
-                                    :class="{ 'invalid': deliveryCityError || fieldErrors.delivery_city }">
-                                <span class="clear-input fas fa-x" @click="clearInput('city')"></span>
-                            </div>
-                            <p class="input-hint">Укажите свой город</p>
-                            <div v-if="citySearchLoading" class="autocomplete-status">Ищем города...</div>
-                            <div v-else-if="orderForm.delivery_city && !citySuggestions.length && !deliveryCityValid"
-                                class="autocomplete-status warning">
-                                Город не найден
-                            </div>
-                            <ul v-if="citySuggestions.length" class="autocomplete-list">
-                                <li v-for="city in citySuggestions" :key="city.place_id"
-                                    @mousedown.prevent="selectCity(city)">
-                                    <span>{{ city.label }}</span>
-                                    <small v-if="city.region">{{ city.region }}</small>
-                                </li>
-                            </ul>
-                            <p v-if="deliveryCityError" class="input-error">{{ deliveryCityError }}</p>
-                            <div v-if="fieldErrors.delivery_city" class="field-tooltip">{{ fieldErrors.delivery_city }}</div>
+                    <div class="form-group autocomplete">
+                        <label for="delivery_city">Город *</label>
+                        <div>
+                            <input type="text" id="delivery_city" v-model="orderForm.delivery_city" @input="onCityInput"
+                                @blur="onCityBlur" autocomplete="off" placeholder="Введите свой город"
+                                :class="{ 'invalid': deliveryCityError || fieldErrors.delivery_city }">
+                            <span class="clear-input fas fa-x" @click="clearInput('city')"></span>
                         </div>
-                        <div class="form-group autocomplete">
-                            <label for="delivery_street">Улица *</label>
-                            <div>
-                                <input type="text" id="delivery_street" v-model="orderForm.delivery_street"
-                                    @input="onStreetInput" @blur="onStreetBlur" :disabled="!deliveryCityValid"
-                                    autocomplete="off" placeholder="Введите улицу"
-                                    :class="{ 'invalid': deliveryStreetError || fieldErrors.delivery_street }">
-                                <span class="clear-input fas fa-x" @click="clearInput('street')"></span>
-                            </div>
-                            <p class="input-hint">Сначала выберите город, затем улицу</p>
-                            <div v-if="streetSearchLoading" class="autocomplete-status">Ищем улицы...</div>
-                            <div v-else-if="orderForm.delivery_street && !streetSuggestions.length && !deliveryStreetValid"
-                                class="autocomplete-status warning">
-                                Улица не найдена
-                            </div>
-                            <ul v-if="streetSuggestions.length" class="autocomplete-list">
-                                <li v-for="street in streetSuggestions" :key="street.place_id"
-                                    @mousedown.prevent="selectStreet(street)">
-                                    <span>{{ street.label }}</span>
-                                </li>
-                            </ul>
-                            <p v-if="deliveryStreetError" class="input-error">{{ deliveryStreetError }}</p>
-                            <div v-if="fieldErrors.delivery_street" class="field-tooltip">{{ fieldErrors.delivery_street }}</div>
+                        <p class="input-hint">Укажите свой город</p>
+                        <div v-if="citySearchLoading" class="autocomplete-status">Ищем города...</div>
+                        <div v-else-if="orderForm.delivery_city && !citySuggestions.length && !deliveryCityValid"
+                            class="autocomplete-status warning">
+                            Город не найден
                         </div>
-                        <div class="form-group">
-                            <label for="delivery_building">Дом / квартира *</label>
-                            <input type="text" id="delivery_building" v-model="orderForm.delivery_building"
-                                @input="fieldErrors.delivery_building = ''" placeholder="Например: д. 10, кв. 15" required>
-                            <div v-if="fieldErrors.delivery_building" class="field-tooltip">{{ fieldErrors.delivery_building }}</div>
+                        <ul v-if="citySuggestions.length" class="autocomplete-list">
+                            <li v-for="city in citySuggestions" :key="city.place_id"
+                                @mousedown.prevent="selectCity(city)">
+                                <span>{{ city.label }}</span>
+                                <small v-if="city.region">{{ city.region }}</small>
+                            </li>
+                        </ul>
+                        <p v-if="deliveryCityError" class="input-error">{{ deliveryCityError }}</p>
+                        <div v-if="fieldErrors.delivery_city" class="field-tooltip">{{ fieldErrors.delivery_city }}</div>
+                    </div>
+                    <div class="form-group autocomplete">
+                        <label for="delivery_street">Улица *</label>
+                        <div>
+                            <input type="text" id="delivery_street" v-model="orderForm.delivery_street"
+                                @input="onStreetInput" @blur="onStreetBlur" :disabled="!deliveryCityValid"
+                                autocomplete="off" placeholder="Введите улицу"
+                                :class="{ 'invalid': deliveryStreetError || fieldErrors.delivery_street }">
+                            <span class="clear-input fas fa-x" @click="clearInput('street')"></span>
                         </div>
-                        <div class="delivery-address-preview" v-if="deliveryAddressPreview">
-                            <strong>Адрес доставки:</strong>
-                            <span>{{ deliveryAddressPreview }}</span>
+                        <p class="input-hint">Сначала выберите город, затем улицу</p>
+                        <div v-if="streetSearchLoading" class="autocomplete-status">Ищем улицы...</div>
+                        <div v-else-if="orderForm.delivery_street && !streetSuggestions.length && !deliveryStreetValid"
+                            class="autocomplete-status warning">
+                            Улица не найдена
                         </div>
-                    <?php else: ?>
-                        <div class="form-group">
-                            <label for="delivery_city">Город *</label>
-                            <input type="text" id="delivery_city" v-model="orderForm.delivery_city" @input="fieldErrors.delivery_city = ''" required>
-                            <div v-if="fieldErrors.delivery_city" class="field-tooltip">{{ fieldErrors.delivery_city }}</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="delivery_street">Улица *</label>
-                            <input type="text" id="delivery_street" v-model="orderForm.delivery_street" @input="fieldErrors.delivery_street = ''" required>
-                            <div v-if="fieldErrors.delivery_street" class="field-tooltip">{{ fieldErrors.delivery_street }}</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="delivery_building">Дом / квартира *</label>
-                            <input type="text" id="delivery_building" v-model="orderForm.delivery_building"
-                                @input="fieldErrors.delivery_building = ''" placeholder="Например: д. 10, кв. 15" required>
-                            <div v-if="fieldErrors.delivery_building" class="field-tooltip">{{ fieldErrors.delivery_building }}</div>
-                        </div>
-                    <?php endif; ?>
+                        <ul v-if="streetSuggestions.length" class="autocomplete-list">
+                            <li v-for="street in streetSuggestions" :key="street.place_id"
+                                @mousedown.prevent="selectStreet(street)">
+                                <span>{{ street.label }}</span>
+                            </li>
+                        </ul>
+                        <p v-if="deliveryStreetError" class="input-error">{{ deliveryStreetError }}</p>
+                        <div v-if="fieldErrors.delivery_street" class="field-tooltip">{{ fieldErrors.delivery_street }}</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="delivery_building">Дом / квартира *</label>
+                        <input type="text" id="delivery_building" v-model="orderForm.delivery_building"
+                            @input="fieldErrors.delivery_building = ''" placeholder="Например: д. 10, кв. 15" required>
+                        <div v-if="fieldErrors.delivery_building" class="field-tooltip">{{ fieldErrors.delivery_building }}</div>
+                    </div>
+                    <div class="delivery-address-preview" v-if="deliveryAddressPreview">
+                        <strong>Адрес доставки:</strong>
+                        <span>{{ deliveryAddressPreview }}</span>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="delivery_date">Дата доставки</label>
@@ -298,7 +260,7 @@ $policyUrl = rtrim(ROOT, '/') . '/policy';
                         <input id="privacy-policy-yes" type="checkbox" v-model="policyYes" @change="policyChange('yes')">
                         <label class="checkbox-label" for="privacy-policy-yes">
                             Согласен с
-                            <a href="<?php echo htmlspecialchars($policyUrl); ?>" target="_blank">политикой обработки
+                            <a href="/policy" target="_blank">политикой обработки
                                 персональных данных</a>
                         </label>
                         <div v-if="fieldErrors.policy" class="field-tooltip">{{ fieldErrors.policy }}</div>

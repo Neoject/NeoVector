@@ -88,6 +88,10 @@ use NeoVector\Params;
                             </a>
                         </template>
                     </div>
+                    <template v-if="!auth.authenticated">
+                        <login ref="authLogin" @close="closeLogin"></login>
+                        <register ref="authRegister" @close="closeRegister"></register>
+                    </template>
                 </div>
             </template>
         </nav>

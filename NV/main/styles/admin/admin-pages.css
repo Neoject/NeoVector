@@ -7,7 +7,7 @@
 
 table.pages-table {
     backdrop-filter: blur(10px);
-    border: 2px solid var(--bg-white-90);
+    border: 2px solid var(--border-secondary);
     border-radius: 15px;
     padding: 4px;
     position: relative;
@@ -23,7 +23,7 @@ table.pages-table.pages-table-th {
 table.pages-table td {
     padding: 0 0.8vw;
     background: var(--background);
-    border: 1px solid var(--color-292727);
+    border: 1px solid var(--border-medium);
 }
 
 table.pages-table th:last-child,
@@ -39,7 +39,7 @@ table.pages-table td:last-child {
     width: 120px;
     vertical-align: middle;
     text-align: center;
-    box-shadow: -2px 0 5px var(--bg-black-20);
+    box-shadow: -2px 0 5px var(--shadow-regular);
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
 }

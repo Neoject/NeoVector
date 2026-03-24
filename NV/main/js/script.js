@@ -3,6 +3,7 @@ NV.ready(() => {
         const { createApp } = Vue;
 
         const blockComponents = {
+            order: window.Order,
             hero: window.Hero,
             actual: window.Actual,
             products: window.Products,
@@ -20,6 +21,9 @@ NV.ready(() => {
             mixins: [window.Props],
             components: {
                 hero: window.Hero,
+                modal: window.Modal,
+                login: window.Login,
+                register: window.Register,
                 actual: window.Actual,
                 products: window.Products,
                 features: window.Features,
@@ -29,21 +33,14 @@ NV.ready(() => {
                 stats: window.Stats,
                 contact: window.Contact,
                 info_buttons: window.InfoButtons,
-                footer: window.FooterBlock
+                footer: window.FooterBlock,
+                order: window.Order,
             },
             data() {
                 return {
                     blockComponents: blockComponents,
                     auth: NV.getAuth(),
-                    showLogin: false,
-                    showRegister: false,
                     userMenuOpen: false,
-                    loginData: { username: '', password: '', remember: false },
-                    loginLoading: false,
-                    loginError: '',
-                    registerData: { username: '', password: '', confirmPassword: '' },
-                    registerLoading: false,
-                    registerError: '',
                     isScrolled: false,
                     mobileMenuOpen: false,
                     cartOpen: false,
@@ -60,8 +57,6 @@ NV.ready(() => {
                     selectingHandProductId: null,
                     selectingHandAction: null,
                     selectingFromFavorites: false,
-                    wishlist: [],
-                    cartItems: [],
                     contactForm: {
                         name: '',
                         email: '',
@@ -70,20 +65,6 @@ NV.ready(() => {
                     contactLoading: false,
                     contactError: '',
                     contactSuccess: '',
-                    orderForm: {
-                        customer_name: '',
-                        customer_phone: '',
-                        customer_email: '',
-                        delivery_type: 'pickup',
-                        delivery_city: '',
-                        delivery_street: '',
-                        delivery_building: '',
-                        delivery_date: '',
-                        delivery_time: '',
-                        delivery_price: 0,
-                        payment_type: 'cash',
-                        notes: ''
-                    },
                     dadataToken: '7c958262d9f01a263e77984b8ee106c01816709a',
                     citySuggestions: [],
                     streetSuggestions: [],
@@ -360,8 +341,13 @@ NV.ready(() => {
                     const savedUser = localStorage.getItem('remember_username');
 
                     if (savedUser) {
-                        this.loginData.username = savedUser;
-                        this.loginData.remember = true;
+                        this.$nextTick(() => {
+                            const loginEl = this.$refs.authLogin;
+                            if (loginEl && loginEl.loginData) {
+                                loginEl.loginData.username = savedUser;
+                                loginEl.loginData.remember = true;
+                            }
+                        });
                     }
 
                     window.addEventListener('scroll', this.handleScroll);
@@ -463,105 +449,22 @@ NV.ready(() => {
                     }
                 },
                 openLogin() {
-                    this.loginError = '';
-                    this.showRegister = false;
-                    this.showLogin = true;
-                    this.userMenuOpen = false;
-                    this.closeMobileMenu();
+                    this.$refs.authLogin?.openLogin?.();
                 },
                 closeLogin() {
-                    this.showLogin = false;
-                    this.loginData = { username: '', password: '', remember: false };
-                    this.loginError = '';
+                    this.$refs.authLogin?.closeLogin?.();
                 },
                 openRegister() {
-                    this.registerError = '';
-                    this.showLogin = false;
-                    this.showRegister = true;
-                    this.userMenuOpen = false;
-                    this.closeMobileMenu();
+                    this.$refs.authRegister?.openRegister?.();
                 },
                 closeRegister() {
-                    this.showRegister = false;
-                    this.registerData = { username: '', password: '', confirmPassword: '' };
-                    this.registerError = '';
-                },
-                async doLogin() {
-                    this.loginError = '';
-                    this.loginLoading = true;
-                    try {
-                        const result = await NV.login(
-                            this.loginData.username,
-                            this.loginData.password,
-                            this.loginData.remember
-                        );
-
-                        if (result.success) {
-                            this.auth = await NV.checkUserAuth();
-
-                            if (this.loginData.remember) {
-                                localStorage.setItem('remember_username', this.loginData.username);
-                            } else {
-                                localStorage.removeItem('remember_username');
-                            }
-                            this.closeLogin();
-                        } else {
-                            this.loginError = result.error || 'Ошибка входа';
-                        }
-                    } catch (err) {
-                        this.loginError = err.message || 'Ошибка входа';
-                    }
-
-                    this.loginLoading = false;
-                },
-                async doRegister() {
-                    this.registerError = '';
-
-                    const username = (this.registerData.username || '').trim();
-                    const password = this.registerData.password || '';
-                    const confirmPassword = this.registerData.confirmPassword || '';
-
-                    if (!username || !password) {
-                        this.registerError = 'Введите логин и пароль';
-                        return;
-                    }
-                    if (password.length < 6) {
-                        this.registerError = 'Пароль должен быть не короче 6 символов';
-                        return;
-                    }
-                    if (password !== confirmPassword) {
-                        this.registerError = 'Пароли не совпадают';
-                        return;
-                    }
-
-                    this.registerLoading = true;
-                    try {
-                        const result = await NV.register(username, password, 'user');
-
-                        if (!result.success) {
-                            this.registerError = result.error || 'Ошибка регистрации';
-                            return;
-                        }
-
-                        const loginResult = await NV.login(username, password, false);
-                        if (loginResult.success) {
-                            this.auth = await NV.checkUserAuth();
-                            this.closeRegister();
-                        } else {
-                            this.showRegister = false;
-                            this.openLogin();
-                            this.loginData.username = username;
-                            this.loginError = 'Регистрация успешна. Войдите в аккаунт.';
-                        }
-                    } catch (err) {
-                        this.registerError = err.message || 'Ошибка регистрации';
-                    } finally {
-                        this.registerLoading = false;
-                    }
+                    this.$refs.authRegister?.closeRegister?.();
                 },
                 async logout() {
-                    await NV.logout();
-                    this.auth = NV.getAuth();
+                    if (confirm('Выйти из профиля?')) {
+                        await NV.logout();
+                        this.auth = NV.getAuth();
+                    }
                 },
                 handleScroll() {
                     this.isScrolled = window.scrollY > 50;
@@ -846,42 +749,6 @@ NV.ready(() => {
                     if (window.history && window.history.pushState) {
                         window.history.pushState({ productId: product.id, type: 'product' }, '', url.toString());
                     }
-                },
-                removeFromCart(cartItem) {
-                    if (confirm(`Вы действительно хотите удалить ${cartItem.name} из корзины?`)) {
-                        this.cartItems = this.cartItems.filter(item => item !== cartItem);
-                        this.saveCart();
-                        if (this.cartItems.length === 0 && this.orderModalOpen) {
-                            this.closeOrderModal();
-                        }
-                    }
-                },
-                increaseQuantity(cartItem) {
-                    if (cartItem) {
-                        cartItem.quantity += 1;
-                    }
-                    this.saveCart();
-                },
-                decreaseQuantity(cartItem) {
-                    if (cartItem && cartItem.quantity > 1) {
-                        cartItem.quantity -= 1;
-                    } else {
-                        this.removeFromCart(cartItem);
-                    }
-                    this.saveCart();
-                },
-                increaseCurrentOrderQuantity() {
-                    if (!this.currentOrderProduct) return;
-                    const currentQty = Number(this.currentOrderProduct.quantity || 1) || 1;
-                    this.currentOrderProduct.quantity = currentQty + 1;
-                },
-                decreaseCurrentOrderQuantity() {
-                    if (!this.currentOrderProduct) return;
-                    const currentQty = Number(this.currentOrderProduct.quantity || 1) || 1;
-                    if (currentQty <= 1) {
-                        return;
-                    }
-                    this.currentOrderProduct.quantity = currentQty - 1;
                 },
                 async submitContactForm() {
                     if (this.contactLoading) {
@@ -1450,21 +1317,7 @@ NV.ready(() => {
                     this.closeFavorites();
                     this.startOptionSelection(product, 'cart', 'addToCart', event);
                 },
-                openOrderModal() {
-                    if (this.currentOrderProduct) {
-                        this.orderModalOpen = true;
-                        this.closeCart();
-                        this.orderError = '';
-                        this.orderSuccess = '';
-                    } else if (this.cartItems.length === 0) {
-                        alert('Корзина пуста');
-                    } else {
-                        this.orderModalOpen = true;
-                        this.closeCart();
-                        this.orderError = '';
-                        this.orderSuccess = '';
-                    }
-                },
+
                 fillPickupParams() {
                     const pickupAddressEl = document.getElementById('pickup_address');
                     const workHoursEl = document.getElementById('work_hours');
@@ -2176,12 +2029,7 @@ NV.ready(() => {
                         .replace(/^-+|-+$/g, '')
                         .toLowerCase();
                 },
-                resetOptionSelectionState() {
-                    this.selectedProductOptions = [];
-                    this.optionSelectionIndex = 0;
-                    this.showOptionSelector = false;
-                    this.hand = null;
-                },
+
                 normalizeCartItem(item) {
                     const normalized = { ...item };
                     if (!Array.isArray(normalized.options)) {
@@ -2968,8 +2816,8 @@ NV.ready(() => {
                     this.cartOpen = false;
                     this.favoritesOpen = false;
                     this.orderModalOpen = false;
-                    this.showLogin = false;
-                    this.showRegister = false;
+                    this.$refs.authLogin?.closeLogin?.();
+                    this.$refs.authRegister?.closeRegister?.();
                     this.showOptionSelector = false;
                     this.selectingHandAction = null;
                     this.selectingHandProductId = null;

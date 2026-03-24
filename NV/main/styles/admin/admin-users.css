@@ -49,13 +49,13 @@
 }
 
 .header-actions .btn-secondary {
-    background: var(--bg-white-10);
+    background: var(--background-secondary);
     color: var(--text-main);
     border: 1px solid var(--border-medium);
 }
 
 .header-actions .btn-secondary:hover:not(:disabled) {
-    background: var(--bg-white-15);
+    background: var(--background-additional);
     border-color: var(--border-strong);
 }
 
@@ -67,7 +67,7 @@
 .users-list { margin-top: 20px; }
 
 .users-table {
-    background: var(--bg-white-05);
+    background: var(--background-secondary);
     backdrop-filter: blur(10px);
     border-radius: 15px;
     border: 1px solid var(--border-light);
@@ -81,7 +81,7 @@
     min-width: 600px;
 }
 
-.users-table thead { background: var(--bg-white-08); }
+.users-table thead { background: var(--background-secondary); }
 
 .users-table th {
     padding: 18px 20px;
@@ -90,7 +90,7 @@
     font-weight: 600;
     font-size: 14px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     border-bottom: 2px solid rgba(255, 237, 179, 0.2);
     position: relative;
 }
@@ -102,7 +102,7 @@
     top: 20%;
     height: 60%;
     width: 1px;
-    background: var(--bg-white-10);
+    background: var(--background-secondary);
 }
 
 .users-table tbody tr {
@@ -112,7 +112,7 @@
 
 .users-table tbody tr:last-child { border-bottom: none; }
 .users-table tbody tr:hover {
-    background: var(--bg-white-08);
+    background: var(--background-additional);
     transform: translateX(4px);
 }
 
@@ -153,7 +153,7 @@
 }
 
 .role-badge.role-admin {
-    background: linear-gradient(135deg, var(--error-red-alt) 0%, var(--color-ee5a6f) 100%);
+    background: linear-gradient(135deg, var(--error-red-alt) 0%, var(--error-red-darker) 100%);
     color: var(--text-main);
     box-shadow: 0 2px 8px rgba(238, 90, 111, 0.3);
 }
@@ -164,7 +164,7 @@
 }
 
 .role-badge.role-user {
-    background: linear-gradient(135deg, var(--color-4ecdc4) 0%, var(--color-44a08d) 100%);
+    background: linear-gradient(135deg, var(--background) 0%, var(--background-additional) 100%);
     color: var(--text-main);
     box-shadow: 0 2px 8px rgba(68, 160, 141, 0.3);
 }

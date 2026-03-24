@@ -4,7 +4,7 @@
 
 .admin section {
     padding: 20px;
-    background: var(--bg-white-02);
+    background: var(--background-secondary);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border: 1px solid var(--secondary);
@@ -13,8 +13,8 @@
 }
 
 .admin-link {
-    background: linear-gradient(135deg, var(--bg-gold-shadow-25) 0%, var(--bg-black-50) 100%);
-    border: 1px solid var(--border-gold-strong);
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
+    border: 1px solid var(--border-secondary-strong);
     color: var(--header-secondary) !important;
     padding: 8px 16px;
     border-radius: 20px;
@@ -25,9 +25,9 @@
 }
 
 .admin-link:hover {
-    background: linear-gradient(135deg, var(--bg-gold-25) 0%, var(--bg-black-40) 100%);
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px var(--bg-gold-30);
+    box-shadow: 0 4px 8px var(--shadow-regular);
 }
 
 .admin-link::after {
@@ -58,9 +58,9 @@
     left: -300px;
     width: 300px;
     height: 100vh;
-    background: linear-gradient(135deg, var(--bg-black-98) 0%, var(--bg-black-98) 100%);
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: 5px 0 20px var(--bg-black-30);
+    box-shadow: 5px 0 20px var(--shadow-regular);
     transition: left 0.4s ease;
     z-index: 2000;
     overflow-y: auto;
