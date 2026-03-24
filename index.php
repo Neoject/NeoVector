@@ -164,6 +164,7 @@ try {
             v-bind="getBlockProps(block)"
     ></component>
     <!-- Order Modal -->
+    <script></script>
     <?php
     $hasAutocomplete = false;
     $normalizeImageUrl = function($url) {
