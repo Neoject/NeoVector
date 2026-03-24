@@ -18,7 +18,7 @@ if (isset($product) && $product) {
 ?>
 
 <body>
-    <div id="app">
+    <div id="product">
         <header class="scrolled">
             <div class="container nav-container">
                 <div class="nav-left">
@@ -1347,7 +1347,7 @@ if (isset($product) && $product) {
                         NV.notifyPolicyReject();
                     },
                 }
-            }).mount('#app');
+            }).mount('#product');
         })
     </script>
 <?php

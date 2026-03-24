@@ -72,6 +72,14 @@
                               placeholder="Описание" rows="3"></textarea>
                 </div>
                 <div class="form-group">
+                    <label>Текст кнопки 1</label>
+                    <input type="text" v-model="root.blockForm.settings.buttonA">
+                </div>
+                <div class="form-group">
+                    <label>Текст кнопки 2</label>
+                    <input type="text" v-model="root.blockForm.settings.buttonB">
+                </div>
+                <div class="form-group">
                     <label>Фоновое изображение</label>
                     <div class="image-upload-field">
                         <div v-if="root.blockForm.settings.backgroundImage"

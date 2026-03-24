@@ -14,7 +14,9 @@ use NeoVector\Params;
                 <i class="fas fa-bars"></i>
             </button>
             <a class="logo" href="#"
-               @click.prevent="currentProduct ? closeProductPage() : goHome()">Aeternum</a>
+               @click.prevent="currentProduct ? closeProductPage() : goHome()">
+                <img :src="'<?=Params::getLogo()?>'" alt="<?=Params::getTitle()?>" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+            </a>
             <div class="mobile-cart-icon" @click="toggleCart">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count" v-if="cartItems.length > 0">{{ getCartItemsCount() }}</span>
@@ -42,38 +44,49 @@ use NeoVector\Params;
                 <i class="fas fa-heart"></i>
                 <span class="cart-count" v-if="wishlist.length > 0">{{ getWishlistCount() }}</span>
             </div>
-            <template v-if="auth.role === 'admin'">
-                <a v-if="!auth.authenticated" href="#" @click.prevent="openLogin">Войти</a>
-                <div v-else class="user-menu" @click="toggleUserMenu">
+            <template v-if="auth.role === 'admin' || auth.role !== 'admin'">
+                <div class="user-menu" @click="toggleUserMenu">
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <span class="user-name">{{ auth.username }}</span>
+                    <span class="user-name">{{ auth.username || 'Профиль' }}</span>
                     <i class="fas fa-chevron-down" :class="{ 'rotated': userMenuOpen }"></i>
                     <div v-if="userMenuOpen" class="user-menu-popup" @click.stop>
-                        <div class="user-menu-header">
-                            <div class="user-info">
-                                <div class="user-avatar-large">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="user-details">
-                                    <div class="user-name-large">{{ auth.username }}</div>
-                                    <div class="user-role">{{ auth.role === 'admin' ? 'Администратор' : 'Клиент'
-                                        }}</div>
+                        <template v-if="auth.authenticated">
+                            <div class="user-menu-header">
+                                <div class="user-info">
+                                    <div class="user-avatar-large">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name-large">{{ auth.username }}</div>
+                                        <div class="user-role">{{ auth.role === 'admin' ? 'Администратор' : 'Клиент'
+                                            }}</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="user-menu-items">
-                            <a v-if="auth.role === 'admin'" href="admin/?page=admin"
-                               class="user-menu-item admin-item">
-                                <i class="fas fa-cog"></i>
-                                <span>Администрирование</span>
+                            <div class="user-menu-items">
+                                <a v-if="auth.role === 'admin'" href="admin/?page=admin"
+                                   class="user-menu-item admin-item">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Администрирование</span>
+                                </a>
+                                <a href="#" @click.prevent="logout" class="user-menu-item logout-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Выйти</span>
+                                </a>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <a href="#" @click.prevent="openLogin" class="user-menu-item">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Войти</span>
                             </a>
-                            <a href="#" @click.prevent="logout" class="user-menu-item logout-item">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Выйти</span>
+                            <a href="#" @click.prevent="openRegister" class="user-menu-item">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Регистрация</span>
                             </a>
-                        </div>
+                        </template>
                     </div>
                 </div>
             </template>

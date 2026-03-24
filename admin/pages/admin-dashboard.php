@@ -38,7 +38,6 @@
                         <div class="modal-body">
                             <div class="content-sections">
                                 <div class="content-section">
-                                    <h4>Почему выбирают Aeternum</h4>
                                     <div class="content-items">
                                         <div v-for="(item, index) in root.featuresContent"
                                              :key="'feature-' + index" class="content-item">

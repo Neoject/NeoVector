@@ -1,6 +1,7 @@
 <?php
 
 use NeoVector\ApiController;
+use NeoVector\Config;
 use NeoVector\Database;
 use NeoVector\Log;
 use NeoVector\PageBlock;
@@ -85,80 +86,91 @@ try {
 ?>
 <div id="app">
     <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
-    <template v-if="!currentVirtualPage && !virtualPageError">
-    <template
-            v-for="(block, blockIndex) in (sortedPageBlocks || []).filter(b => b)"
-            :key="block && (block.id ?? null) !== null ? block.id : 'block-' + blockIndex"
-    >
-        <hero
-                v-if="block.type === 'hero'"
-                :block="block"
-                :is-in-view="isInView"
-                :nav-click="navClick"
-        ></hero>
-        <actual
-                v-if="block.type === 'actual'"
-                :block="block"
-                :is-in-view="isInView"
-        ></actual>
-        <products
-                v-if="block.type === 'products'"
-                :block="block"
-                :products="products"
-                :element-states="elementStates"
-                :cart-items="cartItems"
-                :wishlist="wishlist"
-                :is-in-view="isInView"
-                :is-video="isVideo"
-                :get-current-product-image="getCurrentProductImage"
-                :get-base-path="getBasePath"
-                @update:cart-items="cartItems = $event"
-                @update:wishlist="wishlist = $event"
-                @open-cart="closeFavorites(); cartOpen = true"
-                @open-favorites="closeCart(); favoritesOpen = true"
-                @close-favorites="favoritesOpen = false"
-                @open-order="openOrderModal()"
-                @start-option-selection="handleProductsOptionSelection($event)"
-        ></products>
-        <features
-                v-if="block.type === 'features'"
-                :block="block"
-                :is-in-view="isInView"
-        ></features>
-        <buttons
-                v-if="block.type === 'buttons'"
-                :block="block"
-                :is-in-view="isInView"
-                :open-virtual-page="openVirtualPage"
-                :get-base-path="getBasePath"
-        ></buttons>
-        <history
-                v-if="block.type === 'history'"
-                :block="block"
-                :is-in-view="isInView"
-        ></history>
-        <text-block
-                v-if="block.type === 'text'"
-                :block="block"
-                :is-in-view="isInView"
-        ></text-block>
-        <stats
-                v-if="block.type === 'stats'"
-                :block="block"
-                :is-in-view="isInView"
-        ></stats>
-        <contact
-                v-if="block.type === 'contact'"
-                :block="block"
-                :is-in-view="isInView"
-        ></contact>
-        <info-buttons
-                v-if="block.type === 'info_buttons'"
-                :block="block"
-                :is-in-view="isInView"
-        ></info-buttons>
-    </template>
-    </template>
+    <div class="order-modal" :class="{ 'active': showLogin }" @click.self="closeLogin">
+        <div class="order-modal-content" style="max-width: 460px;">
+            <div class="order-modal-header">
+                <h2>Вход</h2>
+                <button class="close-icon" @click="closeLogin">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="order-modal-body">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input v-model.trim="loginData.username" type="text" placeholder="Введите логин">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input v-model="loginData.password" type="password" placeholder="Введите пароль">
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                    <input id="remember-me" v-model="loginData.remember" type="checkbox" style="width:auto;">
+                    <label for="remember-me" style="margin:0;">Запомнить меня</label>
+                </div>
+                <p v-if="loginError" class="error-message">{{ loginError }}</p>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                    <button class="btn btn-outline" @click="closeLogin">Отмена</button>
+                    <button class="btn btn-primary" :disabled="loginLoading" @click="doLogin">
+                        {{ loginLoading ? 'Входим...' : 'Войти' }}
+                    </button>
+                </div>
+                <p style="margin-top:14px;">
+                    Нет аккаунта?
+                    <a href="#" @click.prevent="closeLogin(); openRegister();">Зарегистрироваться</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="order-modal" :class="{ 'active': showRegister }" @click.self="closeRegister">
+        <div class="order-modal-content" style="max-width: 460px;">
+            <div class="order-modal-header">
+                <h2>Регистрация</h2>
+                <button class="close-icon" @click="closeRegister">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="order-modal-body">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input v-model.trim="registerData.username" type="text" placeholder="Придумайте логин">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input v-model="registerData.password" type="password" placeholder="Минимум 6 символов">
+                </div>
+                <div class="form-group">
+                    <label>Подтвердите пароль</label>
+                    <input v-model="registerData.confirmPassword" type="password" placeholder="Повторите пароль">
+                </div>
+                <p v-if="registerError" class="error-message">{{ registerError }}</p>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                    <button class="btn btn-outline" @click="closeRegister">Отмена</button>
+                    <button class="btn btn-primary" :disabled="registerLoading" @click="doRegister">
+                        {{ registerLoading ? 'Регистрируем...' : 'Зарегистрироваться' }}
+                    </button>
+                </div>
+                <p style="margin-top:14px;">
+                    Уже есть аккаунт?
+                    <a href="#" @click.prevent="closeRegister(); openLogin();">Войти</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <component
+            v-if="!currentVirtualPage && !virtualPageError"
+            v-for="(block, blockIndex) in filteredBlocks"
+            :key="block?.id ?? 'block-' + blockIndex"
+            :is="blockComponents[block.type]"
+            v-bind="getBlockProps(block)"
+    ></component>
+    <!-- Order Modal -->
+    <?php
+    $hasAutocomplete = false;
+    $normalizeImageUrl = function($url) {
+        return Config::normalize_media_url($url, ROOT_PATH);
+    };
+    include NV . '/order_modal.php';
+    ?>
     <!-- Cart Selector Modal -->
     <div class="cart-modal" :class="{ 'active': cartOpen }">
         <div class="cart-content" @click.stop>
@@ -285,7 +297,7 @@ try {
         </div>
     </div>
     <div class="overlay"
-         :class="{ 'active': cartOpen || userMenuOpen || favoritesOpen || orderModalOpen || showOptionSelector }"
+         :class="{ 'active': cartOpen || favoritesOpen || orderModalOpen || showOptionSelector }"
          :style="userMenuOpen ? { background: 'none' } : {}"
          @click="closeAllModals">
     </div>

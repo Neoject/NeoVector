@@ -238,6 +238,33 @@ const NV = {
             return { success: false, error: 'Network error' };
         }
     },
+    async register(username, password, role = 'user') {
+        try {
+            const apiUrl = this.getApiUrl();
+            const form = new FormData();
+
+            form.append('action', 'register');
+            form.append('username', username);
+            form.append('password', password);
+            form.append('role', role);
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                body: form,
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                return { success: true };
+            }
+
+            return { success: false, error: data.error || 'Registration failed' };
+        } catch (e) {
+            return { success: false, error: 'Network error' };
+        }
+    },
     async logout() {
         try {
             const apiUrl = this.getApiUrl();
@@ -359,16 +386,17 @@ const NV = {
             if (response.ok) {
                 const data = await response.json();
 
-                if (data.success) {
-                    this.title = data.title || '';
-                    this.description = data.description || '';
-                    this.imageMetaTags = data.image_meta_tags || '';
-                    this.pickupAddress = data.pickup_address ? 'Адрес магазина: ' + data.pickup_address : '';
-                    this.workHours = data.work_hours ? 'Время работы: ' + data.work_hours : '';
-                    this.storePhone = data.store_phone ? 'Мобильный телефон: ' + data.store_phone : '';
-                    this.deliveryBel = data.delivery_bel;
-                    this.deliveryRus = data.delivery_rus;
-                }
+                const ok = (data && typeof data === 'object' && data.success === undefined) ? true : !!data?.success;
+                if (!ok) return;
+
+                this.title = data.title || '';
+                this.description = data.description || '';
+                this.imageMetaTags = data.image_meta_tags || '';
+                this.pickupAddress = data.pickup_address ? 'Адрес магазина: ' + data.pickup_address : '';
+                this.workHours = data.work_hours ? 'Время работы: ' + data.work_hours : '';
+                this.storePhone = data.store_phone ? 'Мобильный телефон: ' + data.store_phone : '';
+                this.deliveryBel = data.delivery_bel || '';
+                this.deliveryRus = data.delivery_rus || '';
             }
         } catch (error) {
             console.error('Error loading params:', error);
@@ -387,9 +415,70 @@ const NV = {
             },
             onClick: function(){} // Callback after click
         }).showToast();
+    },
+    showCookieConsent() {
+        const consent = localStorage.getItem('cookieConsent');
+
+        if (consent) return;
+
+        const container = document.createElement('div');
+        container.classList.add('cookie-container')
+
+        const text = document.createElement('div');
+        text.innerHTML = 'Наш сайт использует файлы cookie для улучшения пользовательского опыта. <br>' +
+            'Нажав «Принять», вы даете согласие на обработку файлов cookie.';
+
+        const buttons = document.createElement('div');
+        buttons.classList.add('btns-container');
+
+        const acceptBtn = document.createElement('button');
+        acceptBtn.classList.add('btn');
+        acceptBtn.textContent = 'Принять';
+        acceptBtn.style.cursor = 'pointer';
+
+        const declineBtn = document.createElement('button');
+        declineBtn.classList.add('btn');
+        declineBtn.textContent = 'Отклонить';
+        declineBtn.style.cursor = 'pointer';
+
+        buttons.appendChild(acceptBtn);
+        buttons.appendChild(declineBtn);
+
+        container.appendChild(text);
+        container.appendChild(buttons);
+
+        const toast = Toastify({
+            node: container,
+            duration: -1,
+            gravity: 'bottom',
+            position: 'center',
+            close: false,
+            stopOnFocus: true,
+            style: {
+                color: "var(--text-main)",
+                background: "var(--background)",
+                cursor: "auto"
+            },
+        });
+
+        acceptBtn.onclick = () => {
+            localStorage.setItem('cookieConsent', 'accepted');
+            toast.hideToast();
+        };
+
+        declineBtn.onclick = () => {
+            localStorage.setItem('cookieConsent', 'declined');
+            toast.hideToast();
+        };
+
+        toast.showToast();
     }
 };
 
 if (typeof window !== 'undefined') {
     window.NV = NV;
 }
+
+NV.ready(() => {
+    NV.showCookieConsent();
+})

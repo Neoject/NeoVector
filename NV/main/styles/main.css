@@ -3,7 +3,6 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    user-select: none;
 }
 
 html {
@@ -33,6 +32,7 @@ header {
     position: fixed;
     width: 100%;
     color: var(--header-secondary);
+    user-select: none;
     z-index: 999;
     transition: all 0.3s ease;
     backdrop-filter: blur(18px);
@@ -412,17 +412,15 @@ a {
     margin: 0 4.5vw;
 }
 
-.info-buttons-block {
+#info-buttons {
     padding: 40px 0 0;
-    background-color: var(--background);
-    flex: 0 0 calc(33.333% - 10px);
 }
 
-.info-buttons-block .info-buttons-content {
+.info-buttons .info-buttons-content {
     text-align: center;
 }
 
-.info-buttons-block a {
+.info-buttons a {
     width: 20vw;
     font-size: 14px;
     flex-wrap: unset;
@@ -625,6 +623,7 @@ h1 span {
     -webkit-transition: all 0.3s ease;
     font-size: 14px;
     cursor: pointer;
+    user-select: none;
 }
 
 .btn:hover {
@@ -1183,7 +1182,7 @@ section {
     line-height: 1.6;
 }
 
-.cart-overlay {
+/*.cart-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -1193,7 +1192,7 @@ section {
     z-index: 1999;
     cursor: pointer;
     transition: all 0.3s ease-in-out;
-}
+}*/
 
 .cart-modal {
     position: fixed;
@@ -1220,7 +1219,7 @@ section {
     flex-direction: column;
 }
 
-.favorites-overlay {
+/*.favorites-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -1230,7 +1229,7 @@ section {
     z-index: 1999;
     cursor: pointer;
     transition: all 0.3s ease-in-out;
-}
+}*/
 
 .favorites-modal {
     position: fixed;
@@ -1688,7 +1687,7 @@ footer {
     width: 100%;
     height: 100%;
     background: var(--bg-black-50);
-    z-index: 100;
+    z-index: 1000;
     opacity: 0;
     visibility: hidden;
     -webkit-transition: all 0.3s ease;
@@ -7177,4 +7176,17 @@ label.checkbox-label {
     .contact-info {
         grid-template-columns: 1fr;
     }
+}
+
+.cookie-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btns-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
 }

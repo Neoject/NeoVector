@@ -28,8 +28,6 @@ class User
      */
     public static function register(): void
     {
-        Auth::requireAuth();
-
         $username = isset($_POST['username']) ? trim((string) $_POST['username']) : '';
         $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
         $role = isset($_POST['role']) ? trim((string) $_POST['role']) : 'user';
