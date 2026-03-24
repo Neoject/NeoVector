@@ -2,23 +2,20 @@
 /**
  * Общий шаблон окна оформления заказа
  * Используется в index.php и product/index.php
- * 
- * @var string $HOME_URL Базовый URL сайта
+ *
  * @var bool $hasAutocomplete Использовать ли автодополнение для адреса (DaData)
  * @var callable|null $normalizeImageUrl Функция для нормализации URL изображений (опционально)
  */
 
-if (!isset($HOME_URL)) {
-    $HOME_URL = '';
-}
 if (!isset($hasAutocomplete)) {
     $hasAutocomplete = false;
 }
+
 if (!isset($normalizeImageUrl)) {
     $normalizeImageUrl = null;
 }
 
-$policyUrl = rtrim($HOME_URL, '/') . '/policy';
+$policyUrl = rtrim(ROOT, '/') . '/policy';
 ?>
 <div class="order-modal" :class="{ 'active': orderModalOpen }" @click.self="closeOrderModal">
     <div class="order-modal-content">
