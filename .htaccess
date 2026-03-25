@@ -9,6 +9,7 @@
     RewriteCond %{REQUEST_URI} !^/assets/
     RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|gif|css|js|ico|svg|woff|woff2|ttf|eot|mp4|webm|ogg)$ [NC]
     RewriteRule ^(.*)$ index.php [L,QSA]
+    RewriteRule ^admin/?$ NV/admin/index.php [L]
 </IfModule>
 
 php_value upload_max_filesize 256M

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once \dirname(__DIR__, 2) . '/config.php';
 
 global $HOME_URL, $scripts;
 
@@ -50,7 +50,7 @@ if (!$auth->isAdmin()): ?>
             <div class="login-form" style="text-align:center;">
                 <h2>Вход в админ-панель</h2>
                 <p style="margin-top:10px;">Только для администраторов.</p>
-                <form method="post" action="index.php" style="max-width:320px; margin:20px auto 0; text-align:left;">
+                <form method="post" action="../../index.php" style="max-width:320px; margin:20px auto 0; text-align:left;">
                     <input type="hidden" name="action" value="login">
                     <div class="form-group">
                         <label>Имя пользователя</label>
@@ -71,7 +71,7 @@ if (!$auth->isAdmin()): ?>
                     } ?>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Войти</button>
-                        <a class="btn btn-secondary" href="../" style="margin-left:10px;">На главную</a>
+                        <a class="btn btn-secondary" href="../.." style="margin-left:10px;">На главную</a>
                     </div>
                 </form>
             </div>
@@ -125,8 +125,8 @@ $adminUser = $auth->getCurrentUser();
                                     title="Дополнительные параметры">
                                     <i class="fa-solid fa-cog"></i>
                                 </button>
-                                <a href="index.php?action=logout" @click.prevent="confirmLogout"
-                                    class="btn btn-secondary" title="Выйти">
+                                <a href="../../index.php?action=logout" @click.prevent="confirmLogout"
+                                   class="btn btn-secondary" title="Выйти">
                                     <i class="fas fa-sign-out-alt"></i>
                                 </a>
                             </div>
@@ -173,7 +173,7 @@ $adminUser = $auth->getCurrentUser();
                             <i class="fas fa-user"></i>
                             <span>Профиль</span>
                         </button>
-                        <a href="index.php?action=logout" class="mobile-nav-btn logout-btn">
+                        <a href="../../index.php?action=logout" class="mobile-nav-btn logout-btn">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Выйти</span>
                         </a>
@@ -375,14 +375,14 @@ $adminUser = $auth->getCurrentUser();
         window.__ADMIN_AUTH__ = <?= json_encode($adminUser ?? ['authenticated' => false]); ?>;
     </script>
 
-    <script src="../NV/main/js/admin/modal.js"></script>
-    <script src="../NV/main/js/admin/auth.js"></script>
-    <script src="../NV/main/js/admin/category.js"></script>
-    <script src="../NV/main/js/admin/mail.js"></script>
-    <script src="../NV/main/js/admin/admin.js"></script>
+    <script src="<?=ROOT?>/main/js/admin/modal.js"></script>
+    <script src="<?=ROOT?>/main/js/admin/auth.js"></script>
+    <script src="<?=ROOT?>/main/js/admin/category.js"></script>
+    <script src="<?=ROOT?>/main/js/admin/mail.js"></script>
+    <script src="<?=ROOT?>/main/js/admin/admin.js"></script>
 
     <?php foreach ($scripts as $script) {
-        echo '<script src="'.NV.'/main/js/admin/pages/'.$script.'.js"></script>';
+        echo '<script src="'.ROOT.'/main/js/admin/pages/'.$script.'.js"></script>';
     } ?>
 
     <script type="text/x-template" id="admin-dashboard-template">
@@ -390,7 +390,7 @@ $adminUser = $auth->getCurrentUser();
     </script>
     <?php foreach ($scripts as $script): ?>
     <script type="text/x-template" id="<?=$script?>-template">
-        <?php include __DIR__.'/pages/'.$script.'.html'; ?>
+        <?php include __DIR__ . '/pages/' .$script.'.html'; ?>
     </script>
 <?php
 endforeach;

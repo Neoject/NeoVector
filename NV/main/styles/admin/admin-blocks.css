@@ -294,7 +294,7 @@
     max-width: 200px;
     max-height: 150px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px var(--shadow-regular);
+    box-shadow: 0 4px 12px var(--shadow-primary);
 }
 
 .image-preview button {

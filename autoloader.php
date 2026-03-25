@@ -2,7 +2,7 @@
 
 spl_autoload_register(static function ($class) {
     $prefixes = [
-        'NeoVector\\' => __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR,
+        'NeoVector\\' => __DIR__ . DIRECTORY_SEPARATOR . 'NV/main/classes' . DIRECTORY_SEPARATOR,
     ];
 
     foreach ($prefixes as $prefix => $baseDir) {

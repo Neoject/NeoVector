@@ -7,6 +7,10 @@ use NeoVector\Params;
 
 require_once 'autoloader.php';
 
+if (!defined('ROOT_PATH')) {
+    define('ROOT_PATH', __DIR__);
+}
+
 Config::load();
 
 global $DB_HOST, $DB_USER, $DB_PASS, $DB_NAME;
@@ -38,7 +42,6 @@ if ($projectBasePath === '/' || $projectBasePath === '\\' || $projectBasePath ==
 }
 
 define('ROOT', $HOME_URL === '/' ? '' : rtrim($HOME_URL, '/'));
-const ROOT_PATH = __DIR__;
 const NV = ROOT . '/NV';
 
 $_DESCRIPTION = Params::getDescription();

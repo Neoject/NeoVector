@@ -29,7 +29,7 @@ use NeoVector\Params;
         <nav class="nav-links" :key="'nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
             <template v-if="isMainPage">
                 <a v-for="(button, index) in navigationButtons" :key="'nav-' + index" href="#"
-                   @click="handleNavigationClick($event, button.target)">
+                   @click="navClick($event, button.target)">
                     {{ button.label }}
                 </a>
             </template>

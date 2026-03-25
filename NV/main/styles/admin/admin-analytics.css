@@ -103,7 +103,7 @@
 }
 
 .analytics-table .column-resize-handle:hover { background: var(--background-additional); }
-.analytics-table .column-resize-handle.active { background: var(--background-additional); box-shadow: 0 0 10px var(--shadow-regular); }
+.analytics-table .column-resize-handle.active { background: var(--background-additional); box-shadow: 0 0 10px var(--shadow-primary); }
 .analytics-table .column-resize-handle::before {
     content: '';
     position: absolute;

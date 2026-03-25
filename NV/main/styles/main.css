@@ -31,14 +31,14 @@ header {
     padding: 20px 0 10px 0;
     position: fixed;
     width: 100%;
-    color: var(--header-secondary);
+    color: var(--header-main);
     user-select: none;
     z-index: 999;
     transition: all 0.3s ease;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     background: var(--background);
-    box-shadow: var(--shadow-regular)
+    box-shadow: var(--shadow-primary)
 }
 
 header a,
@@ -86,19 +86,19 @@ input[type=checkbox] {
 input[type=checkbox]:hover {
     border-color: var(--header-secondary);
     background: var(--background-additional);
-    box-shadow: 0 0 8px var(--shadow-regular);
+    box-shadow: 0 0 8px var(--shadow-primary);
 }
 
 input[type=checkbox]:focus {
     outline: none;
     border-color: var(--header-main);
-    box-shadow: 0 0 12px var(--shadow-regular);
+    box-shadow: 0 0 12px var(--shadow-primary);
 }
 
 input[type=checkbox]:checked {
     background: linear-gradient(135deg, var(--header-main) 0%, var(--header-secondary) 100%);
     border-color: var(--header-secondary);
-    box-shadow: 0 0 12px var(--shadow-regular);
+    box-shadow: 0 0 12px var(--shadow-primary);
 }
 
 input[type=checkbox]:checked::after {
@@ -116,7 +116,7 @@ input[type=checkbox]:checked::after {
 
 input[type=checkbox]:checked:hover {
     background: linear-gradient(135deg, var(--header-secondary) 0%, var(--header-main) 100%);
-    box-shadow: 0 0 16px var(--shadow-regular);
+    box-shadow: 0 0 16px var(--shadow-primary);
 }
 
 input[type=checkbox]:disabled {
@@ -250,12 +250,7 @@ header.scrolled {
     position: fixed;
     width: 100%;
     overflow: visible;
-    box-shadow:
-            0 10px 40px var(--background-secondary),
-            inset 0 1px 2px var(--background-additional),
-            inset 0 -1px 1px var(--background-empty),
-            0 0 0 1px var(--shadow-regular),
-            0 4px 16px var(--hover-secondary);
+    box-shadow: var(--shadow-header), var(--shadow-primary);
     filter: url(#liquid-glass-subtle);
     -webkit-filter: url(#liquid-glass-subtle);
     z-index: 999;
@@ -362,7 +357,6 @@ a {
 
 @media (max-width: 768px) {
     header.scrolled {
-
         filter: url(#liquid-glass-subtle);
         -webkit-filter: url(#liquid-glass-subtle);
         backdrop-filter: blur(20px) saturate(150%);
@@ -468,13 +462,13 @@ a {
     text-decoration: none;
     padding: 0 20px;
     color: var(--text-main);
-    text-shadow: 0 0 90px var(--shadow-regular);
+    text-shadow: 0 0 90px var(--shadow-primary);
     user-select: none;
     transition: all 0.3s ease-in-out;
 }
 
 .logo:hover {
-    text-shadow: 0 0 32px var(--shadow-regular);
+    text-shadow: 0 0 32px var(--shadow-primary);
 }
 
 .nav-links {
@@ -528,7 +522,7 @@ a {
     background: var(--background-additional);
     color: var(--header-secondary);
     border: 1px solid var(--border-secondary-alt);
-    box-shadow: 0 0 10px var(--shadow-regular);
+    box-shadow: 0 0 10px var(--shadow-primary);
     border-radius: 50%;
     width: 20px;
     height: 20px;
@@ -608,7 +602,6 @@ h1 span {
     display: inline-block;
     padding: 8px 16px;
     margin: 12px;
-    background: var(--primary);
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
     color: var(--text-dark);
     text-decoration: none;
@@ -627,7 +620,7 @@ h1 span {
     border: 2px solid var(--primary);
     color: var(--primary);
     transform: translateY(-3px);
-    box-shadow: 0 10px 20px var(--shadow-regular);
+    box-shadow: 0 10px 20px var(--shadow-primary);
 }
 
 .btn-outline {
@@ -645,7 +638,6 @@ h1 span {
 
 section {
     padding: 12vh 0;
-    background: var(--background-section);
 }
 
 .section-title {
@@ -732,7 +724,7 @@ section {
         -ms-transform: translateY(-10px);
         transform: translateY(-10px);
         background: var(--background-secondary);
-        box-shadow: 0 15px 30px var(--shadow-regular);
+        box-shadow: 0 15px 30px var(--shadow-primary);
     }
 }
 
@@ -796,7 +788,7 @@ section {
     border-top-color: var(--header-secondary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    box-shadow: 0 2px 8px var(--shadow-regular);
+    box-shadow: 0 2px 8px var(--shadow-primary);
 }
 
 @keyframes spin {
@@ -1155,7 +1147,7 @@ section {
     -ms-transform: translateY(-10px);
     transform: translateY(-10px);
     background: var(--background-secondary);
-    box-shadow: 0 15px 30px var(--shadow-regular);
+    box-shadow: 0 15px 30px var(--shadow-primary);
 }
 
 .feature-icon {
@@ -1186,7 +1178,7 @@ section {
     height: 100vh;
     background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: -5px 0 20px var(--shadow-regular);
+    box-shadow: -5px 0 20px var(--shadow-primary);
     transition: right 0.4s ease;
     z-index: 2000;
     padding: 20px;
@@ -1211,7 +1203,7 @@ section {
     height: 100vh;
     background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: -5px 0 20px var(--shadow-regular);
+    box-shadow: -5px 0 20px var(--shadow-primary);
     transition: right 0.4s ease;
     z-index: 2000;
     overflow-y: auto;
@@ -1543,7 +1535,7 @@ section {
     -moz-transform: translateY(-2px);
     -ms-transform: translateY(-2px);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--shadow-regular);
+    box-shadow: 0 4px 12px var(--shadow-primary);
 }
 
 .add-to-cart-btn-option {
@@ -1953,7 +1945,7 @@ footer {
     height: 100vh;
     background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: 5px 0 20px var(--shadow-regular);
+    box-shadow: 5px 0 20px var(--shadow-primary);
     transition: left 0.3s ease;
     z-index: 2000;
     padding: 80px 20px 20px;
@@ -2388,7 +2380,6 @@ textarea.form-control {
 }
 
 .timeline-year {
-    background: var(--primary);
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
     color: var(--text-dark);
     padding: 15px 25px;
@@ -2399,7 +2390,7 @@ textarea.form-control {
     text-align: center;
     position: relative;
     z-index: 2;
-    box-shadow: 0 5px 15px rgba(255, 237, 179, 0.3);
+    box-shadow: var(--shadow-primary);
 }
 
 .timeline-content {
@@ -2421,7 +2412,7 @@ textarea.form-control {
 .timeline-content:hover {
     background: var(--background-secondary);
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px var(--shadow-regular);
+    box-shadow: 0 10px 25px var(--shadow-primary);
 }
 
 .timeline-content h3 {
@@ -2465,7 +2456,7 @@ textarea.form-control {
     -moz-transform: translateY(-10px);
     -ms-transform: translateY(-10px);
     transform: translateY(-10px);
-    box-shadow: 0 15px 30px var(--shadow-regular);
+    box-shadow: 0 15px 30px var(--shadow-primary);
 }
 
 .stat-number {
@@ -2962,7 +2953,7 @@ textarea.form-control {
     height: 100vh;
     background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: 5px 0 20px var(--shadow-regular);
+    box-shadow: 5px 0 20px var(--shadow-primary);
     transition: left 0.3s ease;
     z-index: 2000;
     padding: 80px 20px 20px;
@@ -3095,7 +3086,7 @@ textarea.form-control {
     background: var(--background-additional);
     color: var(--header-secondary);
     border: 1px solid var(--border-secondary-alt);
-    box-shadow: 0 0 8px var(--shadow-regular);
+    box-shadow: 0 0 8px var(--shadow-primary);
     border-radius: 50%;
     width: 14px;
     height: 14px;
@@ -3125,7 +3116,7 @@ textarea.form-control {
     background: var(--background-additional);
     color: var(--header-secondary);
     border: 1px solid var(--border-secondary-alt);
-    box-shadow: 0 0 8px var(--shadow-regular);
+    box-shadow: 0 0 8px var(--shadow-primary);
     border-radius: 50%;
     width: 14px;
     height: 14px;
@@ -4158,7 +4149,7 @@ textarea.form-control {
 
 .thumbnail-item.active {
     border-color: var(--primary);
-    box-shadow: 0 0 10px var(--shadow-regular);
+    box-shadow: 0 0 10px var(--shadow-primary);
 }
 
 .thumbnail-img {
@@ -5853,7 +5844,7 @@ textarea.form-control {
     border-radius: 8px;
     font-size: 13px;
     z-index: 1000;
-    box-shadow: 0 4px 12px var(--shadow-regular);
+    box-shadow: 0 4px 12px var(--shadow-primary);
     margin-top: 4px;
     animation: tooltipFadeIn 0.3s ease-out;
     max-width: 300px;
@@ -6017,10 +6008,10 @@ header {
     transition: background 0.3s ease, backdrop-filter 0.3s ease;
 }
 
-header.scrolled {
+/*header.scrolled {
     background: rgba(255, 255, 255, 0);
     backdrop-filter: blur(26px) saturate(220%);
-}
+}*/
 
 .product-card {
     position: relative;
@@ -6030,7 +6021,7 @@ header.scrolled {
     -webkit-backdrop-filter: blur(18px) saturate(190%);
     border-radius: 22px;
     border: 1px solid var(--border-secondary);
-    box-shadow: inset 0 8px 32px var(--shadow-regular);
+    box-shadow: inset 0 8px 32px var(--shadow-primary);
     transition:
             transform 0.25s ease,
             background 0.25s ease,
@@ -6063,7 +6054,7 @@ header.scrolled {
     background: var(--hover-secondary);
     transform: translateY(-4px) scale(1.03);
     scale: 1.1;
-    box-shadow: inset 0 12px 40px var(--shadow-regular);
+    box-shadow: inset 0 12px 40px var(--shadow-primary);
 }
 
 .clear-input {
@@ -6789,7 +6780,7 @@ label.checkbox-label {
     border: 2px solid var(--primary);
     color: var(--primary);
     transform: translateY(-3px);
-    box-shadow: 0 10px 20px var(--shadow-regular);
+    box-shadow: 0 10px 20px var(--shadow-primary);
 }
 
 .split-button-container:hover .split-btn:hover {
@@ -6949,7 +6940,7 @@ label.checkbox-label {
         border: 2px solid var(--hover-primary);
         color: var(--text-dark);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px var(--shadow-regular);
+        box-shadow: 0 4px 12px var(--shadow-primary);
     }
 
     .mobile-action-btn:active {
@@ -7015,7 +7006,13 @@ label.checkbox-label {
     margin-bottom: 8px;
 }
 
-.neoject, .neoject a {
+.neoject {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.neoject a {
     color: var(--text-additional-dark);
 }
 

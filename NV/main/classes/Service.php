@@ -123,10 +123,10 @@ class Service
     public static function adminJS(mixed $data): void
     {
         if (!is_array($data)) {
-            echo '<script src="' . NV . '/main/js/admin/' . $data . '.js"></script>';
+            echo '<script src="' . ROOT . '/main/js/admin/' . $data . '.js"></script>';
         } else {
             foreach ($data as $script) {
-                echo '<script src="' . NV . '/main/js/admin/' . $script . '.js"></script>';
+                echo '<script src="' . ROOT . '/main/js/admin/' . $script . '.js"></script>';
             }
         }
     }

@@ -39,7 +39,7 @@ table.pages-table td:last-child {
     width: 120px;
     vertical-align: middle;
     text-align: center;
-    box-shadow: -2px 0 5px var(--shadow-regular);
+    box-shadow: -2px 0 5px var(--shadow-primary);
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
 }

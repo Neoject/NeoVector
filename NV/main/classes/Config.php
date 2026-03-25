@@ -13,9 +13,12 @@ class Config
      */
     public static function load(): void
     {
-        if (self::$loaded) return;
+        if (self::$loaded) {
+            return;
+        }
 
-        $envPath = dirname(__DIR__) . '/.env';
+        $rootPath = \defined('ROOT_PATH') ? \ROOT_PATH : \dirname(__DIR__, 3);
+        $envPath = $rootPath . DIRECTORY_SEPARATOR . '.env';
 
         if (file_exists($envPath) && is_readable($envPath)) {
             $envLines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);

@@ -142,7 +142,7 @@ try {
             <div v-else class="empty-cart">
                 <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
                 <p>Ваша корзина пуста</p>
-                <a href="#" class="btn btn-primary" @click="handleNavigationClick($event, 'products')">Перейти к
+                <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
                     товарам</a>
             </div>
         </div>
@@ -195,7 +195,7 @@ try {
                     </template>
                     <button v-if="cartItems.length" class="btn btn-primary"
                             @click="fromWishlistToCart(product.id)">В корзину</button>
-                    <a href="#" class="btn btn-primary" @click="handleNavigationClick($event, 'products')">Перейти к
+                    <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
                         товарам</a>
                 </div>
             </div>
