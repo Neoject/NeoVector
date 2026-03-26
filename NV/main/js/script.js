@@ -431,6 +431,7 @@ NV.ready(() => {
                                     if (orderProduct && typeof orderProduct === 'object' && orderProduct.id != null) {
                                         this.currentOrderProduct = orderProduct;
                                     }
+
                                     this.openOrderModal();
                                 },
                             };
