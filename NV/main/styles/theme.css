@@ -1,0 +1,89 @@
+@font-face {
+    font-family: 'Main';
+    src: url('../../../src/fonts/CyberAlert.otf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* background */
+    --background: linear-gradient(100deg, #eef2ff, #a8dfff);
+    --background-secondary: linear-gradient(90deg, #bbe5ff, #add3de);;
+    --background-additional: linear-gradient(-45deg, #4678d8, #8e4aff);
+    --background-empty: #aeaeae;
+    --background-header: linear-gradient(135deg, rgba(105, 255, 255, 0.53), rgba(131, 183, 255, 0.49), rgba(109, 216, 216, 0.75), rgba(130, 187, 227, 0.21), rgba(130, 187, 227, 0.21));
+    /* colors */
+    --primary: #6d7bba;
+    --primary-alt: #79a8cd;
+    --secondary: #16e4e4;
+    --header-main: #4a6075;
+    --header-secondary: #cef1ff;
+    --header-additional: #373737;
+    /* text colors */
+    --text-main: #375481;
+    --text-secondary: #444e3c;
+    --text-additional: #4e5657;
+    --text-additional-light: #385559;
+    --text-additional-dark: #352a53;
+    --text-dark: #433a3a;
+    --text-btn: #5e4949;
+    --text-black: #000000;
+    --text-simple: #322323;
+    --text-hover: #151515;
+    /* shadows */
+    --shadow-primary: 0 0 8px 2px #415a81;
+    --shadow-secondary: 0 0 8px 2px #38384c;
+    --shadow-additional: 0 0 8px 2px #282a2e;
+    --shadow-header: inset 0 0 24px 8px rgba(93, 180, 207, 0.7);
+    /* table colors */
+    --table-element: #5d5c56;
+    --table-element-hover: #97927c;
+    /* status colors */
+    --success-bg: #d4edda;
+    --success-border: #c3e6cb;
+    --success-text: #155724;
+    --success-green: #28a745;
+    --success-green-alt: #2ecc71;
+    --success-green-dark: #27ae60;
+    --success-green-light: #218838;
+    --success-dark: #212121;
+    --error-bg: #f8d7da;
+    --error-border: #f5c6cb;
+    --error-text: #721c24;
+    --error-red: #e74c3c;
+    --error-red-alt: #ff6b6b;
+    --error-red-dark: #d32f2f;
+    --error-red-darker: #dc3545;
+    --error-red-light: #ff8a80;
+    --warning: #cd1942;
+    --warning-dark: #8a0419;
+    /* info colors */
+    --info-primary: #007bff;
+    --info-secondary: #0056b3;
+    --info-alt: #3498db;
+    --status-primary: #9b59b6;
+    /* border colors */
+    --border-light: rgba(255, 255, 255, 0.1);
+    --border-medium: rgba(255, 255, 255, 0.2);
+    --border-strong: rgba(255, 255, 255, 0.3);
+    --border-stronger: rgba(255, 255, 255, 0.4);
+    --border-primary-light: rgb(166, 251, 255);
+    --border-primary-medium: rgb(142, 202, 200);
+    --border-primary-strong: rgb(71, 152, 147);
+    --border-primary-stronger: rgba(58, 161, 182, 0.4);
+    --border-primary-strongest: rgba(11, 61, 89, 0.8);
+    --border-secondary: rgba(79, 171, 204, 0.3);
+    --border-secondary-alt: rgba(40, 230, 164, 0.45);
+    --border-secondary-strong: rgba(30, 167, 191, 0.6);
+    --border-secondary-shadow: rgba(13, 76, 96, 0.4);
+    --border-misc: #4b6764;
+    --border-misc-alt: #426983;
+    /* hover */
+    --hover-primary: #39454c;
+    --hover-secondary: rgba(57, 80, 80, 0.56);
+    --hover-button: #475963;
+    --hover-table: #3f6e6e;
+    /* border radius */
+    --radius-primary: 15px;
+}

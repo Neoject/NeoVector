@@ -1,0 +1,320 @@
+<section class="products-management">
+    <div class="products-management-content">
+        <h2>Управление товарами</h2>
+        <button class="products-actions-menu-btn" @click="root.toggleProductsActionsSidebar" title="Меню действий"
+                aria-label="Открыть меню действий">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+        <div class="products-actions-toolbar">
+            <button class="btn btn-primary" @click="root.openAddProductModal" title="Добавить товар">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+            <button class="btn btn-primary" @click="root.manageCategoryEdit" title="Категории">
+                <i class="fa-solid fa-sliders"></i>
+            </button>
+            <button class="btn btn-secondary" @click="root.refreshProducts" title="Обновить"><i class="fas fa-sync"></i></button>
+            <button class="btn btn-secondary" @click.stop="root.toggleColumnSelector" title="Столбцы">
+                <i class="fa-solid fa-list"></i>
+            </button>
+            <div v-if="root.showColumnSelector" class="column-selector-dropdown" @click.stop>
+                <div class="column-selector-header">
+                    <strong>Выберите столбцы</strong>
+                </div>
+                <div class="column-selector-list">
+                    <label v-for="(visible, column) in root.productTableColumns" :key="column"
+                           class="column-selector-item">
+                        <input type="checkbox" :checked="visible"
+                               @change="root.toggleColumn(column)">
+                        <span>{{ root.getColumnLabel(column) }}</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="products-management-controls">
+        <div class="form-group">
+            <label>Поиск</label>
+            <input>
+        </div>
+        <div class="form-group" style="margin: 0 24px">
+            <label>Фильтры</label>
+            <button class="btn btn-secondary" style="margin: 4px 12px" @click="root.openFiltersModal">
+                <i class="fa-solid fa-filter"></i>
+            </button>
+        </div>
+    </div>
+    <div class="products-actions-sidebar-overlay" :class="{ 'active': root.showProductsActionsSidebar }"
+         @click="root.closeProductsActionsSidebar"></div>
+    <teleport to="body">
+        <aside class="products-actions-sidebar" :class="{ 'open': root.showProductsActionsSidebar }">
+            <div class="products-actions-sidebar-header">
+                <h3>Действия</h3>
+                <button class="products-actions-sidebar-close" @click="root.closeProductsActionsSidebar"
+                        aria-label="Закрыть">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="products-actions-sidebar-body">
+                <button class="btn btn-primary btn-block" @click="root.openAddProductModal(); root.closeProductsActionsSidebar()">
+                    <i class="fa-solid fa-plus"></i> Добавить товар
+                </button>
+                <button class="btn btn-primary btn-block" @click="root.manageCategoryEdit(); root.closeProductsActionsSidebar()">
+                    <i class="fa-solid fa-sliders"></i> Категории
+                </button>
+                <button class="btn btn-secondary btn-block" @click="root.refreshProducts(); root.closeProductsActionsSidebar()">
+                    <i class="fas fa-sync"></i> Обновить
+                </button>
+                <div class="products-actions-sidebar-section">
+                    <strong>Столбцы таблицы</strong>
+                    <div class="column-selector-list column-selector-list-sidebar">
+                        <label v-for="(visible, column) in root.productTableColumns" :key="column"
+                               class="column-selector-item">
+                            <input type="checkbox" :checked="visible"
+                                   @change="root.toggleColumn(column)">
+                            <span>{{ root.getColumnLabel(column) }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </teleport>
+    <template v-if="root.categoryEdit">
+        <div class="categories-management" style="margin-top:20px;">
+            <h3>Категории</h3>
+            <div class="categories-layout">
+                <div class="categories-list" style="flex:2 1 420px; min-width:300px;">
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div v-for="cat in root.categories" :key="cat._id" class="drag-item"
+                             draggable="true" @dragstart="root.startDragCategory(cat, $event)"
+                             @dragend="root.endDragCategory" @dragover.prevent
+                             @drop="root.dropCategory(cat, $event)"
+                             style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; cursor:move;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-grip-vertical"
+                                   style="opacity:0.6;"></i>
+                                <div>
+                                    <div style="font-weight:600;">{{ cat.name }}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="btn btn-sm btn-move" style="margin: 0"
+                                        @click="root.moveCategory(cat, 'up')" title="Вверх"
+                                        aria-label="Вверх">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button class="btn btn-sm btn-move"
+                                        style="margin: 0 1vw 0 0"
+                                        @click="root.moveCategory(cat, 'down')" title="Вниз"
+                                        aria-label="Вниз">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                <button class="btn btn-sm btn-edit"
+                                        @click="root.startEditCategory(cat)"><i
+                                            class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-delete"
+                                        style="margin-left:8px;"
+                                        @click="root.deleteCategory(cat)"><i
+                                            class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div v-if="root.categories.length === 0"
+                             style="padding:15px; color:#888;">Категории не созданы</div>
+                    </div>
+                </div>
+                <div class="category-form" style="flex:1 1 320px; min-width:280px;">
+                    <h4>{{ root.categoryForm.id ? 'Редактировать категорию' : 'Добавить категорию' }}</h4>
+                    <div class="form-group">
+                        <label>Название</label>
+                        <input type="text" v-model="root.categoryForm.name"
+                               placeholder="Напр. Натуральная кожа">
+                    </div>
+
+                    <div v-if="root.categoryError" class="error-message">{{ root.categoryError }}
+                    </div>
+                    <div v-if="root.categorySuccess" class="success-message">{{
+                            root.categorySuccess }}</div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary"
+                                :disabled="root.categoryLoading || !(root.categoryForm && root.categoryForm.name && root.categoryForm.name.trim())"
+                                @click="root.saveCategory">{{ root.categoryLoading ? 'Сохранение...' :
+                            (root.categoryForm.id ? 'Сохранить' : 'Добавить') }}</button>
+                        <button class="btn btn-secondary" style="margin-left:8px;"
+                                @click="root.startAddCategory">X</button>
+                    </div>
+                </div>
+                <div class="categories-loader">
+                    <div class="products-loader"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Панель действий для выбранных товаров -->
+    <div v-if="root.selectedProducts.length > 0" class="selected-products-bar">
+        <div class="selected-products-info">
+            <i class="fas fa-check-circle"></i>
+            <span>Выбрано товаров: <strong>{{ root.selectedProducts.length }}</strong></span>
+        </div>
+        <div class="selected-products-actions">
+            <button @click="root.clearSelection" class="btn btn-sm btn-secondary">
+                <i class="fas fa-times"></i> Снять выбор
+            </button>
+            <button @click="root.deleteSelectedProducts" class="btn btn-sm btn-danger">
+                <i class="fas fa-trash"></i> Удалить выбранные
+            </button>
+        </div>
+    </div>
+
+    <div class="products-table">
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 40px;">
+                    <input type="checkbox" @change="root.toggleSelectAll"
+                           :checked="root.selectedProducts.length === root.products.length && root.products.length > 0">
+                </th>
+                <th v-show="root.isColumnVisible('id')" data-column="id">ID<div class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('image')" data-column="image">Изображение<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('name')" data-column="name">Название<div class="column-resize-handle">
+                    </div>
+                </th>
+                <th v-show="root.isColumnVisible('description')" data-column="description">Описание<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('peculiarities')" data-column="peculiarities">Особенности<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('material')" data-column="material">Материал<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('price')" data-column="price">Цена<div class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('price_sale')" data-column="price_sale">Цена по скидке<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('category')" data-column="category">Категория<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('user')" data-column="user">Создал<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('created')" data-column="created">Дата добавления<div
+                            class="column-resize-handle"></div>
+                </th>
+                <th v-show="root.isColumnVisible('updated_by')" data-column="updated_by">Обновил<div
+                            class="column-resize-handle"></div></th>
+                <th v-show="root.isColumnVisible('updated_at')" data-column="updated_at">Последнее обновление<div
+                            class="column-resize-handle"></div></th>
+                <th data-column="actions">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="root.products.length === 0">
+                <td :colspan="root.getVisibleColumnsCount()"
+                    style="text-align: center; padding: 40px; color: #888;">
+                    <i class="fas fa-box-open"
+                       style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                    <p style="font-size: 16px; margin-bottom: 10px;">Товары пока не
+                        добавлены</p>
+                    <p style="font-size: 14px;">Нажмите кнопку "+" чтобы добавить
+                        первый товар</p>
+                </td>
+            </tr>
+            <tr v-for="product in root.products" :key="product.id" draggable="true"
+                @dragstart="root.startDragProduct(product, $event)"
+                @dragend="root.endDragProduct" @dragover.prevent
+                @drop="root.dropProduct(product, $event)"
+                @contextmenu.prevent="root.showContextMenu($event, product)"
+                :class="{ 'dragging': root.draggingProductId === product.id, 'selected': root.isProductSelected(product.id) }"
+                style="cursor: move;">
+                <td @contextmenu.prevent.stop="root.showContextMenu($event, product)"
+                    style="text-align: center;">
+                    <input type="checkbox" :checked="root.isProductSelected(product.id)"
+                           @change="root.toggleProductSelection(product.id)" @click.stop>
+                </td>
+                <td v-show="root.isColumnVisible('id')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        product.id }}</td>
+                <td v-show="root.isColumnVisible('image')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">
+                    <template v-if="product.image">
+                        <img v-if="!root.isVideo(product.image)"
+                             :src="'../' + product.image" :alt="product.name"
+                             class="product-thumb">
+                        <video v-else :src="'../' + product.image"
+                               class="product-thumb" muted loop playsinline
+                               autoplay></video>
+                    </template>
+                    <template v-else>
+                        <div class="fas fa-image"
+                             style="display: flex; width: 60px; place-content: center">
+                        </div>
+                    </template>
+                </td>
+                <td v-show="root.isColumnVisible('name')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        product.name }}</td>
+                <td v-show="root.isColumnVisible('description')" class="table-product-description"
+                    @contextmenu.prevent.stop="root.showContextMenu($event, product)">
+                    <div class="product-description">{{ product.truncatedDescription
+                        || root.truncateText(product.description) }}</div>
+                </td>
+                <td v-show="root.isColumnVisible('peculiarities')" class="table-peculiarities"
+                    @contextmenu.prevent.stop="root.showContextMenu($event, product)">
+                    <div v-if="product.peculiarities && product.peculiarities.length > 0"
+                         class="peculiarities-list">
+                                                <span v-for="(peculiarity, index) in product.peculiarities"
+                                                      :key="index" class="peculiarity-tag">
+                                                    {{ peculiarity }}
+                                                </span>
+                    </div>
+                    <span v-else class="no-peculiarities">Нет особенностей</span>
+                </td>
+                <td v-show="root.isColumnVisible('material')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        product.material }}</td>
+                <td v-show="root.isColumnVisible('price')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        product.price }} руб.</td>
+                <td v-show="root.isColumnVisible('price_sale')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        product.price_sale ? product.price_sale + 'руб.' : '' }} </td>
+                <td v-show="root.isColumnVisible('category')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        root.getCategoryName(product.category) }}</td>
+                <td v-show="root.isColumnVisible('user')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        root.getUserName(product.created_by) }}</td>
+                <td v-show="root.isColumnVisible('created')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        root.formatDate(product.created_at) }}</td>
+                <td v-show="root.isColumnVisible('updated_by')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        root.getUserName(product.updated_by) }}</td>
+                <td v-show="root.isColumnVisible('updated_at')" @contextmenu.prevent.stop="root.showContextMenu($event, product)">{{
+                        root.formatDate(product.updated_at) }}</td>
+                <td class="actions"
+                    @contextmenu.prevent.stop="root.showContextMenu($event, product)">
+                    <div class="actions-container">
+                        <button @click.stop="root.hideProduct(product.id)"
+                                class="btn btn-sm btn-link"
+                                :title="product.visibility === 0 ? 'Показать товар' : 'Скрыть товар'">
+                            <i class="fa-solid"
+                               :class="product.visibility === 0 ? 'fa-eye-slash' : 'fa-eye'"></i>
+                        </button>
+                        <button @click.stop="root.openProductPage(product.id)"
+                                class="btn btn-sm btn-link">
+                            <i class="fa-solid fa-up-right-from-square"></i>
+                        </button>
+                        <button @click.stop="root.editProduct(product)"
+                                class="btn btn-sm btn-edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button @click.stop="root.deleteProduct(product.id)"
+                                class="btn btn-sm btn-delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <!-- Loader -->
+        <div class="products-table-loader">
+            <div class="products-loader"></div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,8 @@
+/assets/
+/.env
+/package.json
+/package-lock.json
+/sitemap.xml
+/bad_ip.json
+/robots.txt
+/qodana.yaml
