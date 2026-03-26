@@ -2,9 +2,12 @@ NV.ready(() => {
     setTimeout(() => {
         const { createApp } = Vue;
 
-        const blockComponents = {
+        const allComponents = {
             order: window.Order,
             hero: window.Hero,
+            modal: window.Modal,
+            login: window.Login,
+            register: window.Register,
             actual: window.Actual,
             products: window.Products,
             features: window.Features,
@@ -14,38 +17,22 @@ NV.ready(() => {
             stats: window.Stats,
             contact: window.Contact,
             info_buttons: window.InfoButtons,
-            footer: window.FooterBlock
+            footer: window.FooterBlock,
         };
 
+        const components = Object.fromEntries(
+            Object.entries(allComponents).filter(([, component]) => !!component)
+        );
+
         createApp({
-            mixins: [window.Props],
-            components: {
-                hero: window.Hero,
-                modal: window.Modal,
-                login: window.Login,
-                register: window.Register,
-                actual: window.Actual,
-                products: window.Products,
-                features: window.Features,
-                buttons: window.Buttons,
-                history: window.HistoryBlock,
-                text: window.TextBlock,
-                stats: window.Stats,
-                contact: window.Contact,
-                info_buttons: window.InfoButtons,
-                footer: window.FooterBlock,
-                order: window.Order,
-            },
+            mixins: [window.Props, window.Options],
+            components,
             data() {
                 return {
-                    blockComponents: blockComponents,
-                    auth: NV.getAuth(),
-                    userMenuOpen: false,
+                    blockComponents: components,
                     isScrolled: false,
-                    mobileMenuOpen: false,
                     cartOpen: false,
                     favoritesOpen: false,
-                    orderModalOpen: false,
                     buyNowPressed: false,
                     addToCartPressed: false,
                     hand: null,
@@ -57,14 +44,6 @@ NV.ready(() => {
                     selectingHandProductId: null,
                     selectingHandAction: null,
                     selectingFromFavorites: false,
-                    contactForm: {
-                        name: '',
-                        email: '',
-                        message: ''
-                    },
-                    contactLoading: false,
-                    contactError: '',
-                    contactSuccess: '',
                     dadataToken: '7c958262d9f01a263e77984b8ee106c01816709a',
                     citySuggestions: [],
                     streetSuggestions: [],
@@ -288,15 +267,6 @@ NV.ready(() => {
                     return this.cartItems.some(item => item.id === this.currentProduct.id);
                 }
             },
-            watch: {
-                orderModalOpen(newVal) {
-                    if (newVal) {
-                        this.$nextTick(() => {
-                            this.fillPickupParams();
-                        });
-                    }
-                }
-            },
             mounted() {
                 this.init();
                 this.initVideoAutoplay();
@@ -481,12 +451,7 @@ NV.ready(() => {
                         this.positionUserMenu();
                     }
                 },
-                toggleMobileMenu() {
-                    this.mobileMenuOpen = !this.mobileMenuOpen;
-                },
-                closeMobileMenu() {
-                    this.mobileMenuOpen = false;
-                },
+
                 closeAllMenus() {
                     this.mobileMenuOpen = false;
                     this.cartOpen = false;

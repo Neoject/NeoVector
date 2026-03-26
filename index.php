@@ -94,7 +94,7 @@ try {
             v-bind="getBlockProps(block)"
     ></component>
     <!-- Order Modal -->
-    <order></order>
+    <order :class="{ 'active': orderModalOpen }" @close="closeOrderModal"></order>
     <!-- Cart Selector Modal -->
     <div class="cart-modal" :class="{ 'active': cartOpen }">
         <div class="cart-content" @click.stop>
