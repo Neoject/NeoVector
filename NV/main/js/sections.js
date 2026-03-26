@@ -3470,18 +3470,18 @@ NV.ready(() => {
           <section id="footer">
             <footer>
                 <div class="container" style="flex: 1">
-                  <div class="paysystems">
+                  <div v-if="block.settings.paysystems" class="paysystems">
                     <ul>
-                      <li><img src="src/images/bepaid.png"></li>
-                      <li><img src="src/images/erip.svg"></li>
+                      <li><img src="NV/main/styles/images/bepaid.png"></li>
+                      <li><img src="NV/main/styles/images/erip.svg"></li>
                     </ul>
                     <ul>
-                      <li><img src="src/images/visa.png"></li>
-                      <li><img src="src/images/mastercard.png"></li>
-                      <li><img src="src/images/belkart.png"></li>
-                      <li><img src="src/images/apple-pay.webp"></li>
-                      <li><img src="src/images/samsung-pay.png"></li>
-                      <li><img src="src/images/google-pay.webp"></li>
+                      <li><img src="NV/main/styles/images/visa.png"></li>
+                      <li><img src="NV/main/styles/images/mastercard.png"></li>
+                      <li><img src="NV/main/styles/images/belkart.png"></li>
+                      <li><img src="NV/main/styles/images/apple-pay.webp"></li>
+                      <li><img src="NV/main/styles/images/samsung-pay.png"></li>
+                      <li><img src="NV/main/styles/images/google-pay.webp"></li>
                     </ul>
                   </div>
                   <div class="footer-content"

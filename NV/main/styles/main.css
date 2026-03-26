@@ -96,7 +96,8 @@ input[type=checkbox]:focus {
 }
 
 input[type=checkbox]:checked {
-    background: linear-gradient(135deg, var(--header-main) 0%, var(--header-secondary) 100%);
+    content: '✔';
+    background: var(--text-additional-dark);.modal-body label
     border-color: var(--header-secondary);
     box-shadow: 0 0 12px var(--shadow-primary);
 }
@@ -638,6 +639,10 @@ h1 span {
 
 section {
     padding: 12vh 0;
+}
+
+section#footer {
+    padding: 0;
 }
 
 .section-title {
@@ -2758,7 +2763,7 @@ textarea.form-control {
 
 .form-control:hover {
     border-color: var(--border-strong);
-    background: var(--background-additional);
+    background: var(--hover-primary);
 }
 
 .user-menu {
@@ -5241,7 +5246,7 @@ textarea.form-control {
     border-radius: 8px;
     color: var(--primary);
     font-size: 14px;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .form-group input[type=checkbox] {
@@ -6022,12 +6027,7 @@ header {
     border-radius: 22px;
     border: 1px solid var(--border-secondary);
     box-shadow: inset 0 8px 32px var(--shadow-primary);
-    transition:
-            transform 0.25s ease,
-            background 0.25s ease,
-            box-shadow 2s ease,
-            opacity 0.3s ease,
-            all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .product-card::before {
@@ -6051,7 +6051,7 @@ header {
 }
 
 .product-card:hover {
-    background: var(--hover-secondary);
+    background: var(--hover-primary);
     transform: translateY(-4px) scale(1.03);
     scale: 1.1;
     box-shadow: inset 0 12px 40px var(--shadow-primary);
@@ -6577,7 +6577,6 @@ label.checkbox-label {
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--bg-black-80);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -6585,7 +6584,7 @@ label.checkbox-label {
 }
 
 .option-selector-content {
-    background: var(--background-additional);
+    background: var(--background-secondary);
     border-radius: 15px;
     width: 90%;
     max-width: 500px;
