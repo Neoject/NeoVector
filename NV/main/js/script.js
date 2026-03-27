@@ -19,11 +19,11 @@ NV.ready(() => {
     createApp({
         mixins: [window.Props],
         components: {
-            wishlist: window.WishList,
             hero: window.Hero,
             modal: window.Modal,
             login: window.Login,
             register: window.Register,
+            cart: window.Cart,
             actual: window.Actual,
             products: window.Products,
             features: window.Features,

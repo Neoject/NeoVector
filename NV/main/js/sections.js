@@ -717,7 +717,7 @@ NV.ready(() => {
     const Cart = {
         mixins: [Data, Props],
         template: `
-          <div class="cart-modal" :class="{ 'active': cartOpen }">
+          <div class="cart-modal">
             <div class="cart-content" @click.stop>
               <div class="cart-header">
                 <h3>Ваша корзина</h3>
