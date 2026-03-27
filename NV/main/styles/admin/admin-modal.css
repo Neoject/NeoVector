@@ -81,7 +81,9 @@
 }
 
 .modal-body label {
-    display: block;
+    display: flex;
+    gap: 12px;
+    align-items: center;
     color: var(--primary);
     margin-bottom: 8px;
     font-weight: 500;
