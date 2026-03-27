@@ -12,7 +12,7 @@ class Order
         $this->createTable();
     }
 
-    private static function createTable(): void
+    public static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `orders` (
             `id` int(255) NOT NULL AUTO_INCREMENT,

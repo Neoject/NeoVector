@@ -24,7 +24,7 @@ class Params
             UNIQUE KEY `unique_key` (`key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-        Database::db()->query($sql);
+        Database::execute($sql);
     }
 
     /**
@@ -132,29 +132,51 @@ class Params
     {
         Auth::requireAuth();
 
-        $file = self::validateUploadedFile('logo', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']);
+        try {
+            $file = self::validateUploadedFile('logo', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']);
 
-        $uploadDir = dirname(__DIR__) . '/assets/logo/';
+            $rootPath = \defined('ROOT_PATH') ? \ROOT_PATH : dirname(__DIR__, 3);
+            $uploadDir = $rootPath . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'logo' . DIRECTORY_SEPARATOR;
 
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            if (!is_dir($uploadDir)) {
+                if (!mkdir($uploadDir, 0755, true)) {
+                    Service::sendError(500, 'Не удалось создать директорию для загрузки');
+                    return;
+                }
+            }
+
+            if (!is_writable($uploadDir)) {
+                Service::sendError(500, 'Нет прав на запись в директорию: ' . $uploadDir);
+                return;
+            }
+
+            $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
+            $fileName = 'logo_' . uniqid() . '.' . $extension;
+            $targetPath = $uploadDir . $fileName;
+
+            if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+                Service::sendError(400, 'Файл не был загружен через HTTP POST');
+                return;
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                $error = error_get_last();
+                Service::sendError(500, 'Не удалось сохранить логотип: ' . ($error['message'] ?? 'неизвестная ошибка'));
+                return;
+            }
+
+            $relativePath = '/assets/logo/' . $fileName;
+
+            Database::execute(
+                'INSERT INTO params (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
+                ['logo', $relativePath]
+            );
+
+            Service::sendJson(['success' => true, 'url' => $relativePath]);
+        } catch (\Throwable $e) {
+            Log::error('Logo loading error: ', $e->getMessage());
+            Service::sendError(500, 'Ошибка загрузки логотипа');
         }
-
-        $extension = pathinfo($file['name'] ?? 'logo', PATHINFO_EXTENSION) ?: 'png';
-        $fileName = 'logo_' . uniqid() . '.' . $extension;
-
-        if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
-            Service::sendError(500, 'Не удалось сохранить логотип');
-        }
-
-        $relativePath = '/assets/logo/' . $fileName;
-
-        Database::execute(
-            'INSERT INTO params (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
-            ['logo', $relativePath]
-        );
-
-        Service::sendJson(['success' => true, 'url' => $relativePath]);
     }
 
     /**
@@ -166,7 +188,8 @@ class Params
 
         $file = self::validateUploadedFile('image', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
-        $uploadDir = dirname(__DIR__) . '/assets/backgrounds/';
+        $rootPath = \defined('ROOT_PATH') ? \ROOT_PATH : dirname(__DIR__, 3);
+        $uploadDir = $rootPath . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'backgrounds' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);

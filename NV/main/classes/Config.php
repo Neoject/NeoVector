@@ -43,8 +43,6 @@ class Config
                 self::$loaded = true;
             }
         }
-
-        Params::createTable();
     }
 
     /**

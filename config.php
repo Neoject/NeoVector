@@ -1,8 +1,10 @@
 <?php
 
 use NeoVector\Auth;
+use NeoVector\Category;
 use NeoVector\Config;
 use NeoVector\Database;
+use NeoVector\HomeContent;
 use NeoVector\Params;
 
 require_once 'autoloader.php';
@@ -20,11 +22,15 @@ $DB_USER = Config::get('DB_USER');
 $DB_PASS = Config::get('DB_PASS');
 $DB_NAME = Config::get('DB_NAME');
 
-if ($DB_USER === '' || $DB_USER === false) {
+if ($DB_USER === '' || $DB_USER === false || $DB_USER === null) {
     throw new RuntimeException(
         'DB credentials not set. Set DB_USER (and DB_HOST, DB_PASS, DB_NAME) in config.php or in a .env file in the project root.'
     );
 }
+
+Category::createTable();
+HomeContent::createTable();
+Params::createTable();
 
 session_start();
 Auth::init(Database::db());

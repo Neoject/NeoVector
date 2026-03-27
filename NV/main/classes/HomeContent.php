@@ -15,7 +15,7 @@ class HomeContent
     /**
      * @return void
      */
-    private static function createTable(): void
+    public static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `home_content` (
             `id` int(255) NOT NULL AUTO_INCREMENT,
