@@ -3,13 +3,6 @@ NV.ready(() => {
         data() {
             return {
                 auth: NV.getAuth(),
-                cartOpen: false,
-                wishListOpen: false,
-                userMenuOpen: false,
-                mobileMenuOpen: false,
-                orderModalOpen: false,
-                products: [],
-                animatedProducts: [],
             }
         },
         methods: {
@@ -21,6 +14,9 @@ NV.ready(() => {
         mixins: [Data],
         data() {
             return {
+                userMenuOpen: false,
+                mobileMenuOpen: false,
+                orderModalOpen: false,
                 title: '',
                 description: '',
                 imageMetaTags: '',
@@ -35,8 +31,6 @@ NV.ready(() => {
                     main: [],
                     other: []
                 },
-                productImageIndices: {},
-                imageLoadingStates: {},
                 isMobile: false,
                 isMobileDevice: false,
                 currentOrderProduct: null,
@@ -44,14 +38,6 @@ NV.ready(() => {
                 virtualPageNotFoundDocumentTitle: 'Страница не найдена',
                 virtualPageLoadErrorDocumentTitle: 'Ошибка загрузки',
             }
-        },
-        computed: {
-            cartTotal() {
-                if (!this.cartItems || !Array.isArray(this.cartItems)) {
-                    return 0;
-                }
-                return this.cartItems.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
-            },
         },
         mounted() {
             this.loadParams().then(r => null);
@@ -88,143 +74,6 @@ NV.ready(() => {
                 } catch (error) {
                     console.error('Error loading params:', error);
                 }
-            },
-            saveCart() {
-                try {
-                    localStorage.setItem('cart', JSON.stringify(Array.isArray(this.cartItems) ? this.cartItems : []));
-                } catch (e) {
-                    console.warn('Failed to save cart:', e);
-                }
-            },
-            closeCart() {
-                this.cartOpen = false;
-            },
-            toggleCart() {
-                if (this.mobileMenuOpen) {
-                    this.mobileMenuOpen = false;
-                    setTimeout(() => {
-                        this.cartOpen = !this.cartOpen;
-                    }, 300);
-                } else {
-                    this.cartOpen = !this.cartOpen;
-                }
-            },
-            openOrderModal() {
-                const hasCurrentProduct = !!this.currentOrderProduct;
-                const hasCartItems = Array.isArray(this.cartItems) && this.cartItems.length > 0;
-
-                if (!hasCurrentProduct && !hasCartItems) {
-                    alert('Корзина пуста');
-                    return;
-                }
-
-                this.orderModalOpen = true;
-                this.closeCart();
-            },
-            closeOrderModal() {
-                this.orderModalOpen = false;
-                this.currentOrderProduct = null;
-            },
-            increaseQuantity(item) {
-                if (!item) return;
-                const qty = Number(item.quantity || 1) || 1;
-                item.quantity = qty + 1;
-                this.saveCart();
-            },
-            decreaseQuantity(item) {
-                if (!item) return;
-                const qty = Number(item.quantity || 1) || 1;
-                if (qty <= 1) {
-                    this.removeFromCart(item);
-                    return;
-                }
-                item.quantity = qty - 1;
-                this.saveCart();
-            },
-            navClick(event, targetId) {
-                if (event && event.preventDefault) {
-                    event.preventDefault();
-                }
-
-                if (typeof this.closeAllMenus === 'function') {
-                    this.closeAllMenus();
-                } else if (typeof this.closeOtherMenus === 'function') {
-                    this.closeOtherMenus();
-                } else {
-                    this.mobileMenuOpen = false;
-                    this.cartOpen = false;
-                    this.wishListOpen = false;
-                }
-
-                if (this.isMainPage) {
-                    this.smoothScrollTo(targetId);
-                    return;
-                }
-
-                const slug = String(targetId || '').toLowerCase().replace(/\s+/g, '-');
-                this.openVirtualPage(slug, { updateHistory: true, scrollToTop: true }).then((page) => {
-                    if (!page && typeof this.goHome === 'function') {
-                        this.goHome({ updateHistory: true, scrollToTop: false });
-                        this.$nextTick(() => this.smoothScrollTo(targetId));
-                    }
-                }).catch(() => {
-                    if (typeof this.goHome === 'function') {
-                        this.goHome({ updateHistory: true, scrollToTop: false });
-                        this.$nextTick(() => this.smoothScrollTo(targetId));
-                    }
-                });
-            },
-            isVideo(url) {
-                if (!url || typeof url !== 'string') {
-                    return false;
-                }
-                const u = url.toLowerCase();
-                return /\.(mp4|webm|ogg|m4v|mov|avi|flv)(\?|#|$)/i.test(u);
-            },
-            getAllProductImages(product) {
-                if (!product) return [];
-                const list = [];
-
-                const main = this.normalizeMediaUrl(product.image);
-                if (main) list.push(main);
-
-                if (Array.isArray(product.additional_images)) {
-                    list.push(...product.additional_images.map((img) => this.normalizeMediaUrl(img)).filter(Boolean));
-                }
-
-                if (Array.isArray(product.additional_videos)) {
-                    list.push(...product.additional_videos.map((vid) => this.normalizeMediaUrl(vid)).filter(Boolean));
-                }
-
-                return list;
-            },
-            getCurrentProductImage(product) {
-                if (!product) return '';
-                const id = product.id;
-                const all = this.getAllProductImages(product);
-                if (!all.length) return this.normalizeMediaUrl(product.image) || '';
-                const idx = id != null ? (this.productImageIndices[id] || 0) : 0;
-                return all[idx] || all[0] || '';
-            },
-            onVideoLoadStart(event, product) {
-                if (!product || !product.id) return;
-                const video = event?.target;
-                if (video && video.readyState < 2) {
-                    this.imageLoadingStates[product.id] = true;
-                }
-            },
-            onVideoLoadedData(event, product) {
-                if (!product || !product.id) return;
-                this.imageLoadingStates[product.id] = false;
-            },
-            onVideoError(event, product) {
-                console.warn('Failed to load video:', event?.target?.src);
-                if (!product || !product.id) return;
-                this.imageLoadingStates[product.id] = false;
-            },
-            isImageLoading(product) {
-                if (!product || !product.id) return false;
-                return this.imageLoadingStates[product.id] === true;
             },
             click(event, button) {
                 const target = button.target || button.link;
@@ -715,59 +564,8 @@ NV.ready(() => {
     }
 
     const Cart = {
-        mixins: [Data, Props],
         template: `
-          <div class="cart-modal">
-            <div class="cart-content" @click.stop>
-              <div class="cart-header">
-                <h3>Ваша корзина</h3>
-                <button class="close-icon" @click="closeCart(); $emit('close')">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              <div v-if="cartItems.length > 0">
-                <div class="cart-item" v-for="(item, cartIndex) in cartItems"
-                     :key="item.id + '-' + (item.optionKey || cartIndex)">
-                  <img v-if="!isVideo(getCurrentProductImage(item))" :src="item.image" :alt="item.name"
-                       class="cart-item-img" loading="lazy" decoding="async">
-                  <video v-else :src="getCurrentProductImage(item)" class="cart-item-img"
-                         :class="{ 'loading': isImageLoading(item) }" muted loop playsinline autoplay
-                         @loadstart="onVideoLoadStart($event, item)" @loadeddata="onVideoLoadedData($event, item)"
-                         @error="onVideoError($event, item)"></video>
-                  <div class="cart-item-details">
-                    <h4 class="cart-item-title">{{ item.name }}</h4>
-                    <template v-if="item.options && item.options.length">
-                      <p class="cart-item-attr" v-for="option in item.options"
-                         :key="item.id + '-' + option.slug">
-                        {{ option.name }}: {{ option.value }}
-                      </p>
-                    </template>
-                    <p class="cart-item-price">{{ item.price }} руб.</p>
-                    <div class="cart-item-actions">
-                      <button class="quantity-btn" @click="decreaseQuantity(item)">-</button>
-                      <span class="quantity">{{ item.quantity }}</span>
-                      <button class="quantity-btn" @click="increaseQuantity(item)">+</button>
-                      <button class="remove-item" @click="removeFromCart(item)">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="cart-total">
-                  <span>Итого:</span>
-                  <span>{{ cartTotal }} руб.</span>
-                </div>
-
-                <button class="checkout-btn" @click="openOrderModal">Оформить заказ</button>
-              </div>
-              <div v-else class="empty-cart">
-                <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
-                <p>Ваша корзина пуста</p>
-                <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
-                  товарам</a>
-              </div>
-            </div>
-          </div>
+        
         `,
         data() {
             return {
@@ -1166,7 +964,7 @@ NV.ready(() => {
                     <div class="form-group autocomplete">
                       <label for="delivery_street">Улица *</label>
                       <div>
-                        <input type="text" id="delivery_street" v-model="orderForm.delivery_street" 
+                        <input type="text" id="delivery_street" v-model="orderForm.delivery_street"
                                @input="onStreetInput" @blur="onStreetBlur" :disabled="!deliveryCityValid"
                                autocomplete="off" placeholder="Введите улицу"
                                :class="{ 'invalid': deliveryStreetError || fieldErrors.delivery_street }">
@@ -1259,8 +1057,8 @@ NV.ready(() => {
                     <h4>Дополнительно</h4>
                     <div class="form-group">
                       <label for="order_notes">Комментарий к заказу</label>
-                      <textarea id="order_notes" 
-                                v-model="orderForm.notes" 
+                      <textarea id="order_notes"
+                                v-model="orderForm.notes"
                                 rows="3"
                                 placeholder="Дополнительные пожелания..."
                       >
@@ -1287,15 +1085,15 @@ NV.ready(() => {
                   <div v-if="orderSuccess" class="success-message">{{ orderSuccess }}</div>
                   <div class="order-actions">
                     <button type="button" class="btn btn-secondary" @click.stop.prevent="closeOrderModal()">Отмена</button>
-                    <button v-if="orderForm.payment_type === 'online'" 
-                            type="button" 
+                    <button v-if="orderForm.payment_type === 'online'"
+                            type="button"
                             class="btn btn-primary"
-                            @click="handleOnlinePayment" 
+                            @click="handleOnlinePayment"
                             :disabled="orderLoading || (!policyYes && !policyNo)"
                     >
                       {{ orderLoading ? 'Оформляем заказ...' : 'Оформить заказ' }}
                     </button>
-                    <button v-else type="submit" 
+                    <button v-else type="submit"
                             class="btn btn-primary"
                             :disabled="orderLoading || (!policyYes && !policyNo)"
                     >
@@ -3368,27 +3166,27 @@ NV.ready(() => {
     const Stats = {
         mixins: [Data],
         template: `
-      <section v-if="block && block.type === 'stats'" id="stats">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('stats-title-' + block.id), 'hidden': !isInView('stats-title-' + block.id) }"
-              :id="'stats-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div v-if="block.settings.stats && block.settings.stats.length > 0" class="stats-grid">
-            <div v-for="(stat, statIndex) in block.settings.stats" :key="statIndex"
-                 class="stat-item scroll-animate"
-                 :class="{ 'animated': isInView('stat-' + block.id + '-' + statIndex), 'hidden': !isInView('stat-' + block.id + '-' + statIndex) }"
-                 :id="'stat-' + block.id + '-' + statIndex"
-                 :style="'transition-delay: ' + (0.1 + statIndex * 0.1) + 's'">
-              <div class="stat-number">{{ stat.number }}</div>
-              <div class="stat-label">{{ stat.label }}</div>
+          <section v-if="block && block.type === 'stats'" id="stats">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('stats-title-' + block.id), 'hidden': !isInView('stats-title-' + block.id) }"
+                  :id="'stats-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div v-if="block.settings.stats && block.settings.stats.length > 0" class="stats-grid">
+                <div v-for="(stat, statIndex) in block.settings.stats" :key="statIndex"
+                     class="stat-item scroll-animate"
+                     :class="{ 'animated': isInView('stat-' + block.id + '-' + statIndex), 'hidden': !isInView('stat-' + block.id + '-' + statIndex) }"
+                     :id="'stat-' + block.id + '-' + statIndex"
+                     :style="'transition-delay: ' + (0.1 + statIndex * 0.1) + 's'">
+                  <div class="stat-number">{{ stat.number }}</div>
+                  <div class="stat-label">{{ stat.label }}</div>
+                </div>
+              </div>
+              <div v-else class="empty-stats">
+                <p>Нет данных для отображения</p>
+              </div>
             </div>
-          </div>
-          <div v-else class="empty-stats">
-            <p>Нет данных для отображения</p>
-          </div>
-        </div>
-      </section>
-    `,
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3405,101 +3203,101 @@ NV.ready(() => {
     const Contact = {
         mixins: [Data],
         template: `
-      <section v-if="block && block.type === 'contact'" id="contact">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('contact-title-' + block.id), 'hidden': !isInView('contact-title-' + block.id) }"
-              :id="'contact-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div class="contact-info">
-            <div class="contact-details-card scroll-animate"
-                 :class="{ 'animated': isInView('contact-panel-' + block.id), 'hidden': !isInView('contact-panel-' + block.id) }"
-                 :id="'contact-panel-' + block.id">
-              <div class="contact-details">
-                <div v-if="block.settings.email" class="contact-item" :id="'contact-email-' + block.id">
-                  <i class="fas fa-envelope"></i>
-                  <a :href="'mailto:' + block.settings.email">{{ block.settings.email }}</a>
+          <section v-if="block && block.type === 'contact'" id="contact">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('contact-title-' + block.id), 'hidden': !isInView('contact-title-' + block.id) }"
+                  :id="'contact-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div class="contact-info">
+                <div class="contact-details-card scroll-animate"
+                     :class="{ 'animated': isInView('contact-panel-' + block.id), 'hidden': !isInView('contact-panel-' + block.id) }"
+                     :id="'contact-panel-' + block.id">
+                  <div class="contact-details">
+                    <div v-if="block.settings.email" class="contact-item" :id="'contact-email-' + block.id">
+                      <i class="fas fa-envelope"></i>
+                      <a :href="'mailto:' + block.settings.email">{{ block.settings.email }}</a>
+                    </div>
+                    <div v-if="block.settings.phone" class="contact-item" :id="'contact-phone-' + block.id">
+                      <i class="fas fa-phone"></i>
+                      <a :href="'tel:' + block.settings.phone">{{ block.settings.phone }}</a>
+                    </div>
+                    <div v-if="block.settings.address" class="contact-item"
+                         :id="'contact-address-' + block.id">
+                      <i class="fas fa-map-marker-alt"></i>
+                      <span>{{ block.settings.address }}</span>
+                    </div>
+                  </div>
+                  <div v-if="links(block.settings.socialLinks)"
+                       class="social-links contact-social-links">
+                    <a v-if="block.settings.socialLinks.instagram"
+                       :href="block.settings.socialLinks.instagram" target="_blank" class="social-link"
+                       aria-label="Instagram">
+                      <i class="fab fa-instagram"></i>
+                    </a>
+                    <a v-if="block.settings.socialLinks.tiktok" :href="block.settings.socialLinks.tiktok"
+                       target="_blank" class="social-link" aria-label="TikTok">
+                      <i class="fab fa-tiktok"></i>
+                    </a>
+                    <a v-if="block.settings.socialLinks.telegram"
+                       :href="block.settings.socialLinks.telegram" target="_blank" class="social-link"
+                       aria-label="Telegram">
+                      <i class="fab fa-telegram"></i>
+                    </a>
+                  </div>
                 </div>
-                <div v-if="block.settings.phone" class="contact-item" :id="'contact-phone-' + block.id">
-                  <i class="fas fa-phone"></i>
-                  <a :href="'tel:' + block.settings.phone">{{ block.settings.phone }}</a>
-                </div>
-                <div v-if="block.settings.address" class="contact-item"
-                     :id="'contact-address-' + block.id">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <span>{{ block.settings.address }}</span>
+                <div class="contact-form-card scroll-animate"
+                     :class="{ 'animated': isInView('contact-form-' + block.id), 'hidden': !isInView('contact-form-' + block.id) }"
+                     :id="'contact-form-' + block.id">
+                  <h3>Напишите нам</h3>
+                  <p>Оставьте имя, email и короткое сообщение, и мы свяжемся с вами в ближайшее время.</p>
+                  <form class="contact-form" @submit.prevent="submit">
+                    <div class="form-group">
+                      <label for="contact-name">Ваше имя *</label>
+                      <input
+                          id="contact-name"
+                          type="text"
+                          class="form-control"
+                          v-model.trim="contactForm.name"
+                          required
+                          :disabled="contactLoading"
+                          autocomplete="name"
+                          placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                      <label for="contact-email">Ваш email *</label>
+                      <input
+                          id="contact-email"
+                          type="email"
+                          class="form-control"
+                          v-model.trim="contactForm.email"
+                          required
+                          :disabled="contactLoading"
+                          autocomplete="email"
+                          placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                      <label for="contact-message">Сообщение *</label>
+                      <textarea
+                          id="contact-message"
+                          class="form-control"
+                          rows="4"
+                          v-model.trim="contactForm.message"
+                          required
+                          :disabled="contactLoading"></textarea>
+                    </div>
+                    <div class="contact-form-status" aria-live="polite">
+                      <span v-if="contactError" class="error-message">{{ contactError }}</span>
+                      <span v-else-if="contactSuccess" class="success-message">{{ contactSuccess }}</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary" :disabled="contactLoading">
+                      {{ contactLoading ? 'Отправляем...' : 'Отправить сообщение' }}
+                    </button>
+                  </form>
                 </div>
               </div>
-              <div v-if="links(block.settings.socialLinks)"
-                   class="social-links contact-social-links">
-                <a v-if="block.settings.socialLinks.instagram"
-                   :href="block.settings.socialLinks.instagram" target="_blank" class="social-link"
-                   aria-label="Instagram">
-                  <i class="fab fa-instagram"></i>
-                </a>
-                <a v-if="block.settings.socialLinks.tiktok" :href="block.settings.socialLinks.tiktok"
-                   target="_blank" class="social-link" aria-label="TikTok">
-                  <i class="fab fa-tiktok"></i>
-                </a>
-                <a v-if="block.settings.socialLinks.telegram"
-                   :href="block.settings.socialLinks.telegram" target="_blank" class="social-link"
-                   aria-label="Telegram">
-                  <i class="fab fa-telegram"></i>
-                </a>
-              </div>
             </div>
-            <div class="contact-form-card scroll-animate"
-                 :class="{ 'animated': isInView('contact-form-' + block.id), 'hidden': !isInView('contact-form-' + block.id) }"
-                 :id="'contact-form-' + block.id">
-              <h3>Напишите нам</h3>
-              <p>Оставьте имя, email и короткое сообщение, и мы свяжемся с вами в ближайшее время.</p>
-              <form class="contact-form" @submit.prevent="submit">
-                <div class="form-group">
-                  <label for="contact-name">Ваше имя *</label>
-                  <input
-                      id="contact-name"
-                      type="text"
-                      class="form-control"
-                      v-model.trim="contactForm.name"
-                      required
-                      :disabled="contactLoading"
-                      autocomplete="name"
-                      placeholder="Иван Иванов">
-                </div>
-                <div class="form-group">
-                  <label for="contact-email">Ваш email *</label>
-                  <input
-                      id="contact-email"
-                      type="email"
-                      class="form-control"
-                      v-model.trim="contactForm.email"
-                      required
-                      :disabled="contactLoading"
-                      autocomplete="email"
-                      placeholder="name@example.com">
-                </div>
-                <div class="form-group">
-                  <label for="contact-message">Сообщение *</label>
-                  <textarea
-                      id="contact-message"
-                      class="form-control"
-                      rows="4"
-                      v-model.trim="contactForm.message"
-                      required
-                      :disabled="contactLoading"></textarea>
-                </div>
-                <div class="contact-form-status" aria-live="polite">
-                  <span v-if="contactError" class="error-message">{{ contactError }}</span>
-                  <span v-else-if="contactSuccess" class="success-message">{{ contactSuccess }}</span>
-                </div>
-                <button type="submit" class="btn btn-primary" :disabled="contactLoading">
-                  {{ contactLoading ? 'Отправляем...' : 'Отправить сообщение' }}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-    `,
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3600,57 +3398,57 @@ NV.ready(() => {
     const Actual = {
         mixins: [Data, Props],
         template: `
-      <section v-if="block && block.settings.promotions && block.settings.promotions.length > 0" id="actual">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('actual-title-' + block.id), 'hidden': !isInView('actual-title-' + block.id) }"
-              :id="'actual-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div class="actual-grid">
-            <article v-for="(promo, promoIndex) in block.settings.promotions" :key="promoIndex"
-                     class="actual-card scroll-animate"
-                     :class="{ 'animated': isInView('actual-' + block.id + '-' + promoIndex), 'hidden': !isInView('actual-' + block.id + '-' + promoIndex) }"
-                     :id="'actual-' + block.id + '-' + promoIndex">
-              <div v-if="promo.image" class="actual-card-image">
-                <img :src="promo.image" :alt="promo.title">
-              </div>
-              <div class="actual-card-inner">
-                <div class="actual-badge">
-                  <i class="fas fa-tags"></i>
-                  <span>Акция</span>
-                </div>
-                <h3 class="actual-card-title">{{ promo.title }}</h3>
-                <p v-if="promo.description" class="actual-card-description">{{ promo.description }}</p>
-                <div class="product-promo-list">
-                  <a v-for="(link, idx) in (Array.isArray(promo.links) ? promo.links : Object.values(promo.links || {}))"
-                     :key="idx" :href="link.link" class="product-promo-item">
-                    <div class="product-promo-image">
-                      <img v-if="link.data?.image" :src="'/' + link.data.image" :alt="link.title || link.name">
-                      <div v-else class="product-promo-placeholder">
-                        <i class="fas fa-image"></i>
-                      </div>
+          <section v-if="block && block.settings.promotions && block.settings.promotions.length > 0" id="actual">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('actual-title-' + block.id), 'hidden': !isInView('actual-title-' + block.id) }"
+                  :id="'actual-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div class="actual-grid">
+                <article v-for="(promo, promoIndex) in block.settings.promotions" :key="promoIndex"
+                         class="actual-card scroll-animate"
+                         :class="{ 'animated': isInView('actual-' + block.id + '-' + promoIndex), 'hidden': !isInView('actual-' + block.id + '-' + promoIndex) }"
+                         :id="'actual-' + block.id + '-' + promoIndex">
+                  <div v-if="promo.image" class="actual-card-image">
+                    <img :src="promo.image" :alt="promo.title">
+                  </div>
+                  <div class="actual-card-inner">
+                    <div class="actual-badge">
+                      <i class="fas fa-tags"></i>
+                      <span>Акция</span>
                     </div>
-                    <div class="product-promo-content">
-                      <h4 class="product-promo-title">{{ link.title || link.name }}</h4>
-                      <p v-if="link.description" class="product-promo-description">{{ link.description }}</p>
-                      <div class="product-price-promo">
-                        <p class="product-promo price" :class="link.data.price_sale ? 'price-old' : ''">{{ link.data.price }} руб.</p>
-                        <h4 class="product-promo price-sale" v-if="link.data.price_sale">{{ link.data.price_sale }} руб.</h4>
-                      </div>
+                    <h3 class="actual-card-title">{{ promo.title }}</h3>
+                    <p v-if="promo.description" class="actual-card-description">{{ promo.description }}</p>
+                    <div class="product-promo-list">
+                      <a v-for="(link, idx) in (Array.isArray(promo.links) ? promo.links : Object.values(promo.links || {}))"
+                         :key="idx" :href="link.link" class="product-promo-item">
+                        <div class="product-promo-image">
+                          <img v-if="link.data?.image" :src="'/' + link.data.image" :alt="link.title || link.name">
+                          <div v-else class="product-promo-placeholder">
+                            <i class="fas fa-image"></i>
+                          </div>
+                        </div>
+                        <div class="product-promo-content">
+                          <h4 class="product-promo-title">{{ link.title || link.name }}</h4>
+                          <p v-if="link.description" class="product-promo-description">{{ link.description }}</p>
+                          <div class="product-price-promo">
+                            <p class="product-promo price" :class="link.data.price_sale ? 'price-old' : ''">{{ link.data.price }} руб.</p>
+                            <h4 class="product-promo price-sale" v-if="link.data.price_sale">{{ link.data.price_sale }} руб.</h4>
+                          </div>
+                        </div>
+                        <i class="product-promo-arrow fas fa-arrow-right"></i>
+                      </a>
                     </div>
-                    <i class="product-promo-arrow fas fa-arrow-right"></i>
-                  </a>
-                </div>
-                <a v-if="promo.link" :href="getActualLink(promo)" class="actual-card-link"
-                   @click="actualLinkClick($event, promo)">
-                  {{ promo.linkText || 'Подробнее' }}
-                  <i class="fas fa-arrow-right"></i>
-                </a>
+                    <a v-if="promo.link" :href="getActualLink(promo)" class="actual-card-link"
+                       @click="actualLinkClick($event, promo)">
+                      {{ promo.linkText || 'Подробнее' }}
+                      <i class="fas fa-arrow-right"></i>
+                    </a>
+                  </div>
+                </article>
               </div>
-            </article>
-          </div>
-        </div>
-      </section>    
-    `,
+            </div>
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3756,13 +3554,11 @@ NV.ready(() => {
         }
     }
 
-    window.Data = Data;
     window.Props = Props;
     window.Modal = Modal;
     window.Login = Login;
     window.Register = Register;
     window.Order = Order;
-    window.Cart = Cart;
     window.Options = Options;
     window.Hero = Hero;
     window.Actual = Actual;
