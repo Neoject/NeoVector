@@ -8,11 +8,13 @@
  *    (запуск каждый день в 2:00 ночи)
  *
  * 2. Через браузер:
- *    http://yourdomain.com/cleanup_old_orders.php?secret_key=your_secret_key
+ *    http://yourdomain.com/NV/cleanup_old_orders.php?secret_key=your_secret_key
  *
  * 3. Через командную строку:
  *    php orders_cleanup.php
  */
+
+use NeoVector\Config;
 
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -21,26 +23,7 @@ ini_set('log_errors', 1);
 $envPath = __DIR__ . '/.env';
 if (file_exists($envPath) && is_readable($envPath)) {
     $envLines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($envLines !== false) {
-        foreach ($envLines as $line) {
-            $line = trim($line);
-            if ($line === '' || $line[0] === '#') {
-                continue;
-            }
-            if (strpos($line, '=') === false) {
-                continue;
-            }
-            [$name, $value] = explode('=', $line, 2);
-            $name = trim($name);
-            $value = trim($value, " \t\n\r\0\x0B\"'");
-            if ($name === '') {
-                continue;
-            }
-            putenv($name . '=' . $value);
-            $_ENV[$name] = $value;
-            $_SERVER[$name] = $value;
-        }
-    }
+    Config::load();
 }
 
 function env_value(string $key, $default = null) {
