@@ -18,7 +18,7 @@ class Category
     /**
      * @return void
      */
-    private static function createTable(): void
+    public static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `categories` (
             `id` int(255) NOT NULL AUTO_INCREMENT,

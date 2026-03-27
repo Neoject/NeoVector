@@ -1,9 +1,12 @@
 <?php
 global $HOME_URL;
 
+use NeoVector\Order;
 use NeoVector\Params;
 
 require_once ROOT_PATH . '/config.php';
+
+Order::createTable();
 
 $scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'users', 'profile'];
 ?>
