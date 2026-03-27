@@ -1,24 +1,5 @@
 NV.ready(() => {
-    const Data = {
-        data() {
-            return {
-                auth: NV.getAuth(),
-                cartOpen: false,
-                wishListOpen: false,
-                userMenuOpen: false,
-                mobileMenuOpen: false,
-                orderModalOpen: false,
-                products: [],
-                animatedProducts: [],
-            }
-        },
-        methods: {
-
-        }
-    }
-
     const Props = {
-        mixins: [Data],
         data() {
             return {
                 title: '',
@@ -35,8 +16,6 @@ NV.ready(() => {
                     main: [],
                     other: []
                 },
-                productImageIndices: {},
-                imageLoadingStates: {},
                 isMobile: false,
                 isMobileDevice: false,
                 currentOrderProduct: null,
@@ -45,15 +24,11 @@ NV.ready(() => {
                 virtualPageLoadErrorDocumentTitle: 'Ошибка загрузки',
             }
         },
-        computed: {
-            cartTotal() {
-                if (!this.cartItems || !Array.isArray(this.cartItems)) {
-                    return 0;
-                }
-                return this.cartItems.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
-            },
-        },
         mounted() {
+            if (this.$root !== this) {
+                return;
+            }
+
             this.loadParams().then(r => null);
             this.checkVirtualPage().then(r => null);
 
@@ -88,143 +63,6 @@ NV.ready(() => {
                 } catch (error) {
                     console.error('Error loading params:', error);
                 }
-            },
-            saveCart() {
-                try {
-                    localStorage.setItem('cart', JSON.stringify(Array.isArray(this.cartItems) ? this.cartItems : []));
-                } catch (e) {
-                    console.warn('Failed to save cart:', e);
-                }
-            },
-            closeCart() {
-                this.cartOpen = false;
-            },
-            toggleCart() {
-                if (this.mobileMenuOpen) {
-                    this.mobileMenuOpen = false;
-                    setTimeout(() => {
-                        this.cartOpen = !this.cartOpen;
-                    }, 300);
-                } else {
-                    this.cartOpen = !this.cartOpen;
-                }
-            },
-            openOrderModal() {
-                const hasCurrentProduct = !!this.currentOrderProduct;
-                const hasCartItems = Array.isArray(this.cartItems) && this.cartItems.length > 0;
-
-                if (!hasCurrentProduct && !hasCartItems) {
-                    alert('Корзина пуста');
-                    return;
-                }
-
-                this.orderModalOpen = true;
-                this.closeCart();
-            },
-            closeOrderModal() {
-                this.orderModalOpen = false;
-                this.currentOrderProduct = null;
-            },
-            increaseQuantity(item) {
-                if (!item) return;
-                const qty = Number(item.quantity || 1) || 1;
-                item.quantity = qty + 1;
-                this.saveCart();
-            },
-            decreaseQuantity(item) {
-                if (!item) return;
-                const qty = Number(item.quantity || 1) || 1;
-                if (qty <= 1) {
-                    this.removeFromCart(item);
-                    return;
-                }
-                item.quantity = qty - 1;
-                this.saveCart();
-            },
-            navClick(event, targetId) {
-                if (event && event.preventDefault) {
-                    event.preventDefault();
-                }
-
-                if (typeof this.closeAllMenus === 'function') {
-                    this.closeAllMenus();
-                } else if (typeof this.closeOtherMenus === 'function') {
-                    this.closeOtherMenus();
-                } else {
-                    this.mobileMenuOpen = false;
-                    this.cartOpen = false;
-                    this.wishListOpen = false;
-                }
-
-                if (this.isMainPage) {
-                    this.smoothScrollTo(targetId);
-                    return;
-                }
-
-                const slug = String(targetId || '').toLowerCase().replace(/\s+/g, '-');
-                this.openVirtualPage(slug, { updateHistory: true, scrollToTop: true }).then((page) => {
-                    if (!page && typeof this.goHome === 'function') {
-                        this.goHome({ updateHistory: true, scrollToTop: false });
-                        this.$nextTick(() => this.smoothScrollTo(targetId));
-                    }
-                }).catch(() => {
-                    if (typeof this.goHome === 'function') {
-                        this.goHome({ updateHistory: true, scrollToTop: false });
-                        this.$nextTick(() => this.smoothScrollTo(targetId));
-                    }
-                });
-            },
-            isVideo(url) {
-                if (!url || typeof url !== 'string') {
-                    return false;
-                }
-                const u = url.toLowerCase();
-                return /\.(mp4|webm|ogg|m4v|mov|avi|flv)(\?|#|$)/i.test(u);
-            },
-            getAllProductImages(product) {
-                if (!product) return [];
-                const list = [];
-
-                const main = this.normalizeMediaUrl(product.image);
-                if (main) list.push(main);
-
-                if (Array.isArray(product.additional_images)) {
-                    list.push(...product.additional_images.map((img) => this.normalizeMediaUrl(img)).filter(Boolean));
-                }
-
-                if (Array.isArray(product.additional_videos)) {
-                    list.push(...product.additional_videos.map((vid) => this.normalizeMediaUrl(vid)).filter(Boolean));
-                }
-
-                return list;
-            },
-            getCurrentProductImage(product) {
-                if (!product) return '';
-                const id = product.id;
-                const all = this.getAllProductImages(product);
-                if (!all.length) return this.normalizeMediaUrl(product.image) || '';
-                const idx = id != null ? (this.productImageIndices[id] || 0) : 0;
-                return all[idx] || all[0] || '';
-            },
-            onVideoLoadStart(event, product) {
-                if (!product || !product.id) return;
-                const video = event?.target;
-                if (video && video.readyState < 2) {
-                    this.imageLoadingStates[product.id] = true;
-                }
-            },
-            onVideoLoadedData(event, product) {
-                if (!product || !product.id) return;
-                this.imageLoadingStates[product.id] = false;
-            },
-            onVideoError(event, product) {
-                console.warn('Failed to load video:', event?.target?.src);
-                if (!product || !product.id) return;
-                this.imageLoadingStates[product.id] = false;
-            },
-            isImageLoading(product) {
-                if (!product || !product.id) return false;
-                return this.imageLoadingStates[product.id] === true;
             },
             click(event, button) {
                 const target = button.target || button.link;
@@ -378,23 +216,25 @@ NV.ready(() => {
                     return null;
                 }
 
+                const targetVm = (this.$root && this.$root.currentVirtualPage !== undefined) ? this.$root : this;
+
                 try {
                     const page = await this.loadVirtualPage(normalizedSlug);
 
                     if (!page) {
-                        this.currentVirtualPage = null;
-                        this.virtualPageError = 'Страница не найдена';
+                        targetVm.currentVirtualPage = null;
+                        targetVm.virtualPageError = 'Страница не найдена';
                         return null;
                     }
 
-                    this.currentVirtualPage = page;
-                    this.virtualPageError = null;
-                    this.currentProduct = null;
+                    targetVm.currentVirtualPage = page;
+                    targetVm.virtualPageError = null;
+                    targetVm.currentProduct = null;
 
                     if (page.navigation_buttons && Array.isArray(page.navigation_buttons)) {
-                        this.headerNavigation.other = page.navigation_buttons;
-                    } else if (this.headerNavigation) {
-                        this.headerNavigation.other = [];
+                        targetVm.headerNavigation.other = page.navigation_buttons;
+                    } else if (targetVm.headerNavigation) {
+                        targetVm.headerNavigation.other = [];
                     }
 
                     document.title = this.formatVirtualPageDocumentTitle(page);
@@ -403,19 +243,19 @@ NV.ready(() => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
 
-                    const basePath = this.getBasePath ? this.getBasePath() : this.getBasePath();
-
+                    const basePath = targetVm.getBasePath ? targetVm.getBasePath() : this.getBasePath();
                     if (updateHistory && window.history && window.history.pushState) {
                         window.history.pushState({ page: normalizedSlug }, '', basePath + normalizedSlug);
                     }
 
-                    this.$nextTick(() => this.$forceUpdate);
-
+                    if (targetVm.$nextTick) {
+                        targetVm.$nextTick(() => targetVm.$forceUpdate && targetVm.$forceUpdate());
+                    }
                     return page;
                 } catch (error) {
                     console.error('Error opening page:', error);
-                    this.currentVirtualPage = null;
-                    this.virtualPageError = 'Ошибка загрузки страницы';
+                    targetVm.currentVirtualPage = null;
+                    targetVm.virtualPageError = 'Ошибка загрузки страницы';
                     return null;
                 }
             },
@@ -528,7 +368,7 @@ NV.ready(() => {
                 return socialLinks && Object.values(socialLinks).some(link => link && link.trim() !== '');
             },
             removeFromCart(cartItem) {
-                if (confirm('Вы действительно хотите удалить' + cartItem.name + 'из корзины?')) {
+                if (confirm(`Вы действительно хотите удалить ${cartItem.name} из корзины?`)) {
                     this.cartItems = this.cartItems.filter(item => item !== cartItem);
                     this.saveCart();
                     if (this.cartItems.length === 0 && this.orderModalOpen) {
@@ -554,17 +394,11 @@ NV.ready(() => {
                     overlay.classList.remove('active');
                 }
             },
-            toggleMobileMenu() {
-                this.mobileMenuOpen = !this.mobileMenuOpen;
-            },
-            closeMobileMenu() {
-                this.mobileMenuOpen = false;
-            },
+
         }
     }
 
     const Modal = {
-        mixins: [Data],
         template: `
           <teleport to="body">
             <template v-if="isOpen" @click="zIndex = 1000">
@@ -656,11 +490,11 @@ NV.ready(() => {
             elementStyle() {
                 return {
                     position: 'fixed',
-                    left: this.offsetX + 'px',
-                    top: this.offsetY + 'px',
+                    left: `${this.offsetX}px`,
+                    top: `${this.offsetY}px`,
                     userSelect: 'none',
-                    width: this.width ? this.width + 'px' : '',
-                    height: this.height ? this.height + 'px' : '',
+                    width: this.width ? `${this.width}px` : '',
+                    height: this.height ? `${this.height}px` : '',
                     zIndex: this.zIndex
                 };
             },
@@ -671,15 +505,16 @@ NV.ready(() => {
                 this.startX = event.clientX - this.offsetX;
                 this.startY = event.clientY - this.offsetY;
             },
+
             computed: {
                 elementStyle() {
                     return {
                         position: 'absolute',
-                        left: this.offsetX + 'px',
-                        top: this.offsetY + 'px',
+                        left: `${this.offsetX}px`,
+                        top: `${this.offsetY}px`,
                         userSelect: 'none',
-                        width: this.width ? this.width + 'px' : '',
-                        height: this.height ? this.height + 'px' : '',
+                        width: this.width ? `${this.width}px` : '',
+                        height: this.height ? `${this.height}px` : '',
                         zIndex: this.zIndex
                     };
                 },
@@ -714,73 +549,7 @@ NV.ready(() => {
         }
     }
 
-    const Cart = {
-        mixins: [Data, Props],
-        template: `
-          <div class="cart-modal">
-            <div class="cart-content" @click.stop>
-              <div class="cart-header">
-                <h3>Ваша корзина</h3>
-                <button class="close-icon" @click="closeCart(); $emit('close')">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              <div v-if="cartItems.length > 0">
-                <div class="cart-item" v-for="(item, cartIndex) in cartItems"
-                     :key="item.id + '-' + (item.optionKey || cartIndex)">
-                  <img v-if="!isVideo(getCurrentProductImage(item))" :src="item.image" :alt="item.name"
-                       class="cart-item-img" loading="lazy" decoding="async">
-                  <video v-else :src="getCurrentProductImage(item)" class="cart-item-img"
-                         :class="{ 'loading': isImageLoading(item) }" muted loop playsinline autoplay
-                         @loadstart="onVideoLoadStart($event, item)" @loadeddata="onVideoLoadedData($event, item)"
-                         @error="onVideoError($event, item)"></video>
-                  <div class="cart-item-details">
-                    <h4 class="cart-item-title">{{ item.name }}</h4>
-                    <template v-if="item.options && item.options.length">
-                      <p class="cart-item-attr" v-for="option in item.options"
-                         :key="item.id + '-' + option.slug">
-                        {{ option.name }}: {{ option.value }}
-                      </p>
-                    </template>
-                    <p class="cart-item-price">{{ item.price }} руб.</p>
-                    <div class="cart-item-actions">
-                      <button class="quantity-btn" @click="decreaseQuantity(item)">-</button>
-                      <span class="quantity">{{ item.quantity }}</span>
-                      <button class="quantity-btn" @click="increaseQuantity(item)">+</button>
-                      <button class="remove-item" @click="removeFromCart(item)">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="cart-total">
-                  <span>Итого:</span>
-                  <span>{{ cartTotal }} руб.</span>
-                </div>
-
-                <button class="checkout-btn" @click="openOrderModal">Оформить заказ</button>
-              </div>
-              <div v-else class="empty-cart">
-                <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
-                <p>Ваша корзина пуста</p>
-                <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
-                  товарам</a>
-              </div>
-            </div>
-          </div>
-        `,
-        data() {
-            return {
-
-            }
-        },
-        methods: {
-
-        }
-    }
-
     const Login = {
-        mixins: [Data, Props],
         components: {
             modal: Modal
         },
@@ -840,7 +609,7 @@ NV.ready(() => {
                     );
 
                     if (result.success) {
-                        this.auth = await NV.checkUserAuth();
+                        this.$root.auth = await NV.checkUserAuth();
 
                         if (this.loginData.remember) {
                             localStorage.setItem('remember_username', this.loginData.username);
@@ -861,8 +630,11 @@ NV.ready(() => {
                 this.loginError = '';
                 this.$root.$refs.authRegister?.closeRegister?.();
                 this.showLogin = true;
-                this.userMenuOpen = false;
-                this.closeMobileMenu();
+                const root = this.$root;
+                root.userMenuOpen = false;
+                if (typeof root.closeMobileMenu === 'function') {
+                    root.closeMobileMenu();
+                }
             },
             goToRegister() {
                 this.$root.$refs.authRegister?.openRegister?.();
@@ -876,7 +648,6 @@ NV.ready(() => {
     }
 
     const Register = {
-        mixins: [Data],
         components: {
             modal: Modal
         },
@@ -929,8 +700,11 @@ NV.ready(() => {
                 this.registerError = '';
                 this.$root.$refs.authLogin?.closeLogin?.();
                 this.showRegister = true;
-                this.userMenuOpen = false;
-                this.closeMobileMenu();
+                const root = this.$root;
+                root.userMenuOpen = false;
+                if (typeof root.closeMobileMenu === 'function') {
+                    root.closeMobileMenu();
+                }
             },
             goToLogin() {
                 this.$root.$refs.authLogin?.openLogin?.();
@@ -971,7 +745,7 @@ NV.ready(() => {
 
                     const loginResult = await NV.login(username, password, false);
                     if (loginResult.success) {
-                        this.auth = await NV.checkUserAuth();
+                        this.$root.auth = await NV.checkUserAuth();
                         this.closeRegister();
                     } else {
                         this.closeRegister();
@@ -992,13 +766,13 @@ NV.ready(() => {
     }
 
     const Order = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
-          <div class="order-modal" @click.self="closeOrderModal">
+          <div class="order-modal" :class="{ 'active': orderModalOpen }" @click.self="closeOrderModal">
             <div class="order-modal-content">
               <div class="order-header">
                 <h3>Оформление заказа</h3>
-                <button class="close-icon" @click.stop.prevent="closeOrderModal()">
+                <button class="close-icon" @click="closeOrderModal">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -1286,7 +1060,7 @@ NV.ready(() => {
                   <div v-if="orderError" class="error-message">{{ orderError }}</div>
                   <div v-if="orderSuccess" class="success-message">{{ orderSuccess }}</div>
                   <div class="order-actions">
-                    <button type="button" class="btn btn-secondary" @click.stop.prevent="closeOrderModal()">Отмена</button>
+                    <button type="button" class="btn btn-secondary" @click="closeOrderModal">Отмена</button>
                     <button v-if="orderForm.payment_type === 'online'" 
                             type="button" 
                             class="btn btn-primary"
@@ -1309,6 +1083,7 @@ NV.ready(() => {
         `,
         data() {
             return {
+                orderModalOpen: false,
                 currentOrderProduct: null,
                 orderForm: {
                     customer_name: '',
@@ -1360,15 +1135,6 @@ NV.ready(() => {
                 deliveryRus: '',
             }
         },
-        watch: {
-            orderModalOpen(newVal) {
-                if (newVal) {
-                    this.$nextTick(() => {
-                        this.fillPickupParams();
-                    });
-                }
-            }
-        },
         methods: {
             policy() {
                 return !!this.policyYes && !this.policyNo;
@@ -1398,7 +1164,7 @@ NV.ready(() => {
                 this.orderError = '';
                 this.orderSuccess = '';
                 this.currentOrderProduct = null;
-                this.$emit('close');
+                this.resetOptionSelectionState();
                 this.selectingHandProductId = null;
             },
             increaseCurrentOrderQuantity() {
@@ -1474,7 +1240,7 @@ NV.ready(() => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'Authorization': 'Token' + this.dadataToken
+                            'Authorization': `Token ${this.dadataToken}`
                         },
                         body: JSON.stringify({
                             query: query,
@@ -1506,7 +1272,7 @@ NV.ready(() => {
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'Authorization': 'Token' + this.dadataToken
+                                'Authorization': `Token ${this.dadataToken}`
                             },
                             body: JSON.stringify({
                                 query: query,
@@ -1621,7 +1387,7 @@ NV.ready(() => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'Authorization': 'Token' + this.dadataToken
+                            'Authorization': `Token ${this.dadataToken}`
                         },
                         body: JSON.stringify({
                             query: query,
@@ -1658,7 +1424,7 @@ NV.ready(() => {
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'Authorization': 'Token' + this.dadataToken
+                                'Authorization': `Token ${this.dadataToken}`
                             },
                             body: JSON.stringify({
                                 query: query,
@@ -1748,7 +1514,7 @@ NV.ready(() => {
                     parts.push(this.orderForm.delivery_city);
                 }
                 if (this.orderForm.delivery_street) {
-                    parts.push('ул.' + this.orderForm.delivery_street);
+                    parts.push(`ул. ${this.orderForm.delivery_street}`);
                 }
                 if (this.orderForm.delivery_building) {
                     parts.push(this.orderForm.delivery_building);
@@ -2078,7 +1844,7 @@ NV.ready(() => {
     }
 
     const Options = {
-        mixins: [Data, Order],
+        mixins: [Order],
         data() {
             return {
                 productOptions: [],
@@ -2137,7 +1903,7 @@ NV.ready(() => {
             normalizeOptionTypes(types) {
                 return types
                     .map((type, index) => {
-                        const name = (type.name || '').trim() || 'Опция' + index + 1;
+                        const name = (type.name || '').trim() || `Опция ${index + 1}`;
                         const slug = type.slug || this.slugifyOptionName(name) || 'option-' + index;
                         const values = Array.isArray(type.values)
                             ? type.values
@@ -2292,7 +2058,7 @@ NV.ready(() => {
     }
 
     const Hero = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
       <section v-if="block" id="home" class="hero" :style="getHeroBackgroundStyle(block)">
         <div class="hero-content">
@@ -2332,7 +2098,7 @@ NV.ready(() => {
     }
 
     const Products = {
-        mixins: [Data, Props, Options],
+        mixins: [Props, Options],
         emits: ['update:cart-items', 'update:wishlist', 'open-cart', 'open-favorites', 'close-favorites', 'open-order', 'start-option-selection'],
         template: `
           <section v-if="block && block.type === 'products'" id="products">
@@ -2947,7 +2713,7 @@ NV.ready(() => {
                         if (!product.id) return;
 
                         const currentImage = this.getImage(product);
-                        const imgRef = this.$refs['img' + product.id];
+                        const imgRef = this.$refs[`img-${product.id}`];
                         let imgElement = null;
 
                         if (Array.isArray(imgRef)) {
@@ -3162,7 +2928,7 @@ NV.ready(() => {
                     return '';
                 }
                 return options
-                    .map(option => option.slug || option.name || option.value)
+                    .map(option => `${option.slug || option.name}:${option.value}`)
                     .join('|');
             },
             saveCart() {
@@ -3220,7 +2986,6 @@ NV.ready(() => {
     }
 
     const Features = {
-        mixins: [Data],
         template: `
         <section v-if="block && block.type === 'features'" id="features">
             <div class="container">
@@ -3257,7 +3022,7 @@ NV.ready(() => {
     }
 
     const Buttons = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
       <section v-if="block && block.type === 'buttons' && block.settings.buttons && block.settings.buttons.length > 0" id="buttons-block">
         <div class="container">
@@ -3300,7 +3065,6 @@ NV.ready(() => {
     }
 
     const HistoryBlock = {
-        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'history'" id="history">
         <div class="container">
@@ -3339,7 +3103,6 @@ NV.ready(() => {
     }
 
     const TextBlock = {
-        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'text'" class="text-block">
         <div class="container">
@@ -3366,7 +3129,6 @@ NV.ready(() => {
     }
 
     const Stats = {
-        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'stats'" id="stats">
         <div class="container">
@@ -3403,7 +3165,6 @@ NV.ready(() => {
     }
 
     const Contact = {
-        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'contact'" id="contact">
         <div class="container">
@@ -3598,7 +3359,7 @@ NV.ready(() => {
     }
 
     const Actual = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
       <section v-if="block && block.settings.promotions && block.settings.promotions.length > 0" id="actual">
         <div class="container">
@@ -3675,7 +3436,7 @@ NV.ready(() => {
     }
 
     const InfoButtons = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
           <section v-if="block && block.type === 'info_buttons' && block.is_active && block.settings.buttons && block.settings.buttons.length > 0" id="info-buttons">
             <div class="info-buttons-container">
@@ -3704,23 +3465,23 @@ NV.ready(() => {
     }
 
     const FooterBlock = {
-        mixins: [Data, Props],
+        mixins: [Props],
         template: `
           <section id="footer">
             <footer>
                 <div class="container" style="flex: 1">
-                  <div v-if="block.settings.paysystems" class="paysystems">
+                  <div class="paysystems">
                     <ul>
-                      <li><img src="NV/main/styles/images/bepaid.png"></li>
-                      <li><img src="NV/main/styles/images/erip.svg"></li>
+                      <li><img src="src/images/bepaid.png"></li>
+                      <li><img src="src/images/erip.svg"></li>
                     </ul>
                     <ul>
-                      <li><img src="NV/main/styles/images/visa.png"></li>
-                      <li><img src="NV/main/styles/images/mastercard.png"></li>
-                      <li><img src="NV/main/styles/images/belkart.png"></li>
-                      <li><img src="NV/main/styles/images/apple-pay.webp"></li>
-                      <li><img src="NV/main/styles/images/samsung-pay.png"></li>
-                      <li><img src="NV/main/styles/images/google-pay.webp"></li>
+                      <li><img src="src/images/visa.png"></li>
+                      <li><img src="src/images/mastercard.png"></li>
+                      <li><img src="src/images/belkart.png"></li>
+                      <li><img src="src/images/apple-pay.webp"></li>
+                      <li><img src="src/images/samsung-pay.png"></li>
+                      <li><img src="src/images/google-pay.webp"></li>
                     </ul>
                   </div>
                   <div class="footer-content"
@@ -3756,14 +3517,11 @@ NV.ready(() => {
         }
     }
 
-    window.Data = Data;
     window.Props = Props;
     window.Modal = Modal;
     window.Login = Login;
     window.Register = Register;
     window.Order = Order;
-    window.Cart = Cart;
-    window.Options = Options;
     window.Hero = Hero;
     window.Actual = Actual;
     window.Products = Products;
