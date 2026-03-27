@@ -3,6 +3,13 @@ NV.ready(() => {
         data() {
             return {
                 auth: NV.getAuth(),
+                cartOpen: false,
+                wishListOpen: false,
+                userMenuOpen: false,
+                mobileMenuOpen: false,
+                orderModalOpen: false,
+                products: [],
+                animatedProducts: [],
             }
         },
         methods: {
@@ -14,9 +21,6 @@ NV.ready(() => {
         mixins: [Data],
         data() {
             return {
-                userMenuOpen: false,
-                mobileMenuOpen: false,
-                orderModalOpen: false,
                 title: '',
                 description: '',
                 imageMetaTags: '',
@@ -31,6 +35,8 @@ NV.ready(() => {
                     main: [],
                     other: []
                 },
+                productImageIndices: {},
+                imageLoadingStates: {},
                 isMobile: false,
                 isMobileDevice: false,
                 currentOrderProduct: null,
@@ -38,6 +44,14 @@ NV.ready(() => {
                 virtualPageNotFoundDocumentTitle: 'Страница не найдена',
                 virtualPageLoadErrorDocumentTitle: 'Ошибка загрузки',
             }
+        },
+        computed: {
+            cartTotal() {
+                if (!this.cartItems || !Array.isArray(this.cartItems)) {
+                    return 0;
+                }
+                return this.cartItems.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
+            },
         },
         mounted() {
             this.loadParams().then(r => null);
@@ -74,6 +88,143 @@ NV.ready(() => {
                 } catch (error) {
                     console.error('Error loading params:', error);
                 }
+            },
+            saveCart() {
+                try {
+                    localStorage.setItem('cart', JSON.stringify(Array.isArray(this.cartItems) ? this.cartItems : []));
+                } catch (e) {
+                    console.warn('Failed to save cart:', e);
+                }
+            },
+            closeCart() {
+                this.cartOpen = false;
+            },
+            toggleCart() {
+                if (this.mobileMenuOpen) {
+                    this.mobileMenuOpen = false;
+                    setTimeout(() => {
+                        this.cartOpen = !this.cartOpen;
+                    }, 300);
+                } else {
+                    this.cartOpen = !this.cartOpen;
+                }
+            },
+            openOrderModal() {
+                const hasCurrentProduct = !!this.currentOrderProduct;
+                const hasCartItems = Array.isArray(this.cartItems) && this.cartItems.length > 0;
+
+                if (!hasCurrentProduct && !hasCartItems) {
+                    alert('Корзина пуста');
+                    return;
+                }
+
+                this.orderModalOpen = true;
+                this.closeCart();
+            },
+            closeOrderModal() {
+                this.orderModalOpen = false;
+                this.currentOrderProduct = null;
+            },
+            increaseQuantity(item) {
+                if (!item) return;
+                const qty = Number(item.quantity || 1) || 1;
+                item.quantity = qty + 1;
+                this.saveCart();
+            },
+            decreaseQuantity(item) {
+                if (!item) return;
+                const qty = Number(item.quantity || 1) || 1;
+                if (qty <= 1) {
+                    this.removeFromCart(item);
+                    return;
+                }
+                item.quantity = qty - 1;
+                this.saveCart();
+            },
+            navClick(event, targetId) {
+                if (event && event.preventDefault) {
+                    event.preventDefault();
+                }
+
+                if (typeof this.closeAllMenus === 'function') {
+                    this.closeAllMenus();
+                } else if (typeof this.closeOtherMenus === 'function') {
+                    this.closeOtherMenus();
+                } else {
+                    this.mobileMenuOpen = false;
+                    this.cartOpen = false;
+                    this.wishListOpen = false;
+                }
+
+                if (this.isMainPage) {
+                    this.smoothScrollTo(targetId);
+                    return;
+                }
+
+                const slug = String(targetId || '').toLowerCase().replace(/\s+/g, '-');
+                this.openVirtualPage(slug, { updateHistory: true, scrollToTop: true }).then((page) => {
+                    if (!page && typeof this.goHome === 'function') {
+                        this.goHome({ updateHistory: true, scrollToTop: false });
+                        this.$nextTick(() => this.smoothScrollTo(targetId));
+                    }
+                }).catch(() => {
+                    if (typeof this.goHome === 'function') {
+                        this.goHome({ updateHistory: true, scrollToTop: false });
+                        this.$nextTick(() => this.smoothScrollTo(targetId));
+                    }
+                });
+            },
+            isVideo(url) {
+                if (!url || typeof url !== 'string') {
+                    return false;
+                }
+                const u = url.toLowerCase();
+                return /\.(mp4|webm|ogg|m4v|mov|avi|flv)(\?|#|$)/i.test(u);
+            },
+            getAllProductImages(product) {
+                if (!product) return [];
+                const list = [];
+
+                const main = this.normalizeMediaUrl(product.image);
+                if (main) list.push(main);
+
+                if (Array.isArray(product.additional_images)) {
+                    list.push(...product.additional_images.map((img) => this.normalizeMediaUrl(img)).filter(Boolean));
+                }
+
+                if (Array.isArray(product.additional_videos)) {
+                    list.push(...product.additional_videos.map((vid) => this.normalizeMediaUrl(vid)).filter(Boolean));
+                }
+
+                return list;
+            },
+            getCurrentProductImage(product) {
+                if (!product) return '';
+                const id = product.id;
+                const all = this.getAllProductImages(product);
+                if (!all.length) return this.normalizeMediaUrl(product.image) || '';
+                const idx = id != null ? (this.productImageIndices[id] || 0) : 0;
+                return all[idx] || all[0] || '';
+            },
+            onVideoLoadStart(event, product) {
+                if (!product || !product.id) return;
+                const video = event?.target;
+                if (video && video.readyState < 2) {
+                    this.imageLoadingStates[product.id] = true;
+                }
+            },
+            onVideoLoadedData(event, product) {
+                if (!product || !product.id) return;
+                this.imageLoadingStates[product.id] = false;
+            },
+            onVideoError(event, product) {
+                console.warn('Failed to load video:', event?.target?.src);
+                if (!product || !product.id) return;
+                this.imageLoadingStates[product.id] = false;
+            },
+            isImageLoading(product) {
+                if (!product || !product.id) return false;
+                return this.imageLoadingStates[product.id] === true;
             },
             click(event, button) {
                 const target = button.target || button.link;
@@ -564,8 +715,59 @@ NV.ready(() => {
     }
 
     const Cart = {
+        mixins: [Data, Props],
         template: `
-        
+          <div class="cart-modal" :class="{ 'active': cartOpen }">
+            <div class="cart-content" @click.stop>
+              <div class="cart-header">
+                <h3>Ваша корзина</h3>
+                <button class="close-icon" @click="closeCart(); $emit('close')">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div v-if="cartItems.length > 0">
+                <div class="cart-item" v-for="(item, cartIndex) in cartItems"
+                     :key="item.id + '-' + (item.optionKey || cartIndex)">
+                  <img v-if="!isVideo(getCurrentProductImage(item))" :src="item.image" :alt="item.name"
+                       class="cart-item-img" loading="lazy" decoding="async">
+                  <video v-else :src="getCurrentProductImage(item)" class="cart-item-img"
+                         :class="{ 'loading': isImageLoading(item) }" muted loop playsinline autoplay
+                         @loadstart="onVideoLoadStart($event, item)" @loadeddata="onVideoLoadedData($event, item)"
+                         @error="onVideoError($event, item)"></video>
+                  <div class="cart-item-details">
+                    <h4 class="cart-item-title">{{ item.name }}</h4>
+                    <template v-if="item.options && item.options.length">
+                      <p class="cart-item-attr" v-for="option in item.options"
+                         :key="item.id + '-' + option.slug">
+                        {{ option.name }}: {{ option.value }}
+                      </p>
+                    </template>
+                    <p class="cart-item-price">{{ item.price }} руб.</p>
+                    <div class="cart-item-actions">
+                      <button class="quantity-btn" @click="decreaseQuantity(item)">-</button>
+                      <span class="quantity">{{ item.quantity }}</span>
+                      <button class="quantity-btn" @click="increaseQuantity(item)">+</button>
+                      <button class="remove-item" @click="removeFromCart(item)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="cart-total">
+                  <span>Итого:</span>
+                  <span>{{ cartTotal }} руб.</span>
+                </div>
+
+                <button class="checkout-btn" @click="openOrderModal">Оформить заказ</button>
+              </div>
+              <div v-else class="empty-cart">
+                <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
+                <p>Ваша корзина пуста</p>
+                <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
+                  товарам</a>
+              </div>
+            </div>
+          </div>
         `,
         data() {
             return {
@@ -3554,11 +3756,13 @@ NV.ready(() => {
         }
     }
 
+    window.Data = Data;
     window.Props = Props;
     window.Modal = Modal;
     window.Login = Login;
     window.Register = Register;
     window.Order = Order;
+    window.Cart = Cart;
     window.Options = Options;
     window.Hero = Hero;
     window.Actual = Actual;
