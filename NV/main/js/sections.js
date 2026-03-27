@@ -1,7 +1,22 @@
 NV.ready(() => {
-    const Props = {
+    const Data = {
         data() {
             return {
+                auth: NV.getAuth(),
+            }
+        },
+        methods: {
+
+        }
+    }
+
+    const Props = {
+        mixins: [Data],
+        data() {
+            return {
+                userMenuOpen: false,
+                mobileMenuOpen: false,
+                orderModalOpen: false,
                 title: '',
                 description: '',
                 imageMetaTags: '',
@@ -25,10 +40,6 @@ NV.ready(() => {
             }
         },
         mounted() {
-            if (this.$root !== this) {
-                return;
-            }
-
             this.loadParams().then(r => null);
             this.checkVirtualPage().then(r => null);
 
@@ -216,25 +227,23 @@ NV.ready(() => {
                     return null;
                 }
 
-                const targetVm = (this.$root && this.$root.currentVirtualPage !== undefined) ? this.$root : this;
-
                 try {
                     const page = await this.loadVirtualPage(normalizedSlug);
 
                     if (!page) {
-                        targetVm.currentVirtualPage = null;
-                        targetVm.virtualPageError = 'Страница не найдена';
+                        this.currentVirtualPage = null;
+                        this.virtualPageError = 'Страница не найдена';
                         return null;
                     }
 
-                    targetVm.currentVirtualPage = page;
-                    targetVm.virtualPageError = null;
-                    targetVm.currentProduct = null;
+                    this.currentVirtualPage = page;
+                    this.virtualPageError = null;
+                    this.currentProduct = null;
 
                     if (page.navigation_buttons && Array.isArray(page.navigation_buttons)) {
-                        targetVm.headerNavigation.other = page.navigation_buttons;
-                    } else if (targetVm.headerNavigation) {
-                        targetVm.headerNavigation.other = [];
+                        this.headerNavigation.other = page.navigation_buttons;
+                    } else if (this.headerNavigation) {
+                        this.headerNavigation.other = [];
                     }
 
                     document.title = this.formatVirtualPageDocumentTitle(page);
@@ -243,19 +252,19 @@ NV.ready(() => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
 
-                    const basePath = targetVm.getBasePath ? targetVm.getBasePath() : this.getBasePath();
+                    const basePath = this.getBasePath ? this.getBasePath() : this.getBasePath();
+
                     if (updateHistory && window.history && window.history.pushState) {
                         window.history.pushState({ page: normalizedSlug }, '', basePath + normalizedSlug);
                     }
 
-                    if (targetVm.$nextTick) {
-                        targetVm.$nextTick(() => targetVm.$forceUpdate && targetVm.$forceUpdate());
-                    }
+                    this.$nextTick(() => this.$forceUpdate);
+
                     return page;
                 } catch (error) {
                     console.error('Error opening page:', error);
-                    targetVm.currentVirtualPage = null;
-                    targetVm.virtualPageError = 'Ошибка загрузки страницы';
+                    this.currentVirtualPage = null;
+                    this.virtualPageError = 'Ошибка загрузки страницы';
                     return null;
                 }
             },
@@ -368,7 +377,7 @@ NV.ready(() => {
                 return socialLinks && Object.values(socialLinks).some(link => link && link.trim() !== '');
             },
             removeFromCart(cartItem) {
-                if (confirm(`Вы действительно хотите удалить ${cartItem.name} из корзины?`)) {
+                if (confirm('Вы действительно хотите удалить' + cartItem.name + 'из корзины?')) {
                     this.cartItems = this.cartItems.filter(item => item !== cartItem);
                     this.saveCart();
                     if (this.cartItems.length === 0 && this.orderModalOpen) {
@@ -394,11 +403,17 @@ NV.ready(() => {
                     overlay.classList.remove('active');
                 }
             },
-
+            toggleMobileMenu() {
+                this.mobileMenuOpen = !this.mobileMenuOpen;
+            },
+            closeMobileMenu() {
+                this.mobileMenuOpen = false;
+            },
         }
     }
 
     const Modal = {
+        mixins: [Data],
         template: `
           <teleport to="body">
             <template v-if="isOpen" @click="zIndex = 1000">
@@ -490,11 +505,11 @@ NV.ready(() => {
             elementStyle() {
                 return {
                     position: 'fixed',
-                    left: `${this.offsetX}px`,
-                    top: `${this.offsetY}px`,
+                    left: this.offsetX + 'px',
+                    top: this.offsetY + 'px',
                     userSelect: 'none',
-                    width: this.width ? `${this.width}px` : '',
-                    height: this.height ? `${this.height}px` : '',
+                    width: this.width ? this.width + 'px' : '',
+                    height: this.height ? this.height + 'px' : '',
                     zIndex: this.zIndex
                 };
             },
@@ -505,16 +520,15 @@ NV.ready(() => {
                 this.startX = event.clientX - this.offsetX;
                 this.startY = event.clientY - this.offsetY;
             },
-
             computed: {
                 elementStyle() {
                     return {
                         position: 'absolute',
-                        left: `${this.offsetX}px`,
-                        top: `${this.offsetY}px`,
+                        left: this.offsetX + 'px',
+                        top: this.offsetY + 'px',
                         userSelect: 'none',
-                        width: this.width ? `${this.width}px` : '',
-                        height: this.height ? `${this.height}px` : '',
+                        width: this.width ? this.width + 'px' : '',
+                        height: this.height ? this.height + 'px' : '',
                         zIndex: this.zIndex
                     };
                 },
@@ -549,7 +563,22 @@ NV.ready(() => {
         }
     }
 
+    const Cart = {
+        template: `
+        
+        `,
+        data() {
+            return {
+
+            }
+        },
+        methods: {
+
+        }
+    }
+
     const Login = {
+        mixins: [Data, Props],
         components: {
             modal: Modal
         },
@@ -609,7 +638,7 @@ NV.ready(() => {
                     );
 
                     if (result.success) {
-                        this.$root.auth = await NV.checkUserAuth();
+                        this.auth = await NV.checkUserAuth();
 
                         if (this.loginData.remember) {
                             localStorage.setItem('remember_username', this.loginData.username);
@@ -630,11 +659,8 @@ NV.ready(() => {
                 this.loginError = '';
                 this.$root.$refs.authRegister?.closeRegister?.();
                 this.showLogin = true;
-                const root = this.$root;
-                root.userMenuOpen = false;
-                if (typeof root.closeMobileMenu === 'function') {
-                    root.closeMobileMenu();
-                }
+                this.userMenuOpen = false;
+                this.closeMobileMenu();
             },
             goToRegister() {
                 this.$root.$refs.authRegister?.openRegister?.();
@@ -648,6 +674,7 @@ NV.ready(() => {
     }
 
     const Register = {
+        mixins: [Data],
         components: {
             modal: Modal
         },
@@ -700,11 +727,8 @@ NV.ready(() => {
                 this.registerError = '';
                 this.$root.$refs.authLogin?.closeLogin?.();
                 this.showRegister = true;
-                const root = this.$root;
-                root.userMenuOpen = false;
-                if (typeof root.closeMobileMenu === 'function') {
-                    root.closeMobileMenu();
-                }
+                this.userMenuOpen = false;
+                this.closeMobileMenu();
             },
             goToLogin() {
                 this.$root.$refs.authLogin?.openLogin?.();
@@ -745,7 +769,7 @@ NV.ready(() => {
 
                     const loginResult = await NV.login(username, password, false);
                     if (loginResult.success) {
-                        this.$root.auth = await NV.checkUserAuth();
+                        this.auth = await NV.checkUserAuth();
                         this.closeRegister();
                     } else {
                         this.closeRegister();
@@ -766,13 +790,13 @@ NV.ready(() => {
     }
 
     const Order = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
-          <div class="order-modal" :class="{ 'active': orderModalOpen }" @click.self="closeOrderModal">
+          <div class="order-modal" @click.self="closeOrderModal">
             <div class="order-modal-content">
               <div class="order-header">
                 <h3>Оформление заказа</h3>
-                <button class="close-icon" @click="closeOrderModal">
+                <button class="close-icon" @click.stop.prevent="closeOrderModal()">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -940,7 +964,7 @@ NV.ready(() => {
                     <div class="form-group autocomplete">
                       <label for="delivery_street">Улица *</label>
                       <div>
-                        <input type="text" id="delivery_street" v-model="orderForm.delivery_street" 
+                        <input type="text" id="delivery_street" v-model="orderForm.delivery_street"
                                @input="onStreetInput" @blur="onStreetBlur" :disabled="!deliveryCityValid"
                                autocomplete="off" placeholder="Введите улицу"
                                :class="{ 'invalid': deliveryStreetError || fieldErrors.delivery_street }">
@@ -1033,8 +1057,8 @@ NV.ready(() => {
                     <h4>Дополнительно</h4>
                     <div class="form-group">
                       <label for="order_notes">Комментарий к заказу</label>
-                      <textarea id="order_notes" 
-                                v-model="orderForm.notes" 
+                      <textarea id="order_notes"
+                                v-model="orderForm.notes"
                                 rows="3"
                                 placeholder="Дополнительные пожелания..."
                       >
@@ -1060,16 +1084,16 @@ NV.ready(() => {
                   <div v-if="orderError" class="error-message">{{ orderError }}</div>
                   <div v-if="orderSuccess" class="success-message">{{ orderSuccess }}</div>
                   <div class="order-actions">
-                    <button type="button" class="btn btn-secondary" @click="closeOrderModal">Отмена</button>
-                    <button v-if="orderForm.payment_type === 'online'" 
-                            type="button" 
+                    <button type="button" class="btn btn-secondary" @click.stop.prevent="closeOrderModal()">Отмена</button>
+                    <button v-if="orderForm.payment_type === 'online'"
+                            type="button"
                             class="btn btn-primary"
-                            @click="handleOnlinePayment" 
+                            @click="handleOnlinePayment"
                             :disabled="orderLoading || (!policyYes && !policyNo)"
                     >
                       {{ orderLoading ? 'Оформляем заказ...' : 'Оформить заказ' }}
                     </button>
-                    <button v-else type="submit" 
+                    <button v-else type="submit"
                             class="btn btn-primary"
                             :disabled="orderLoading || (!policyYes && !policyNo)"
                     >
@@ -1083,7 +1107,6 @@ NV.ready(() => {
         `,
         data() {
             return {
-                orderModalOpen: false,
                 currentOrderProduct: null,
                 orderForm: {
                     customer_name: '',
@@ -1135,6 +1158,15 @@ NV.ready(() => {
                 deliveryRus: '',
             }
         },
+        watch: {
+            orderModalOpen(newVal) {
+                if (newVal) {
+                    this.$nextTick(() => {
+                        this.fillPickupParams();
+                    });
+                }
+            }
+        },
         methods: {
             policy() {
                 return !!this.policyYes && !this.policyNo;
@@ -1164,7 +1196,7 @@ NV.ready(() => {
                 this.orderError = '';
                 this.orderSuccess = '';
                 this.currentOrderProduct = null;
-                this.resetOptionSelectionState();
+                this.$emit('close');
                 this.selectingHandProductId = null;
             },
             increaseCurrentOrderQuantity() {
@@ -1240,7 +1272,7 @@ NV.ready(() => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'Authorization': `Token ${this.dadataToken}`
+                            'Authorization': 'Token' + this.dadataToken
                         },
                         body: JSON.stringify({
                             query: query,
@@ -1272,7 +1304,7 @@ NV.ready(() => {
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'Authorization': `Token ${this.dadataToken}`
+                                'Authorization': 'Token' + this.dadataToken
                             },
                             body: JSON.stringify({
                                 query: query,
@@ -1387,7 +1419,7 @@ NV.ready(() => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'Authorization': `Token ${this.dadataToken}`
+                            'Authorization': 'Token' + this.dadataToken
                         },
                         body: JSON.stringify({
                             query: query,
@@ -1424,7 +1456,7 @@ NV.ready(() => {
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'Authorization': `Token ${this.dadataToken}`
+                                'Authorization': 'Token' + this.dadataToken
                             },
                             body: JSON.stringify({
                                 query: query,
@@ -1514,7 +1546,7 @@ NV.ready(() => {
                     parts.push(this.orderForm.delivery_city);
                 }
                 if (this.orderForm.delivery_street) {
-                    parts.push(`ул. ${this.orderForm.delivery_street}`);
+                    parts.push('ул.' + this.orderForm.delivery_street);
                 }
                 if (this.orderForm.delivery_building) {
                     parts.push(this.orderForm.delivery_building);
@@ -1844,7 +1876,7 @@ NV.ready(() => {
     }
 
     const Options = {
-        mixins: [Order],
+        mixins: [Data, Order],
         data() {
             return {
                 productOptions: [],
@@ -1903,7 +1935,7 @@ NV.ready(() => {
             normalizeOptionTypes(types) {
                 return types
                     .map((type, index) => {
-                        const name = (type.name || '').trim() || `Опция ${index + 1}`;
+                        const name = (type.name || '').trim() || 'Опция' + index + 1;
                         const slug = type.slug || this.slugifyOptionName(name) || 'option-' + index;
                         const values = Array.isArray(type.values)
                             ? type.values
@@ -2058,7 +2090,7 @@ NV.ready(() => {
     }
 
     const Hero = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
       <section v-if="block" id="home" class="hero" :style="getHeroBackgroundStyle(block)">
         <div class="hero-content">
@@ -2098,7 +2130,7 @@ NV.ready(() => {
     }
 
     const Products = {
-        mixins: [Props, Options],
+        mixins: [Data, Props, Options],
         emits: ['update:cart-items', 'update:wishlist', 'open-cart', 'open-favorites', 'close-favorites', 'open-order', 'start-option-selection'],
         template: `
           <section v-if="block && block.type === 'products'" id="products">
@@ -2713,7 +2745,7 @@ NV.ready(() => {
                         if (!product.id) return;
 
                         const currentImage = this.getImage(product);
-                        const imgRef = this.$refs[`img-${product.id}`];
+                        const imgRef = this.$refs['img' + product.id];
                         let imgElement = null;
 
                         if (Array.isArray(imgRef)) {
@@ -2928,7 +2960,7 @@ NV.ready(() => {
                     return '';
                 }
                 return options
-                    .map(option => `${option.slug || option.name}:${option.value}`)
+                    .map(option => option.slug || option.name || option.value)
                     .join('|');
             },
             saveCart() {
@@ -2986,6 +3018,7 @@ NV.ready(() => {
     }
 
     const Features = {
+        mixins: [Data],
         template: `
         <section v-if="block && block.type === 'features'" id="features">
             <div class="container">
@@ -3022,7 +3055,7 @@ NV.ready(() => {
     }
 
     const Buttons = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
       <section v-if="block && block.type === 'buttons' && block.settings.buttons && block.settings.buttons.length > 0" id="buttons-block">
         <div class="container">
@@ -3065,6 +3098,7 @@ NV.ready(() => {
     }
 
     const HistoryBlock = {
+        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'history'" id="history">
         <div class="container">
@@ -3103,6 +3137,7 @@ NV.ready(() => {
     }
 
     const TextBlock = {
+        mixins: [Data],
         template: `
       <section v-if="block && block.type === 'text'" class="text-block">
         <div class="container">
@@ -3129,28 +3164,29 @@ NV.ready(() => {
     }
 
     const Stats = {
+        mixins: [Data],
         template: `
-      <section v-if="block && block.type === 'stats'" id="stats">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('stats-title-' + block.id), 'hidden': !isInView('stats-title-' + block.id) }"
-              :id="'stats-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div v-if="block.settings.stats && block.settings.stats.length > 0" class="stats-grid">
-            <div v-for="(stat, statIndex) in block.settings.stats" :key="statIndex"
-                 class="stat-item scroll-animate"
-                 :class="{ 'animated': isInView('stat-' + block.id + '-' + statIndex), 'hidden': !isInView('stat-' + block.id + '-' + statIndex) }"
-                 :id="'stat-' + block.id + '-' + statIndex"
-                 :style="'transition-delay: ' + (0.1 + statIndex * 0.1) + 's'">
-              <div class="stat-number">{{ stat.number }}</div>
-              <div class="stat-label">{{ stat.label }}</div>
+          <section v-if="block && block.type === 'stats'" id="stats">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('stats-title-' + block.id), 'hidden': !isInView('stats-title-' + block.id) }"
+                  :id="'stats-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div v-if="block.settings.stats && block.settings.stats.length > 0" class="stats-grid">
+                <div v-for="(stat, statIndex) in block.settings.stats" :key="statIndex"
+                     class="stat-item scroll-animate"
+                     :class="{ 'animated': isInView('stat-' + block.id + '-' + statIndex), 'hidden': !isInView('stat-' + block.id + '-' + statIndex) }"
+                     :id="'stat-' + block.id + '-' + statIndex"
+                     :style="'transition-delay: ' + (0.1 + statIndex * 0.1) + 's'">
+                  <div class="stat-number">{{ stat.number }}</div>
+                  <div class="stat-label">{{ stat.label }}</div>
+                </div>
+              </div>
+              <div v-else class="empty-stats">
+                <p>Нет данных для отображения</p>
+              </div>
             </div>
-          </div>
-          <div v-else class="empty-stats">
-            <p>Нет данных для отображения</p>
-          </div>
-        </div>
-      </section>
-    `,
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3165,102 +3201,103 @@ NV.ready(() => {
     }
 
     const Contact = {
+        mixins: [Data],
         template: `
-      <section v-if="block && block.type === 'contact'" id="contact">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('contact-title-' + block.id), 'hidden': !isInView('contact-title-' + block.id) }"
-              :id="'contact-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div class="contact-info">
-            <div class="contact-details-card scroll-animate"
-                 :class="{ 'animated': isInView('contact-panel-' + block.id), 'hidden': !isInView('contact-panel-' + block.id) }"
-                 :id="'contact-panel-' + block.id">
-              <div class="contact-details">
-                <div v-if="block.settings.email" class="contact-item" :id="'contact-email-' + block.id">
-                  <i class="fas fa-envelope"></i>
-                  <a :href="'mailto:' + block.settings.email">{{ block.settings.email }}</a>
+          <section v-if="block && block.type === 'contact'" id="contact">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('contact-title-' + block.id), 'hidden': !isInView('contact-title-' + block.id) }"
+                  :id="'contact-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div class="contact-info">
+                <div class="contact-details-card scroll-animate"
+                     :class="{ 'animated': isInView('contact-panel-' + block.id), 'hidden': !isInView('contact-panel-' + block.id) }"
+                     :id="'contact-panel-' + block.id">
+                  <div class="contact-details">
+                    <div v-if="block.settings.email" class="contact-item" :id="'contact-email-' + block.id">
+                      <i class="fas fa-envelope"></i>
+                      <a :href="'mailto:' + block.settings.email">{{ block.settings.email }}</a>
+                    </div>
+                    <div v-if="block.settings.phone" class="contact-item" :id="'contact-phone-' + block.id">
+                      <i class="fas fa-phone"></i>
+                      <a :href="'tel:' + block.settings.phone">{{ block.settings.phone }}</a>
+                    </div>
+                    <div v-if="block.settings.address" class="contact-item"
+                         :id="'contact-address-' + block.id">
+                      <i class="fas fa-map-marker-alt"></i>
+                      <span>{{ block.settings.address }}</span>
+                    </div>
+                  </div>
+                  <div v-if="links(block.settings.socialLinks)"
+                       class="social-links contact-social-links">
+                    <a v-if="block.settings.socialLinks.instagram"
+                       :href="block.settings.socialLinks.instagram" target="_blank" class="social-link"
+                       aria-label="Instagram">
+                      <i class="fab fa-instagram"></i>
+                    </a>
+                    <a v-if="block.settings.socialLinks.tiktok" :href="block.settings.socialLinks.tiktok"
+                       target="_blank" class="social-link" aria-label="TikTok">
+                      <i class="fab fa-tiktok"></i>
+                    </a>
+                    <a v-if="block.settings.socialLinks.telegram"
+                       :href="block.settings.socialLinks.telegram" target="_blank" class="social-link"
+                       aria-label="Telegram">
+                      <i class="fab fa-telegram"></i>
+                    </a>
+                  </div>
                 </div>
-                <div v-if="block.settings.phone" class="contact-item" :id="'contact-phone-' + block.id">
-                  <i class="fas fa-phone"></i>
-                  <a :href="'tel:' + block.settings.phone">{{ block.settings.phone }}</a>
-                </div>
-                <div v-if="block.settings.address" class="contact-item"
-                     :id="'contact-address-' + block.id">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <span>{{ block.settings.address }}</span>
+                <div class="contact-form-card scroll-animate"
+                     :class="{ 'animated': isInView('contact-form-' + block.id), 'hidden': !isInView('contact-form-' + block.id) }"
+                     :id="'contact-form-' + block.id">
+                  <h3>Напишите нам</h3>
+                  <p>Оставьте имя, email и короткое сообщение, и мы свяжемся с вами в ближайшее время.</p>
+                  <form class="contact-form" @submit.prevent="submit">
+                    <div class="form-group">
+                      <label for="contact-name">Ваше имя *</label>
+                      <input
+                          id="contact-name"
+                          type="text"
+                          class="form-control"
+                          v-model.trim="contactForm.name"
+                          required
+                          :disabled="contactLoading"
+                          autocomplete="name"
+                          placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                      <label for="contact-email">Ваш email *</label>
+                      <input
+                          id="contact-email"
+                          type="email"
+                          class="form-control"
+                          v-model.trim="contactForm.email"
+                          required
+                          :disabled="contactLoading"
+                          autocomplete="email"
+                          placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                      <label for="contact-message">Сообщение *</label>
+                      <textarea
+                          id="contact-message"
+                          class="form-control"
+                          rows="4"
+                          v-model.trim="contactForm.message"
+                          required
+                          :disabled="contactLoading"></textarea>
+                    </div>
+                    <div class="contact-form-status" aria-live="polite">
+                      <span v-if="contactError" class="error-message">{{ contactError }}</span>
+                      <span v-else-if="contactSuccess" class="success-message">{{ contactSuccess }}</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary" :disabled="contactLoading">
+                      {{ contactLoading ? 'Отправляем...' : 'Отправить сообщение' }}
+                    </button>
+                  </form>
                 </div>
               </div>
-              <div v-if="links(block.settings.socialLinks)"
-                   class="social-links contact-social-links">
-                <a v-if="block.settings.socialLinks.instagram"
-                   :href="block.settings.socialLinks.instagram" target="_blank" class="social-link"
-                   aria-label="Instagram">
-                  <i class="fab fa-instagram"></i>
-                </a>
-                <a v-if="block.settings.socialLinks.tiktok" :href="block.settings.socialLinks.tiktok"
-                   target="_blank" class="social-link" aria-label="TikTok">
-                  <i class="fab fa-tiktok"></i>
-                </a>
-                <a v-if="block.settings.socialLinks.telegram"
-                   :href="block.settings.socialLinks.telegram" target="_blank" class="social-link"
-                   aria-label="Telegram">
-                  <i class="fab fa-telegram"></i>
-                </a>
-              </div>
             </div>
-            <div class="contact-form-card scroll-animate"
-                 :class="{ 'animated': isInView('contact-form-' + block.id), 'hidden': !isInView('contact-form-' + block.id) }"
-                 :id="'contact-form-' + block.id">
-              <h3>Напишите нам</h3>
-              <p>Оставьте имя, email и короткое сообщение, и мы свяжемся с вами в ближайшее время.</p>
-              <form class="contact-form" @submit.prevent="submit">
-                <div class="form-group">
-                  <label for="contact-name">Ваше имя *</label>
-                  <input
-                      id="contact-name"
-                      type="text"
-                      class="form-control"
-                      v-model.trim="contactForm.name"
-                      required
-                      :disabled="contactLoading"
-                      autocomplete="name"
-                      placeholder="Иван Иванов">
-                </div>
-                <div class="form-group">
-                  <label for="contact-email">Ваш email *</label>
-                  <input
-                      id="contact-email"
-                      type="email"
-                      class="form-control"
-                      v-model.trim="contactForm.email"
-                      required
-                      :disabled="contactLoading"
-                      autocomplete="email"
-                      placeholder="name@example.com">
-                </div>
-                <div class="form-group">
-                  <label for="contact-message">Сообщение *</label>
-                  <textarea
-                      id="contact-message"
-                      class="form-control"
-                      rows="4"
-                      v-model.trim="contactForm.message"
-                      required
-                      :disabled="contactLoading"></textarea>
-                </div>
-                <div class="contact-form-status" aria-live="polite">
-                  <span v-if="contactError" class="error-message">{{ contactError }}</span>
-                  <span v-else-if="contactSuccess" class="success-message">{{ contactSuccess }}</span>
-                </div>
-                <button type="submit" class="btn btn-primary" :disabled="contactLoading">
-                  {{ contactLoading ? 'Отправляем...' : 'Отправить сообщение' }}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-    `,
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3359,59 +3396,59 @@ NV.ready(() => {
     }
 
     const Actual = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
-      <section v-if="block && block.settings.promotions && block.settings.promotions.length > 0" id="actual">
-        <div class="container">
-          <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
-              :class="{ 'animated': isInView('actual-title-' + block.id), 'hidden': !isInView('actual-title-' + block.id) }"
-              :id="'actual-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
-          <div class="actual-grid">
-            <article v-for="(promo, promoIndex) in block.settings.promotions" :key="promoIndex"
-                     class="actual-card scroll-animate"
-                     :class="{ 'animated': isInView('actual-' + block.id + '-' + promoIndex), 'hidden': !isInView('actual-' + block.id + '-' + promoIndex) }"
-                     :id="'actual-' + block.id + '-' + promoIndex">
-              <div v-if="promo.image" class="actual-card-image">
-                <img :src="promo.image" :alt="promo.title">
-              </div>
-              <div class="actual-card-inner">
-                <div class="actual-badge">
-                  <i class="fas fa-tags"></i>
-                  <span>Акция</span>
-                </div>
-                <h3 class="actual-card-title">{{ promo.title }}</h3>
-                <p v-if="promo.description" class="actual-card-description">{{ promo.description }}</p>
-                <div class="product-promo-list">
-                  <a v-for="(link, idx) in (Array.isArray(promo.links) ? promo.links : Object.values(promo.links || {}))"
-                     :key="idx" :href="link.link" class="product-promo-item">
-                    <div class="product-promo-image">
-                      <img v-if="link.data?.image" :src="'/' + link.data.image" :alt="link.title || link.name">
-                      <div v-else class="product-promo-placeholder">
-                        <i class="fas fa-image"></i>
-                      </div>
+          <section v-if="block && block.settings.promotions && block.settings.promotions.length > 0" id="actual">
+            <div class="container">
+              <h2 v-if="block.settings.sectionTitle" class="section-title scroll-animate"
+                  :class="{ 'animated': isInView('actual-title-' + block.id), 'hidden': !isInView('actual-title-' + block.id) }"
+                  :id="'actual-title-' + block.id">{{ block.settings.sectionTitle }}</h2>
+              <div class="actual-grid">
+                <article v-for="(promo, promoIndex) in block.settings.promotions" :key="promoIndex"
+                         class="actual-card scroll-animate"
+                         :class="{ 'animated': isInView('actual-' + block.id + '-' + promoIndex), 'hidden': !isInView('actual-' + block.id + '-' + promoIndex) }"
+                         :id="'actual-' + block.id + '-' + promoIndex">
+                  <div v-if="promo.image" class="actual-card-image">
+                    <img :src="promo.image" :alt="promo.title">
+                  </div>
+                  <div class="actual-card-inner">
+                    <div class="actual-badge">
+                      <i class="fas fa-tags"></i>
+                      <span>Акция</span>
                     </div>
-                    <div class="product-promo-content">
-                      <h4 class="product-promo-title">{{ link.title || link.name }}</h4>
-                      <p v-if="link.description" class="product-promo-description">{{ link.description }}</p>
-                      <div class="product-price-promo">
-                        <p class="product-promo price" :class="link.data.price_sale ? 'price-old' : ''">{{ link.data.price }} руб.</p>
-                        <h4 class="product-promo price-sale" v-if="link.data.price_sale">{{ link.data.price_sale }} руб.</h4>
-                      </div>
+                    <h3 class="actual-card-title">{{ promo.title }}</h3>
+                    <p v-if="promo.description" class="actual-card-description">{{ promo.description }}</p>
+                    <div class="product-promo-list">
+                      <a v-for="(link, idx) in (Array.isArray(promo.links) ? promo.links : Object.values(promo.links || {}))"
+                         :key="idx" :href="link.link" class="product-promo-item">
+                        <div class="product-promo-image">
+                          <img v-if="link.data?.image" :src="'/' + link.data.image" :alt="link.title || link.name">
+                          <div v-else class="product-promo-placeholder">
+                            <i class="fas fa-image"></i>
+                          </div>
+                        </div>
+                        <div class="product-promo-content">
+                          <h4 class="product-promo-title">{{ link.title || link.name }}</h4>
+                          <p v-if="link.description" class="product-promo-description">{{ link.description }}</p>
+                          <div class="product-price-promo">
+                            <p class="product-promo price" :class="link.data.price_sale ? 'price-old' : ''">{{ link.data.price }} руб.</p>
+                            <h4 class="product-promo price-sale" v-if="link.data.price_sale">{{ link.data.price_sale }} руб.</h4>
+                          </div>
+                        </div>
+                        <i class="product-promo-arrow fas fa-arrow-right"></i>
+                      </a>
                     </div>
-                    <i class="product-promo-arrow fas fa-arrow-right"></i>
-                  </a>
-                </div>
-                <a v-if="promo.link" :href="getActualLink(promo)" class="actual-card-link"
-                   @click="actualLinkClick($event, promo)">
-                  {{ promo.linkText || 'Подробнее' }}
-                  <i class="fas fa-arrow-right"></i>
-                </a>
+                    <a v-if="promo.link" :href="getActualLink(promo)" class="actual-card-link"
+                       @click="actualLinkClick($event, promo)">
+                      {{ promo.linkText || 'Подробнее' }}
+                      <i class="fas fa-arrow-right"></i>
+                    </a>
+                  </div>
+                </article>
               </div>
-            </article>
-          </div>
-        </div>
-      </section>    
-    `,
+            </div>
+          </section>
+        `,
         props: {
             block: {
                 type: Object,
@@ -3436,7 +3473,7 @@ NV.ready(() => {
     }
 
     const InfoButtons = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
           <section v-if="block && block.type === 'info_buttons' && block.is_active && block.settings.buttons && block.settings.buttons.length > 0" id="info-buttons">
             <div class="info-buttons-container">
@@ -3465,23 +3502,23 @@ NV.ready(() => {
     }
 
     const FooterBlock = {
-        mixins: [Props],
+        mixins: [Data, Props],
         template: `
           <section id="footer">
             <footer>
                 <div class="container" style="flex: 1">
-                  <div class="paysystems">
+                  <div v-if="block.settings.paysystems" class="paysystems">
                     <ul>
-                      <li><img src="src/images/bepaid.png"></li>
-                      <li><img src="src/images/erip.svg"></li>
+                      <li><img src="NV/main/styles/images/bepaid.png"></li>
+                      <li><img src="NV/main/styles/images/erip.svg"></li>
                     </ul>
                     <ul>
-                      <li><img src="src/images/visa.png"></li>
-                      <li><img src="src/images/mastercard.png"></li>
-                      <li><img src="src/images/belkart.png"></li>
-                      <li><img src="src/images/apple-pay.webp"></li>
-                      <li><img src="src/images/samsung-pay.png"></li>
-                      <li><img src="src/images/google-pay.webp"></li>
+                      <li><img src="NV/main/styles/images/visa.png"></li>
+                      <li><img src="NV/main/styles/images/mastercard.png"></li>
+                      <li><img src="NV/main/styles/images/belkart.png"></li>
+                      <li><img src="NV/main/styles/images/apple-pay.webp"></li>
+                      <li><img src="NV/main/styles/images/samsung-pay.png"></li>
+                      <li><img src="NV/main/styles/images/google-pay.webp"></li>
                     </ul>
                   </div>
                   <div class="footer-content"
@@ -3522,6 +3559,7 @@ NV.ready(() => {
     window.Login = Login;
     window.Register = Register;
     window.Order = Order;
+    window.Options = Options;
     window.Hero = Hero;
     window.Actual = Actual;
     window.Products = Products;
