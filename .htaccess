@@ -4,7 +4,7 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} !^/api\.php
-    RewriteCond %{REQUEST_URI} !^/admin/
+    RewriteCond %{REQUEST_URI} !^/admin
     RewriteCond %{REQUEST_URI} !^/product/
     RewriteCond %{REQUEST_URI} !^/assets/
     RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|gif|css|js|ico|svg|woff|woff2|ttf|eot|mp4|webm|ogg)$ [NC]
