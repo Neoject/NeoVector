@@ -1,11 +1,9 @@
 <?php
 
 use NeoVector\ApiController;
-use NeoVector\Config;
 use NeoVector\Database;
 use NeoVector\Log;
 use NeoVector\PageBlock;
-use NeoVector\Params;
 use NeoVector\Router;
 
 require_once __DIR__ . '/header.php';
