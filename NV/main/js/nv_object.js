@@ -481,4 +481,11 @@ if (typeof window !== 'undefined') {
 
 NV.ready(() => {
     NV.showCookieConsent();
-})
+
+    AOS.init({
+        duration: 800,
+        once: true,
+        offset: 100,
+        easing: 'ease-out-quart'
+    });
+});
