@@ -84,13 +84,21 @@ try {
 ?>
     <div id="app">
         <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
-        <component
-                v-if="!currentVirtualPage && !virtualPageError"
-                v-for="(block, blockIndex) in filteredBlocks"
-                :key="block?.id ?? 'block-' + blockIndex"
-                :is="blockComponents[block.type]"
-                v-bind="getBlockProps(block)"
-        ></component>
+        <template v-if="!currentVirtualPage && !virtualPageError">
+            <component
+                        v-for="(block, blockIndex) in pageSections"
+                        :key="block?.id ?? 'block-' + blockIndex"
+                        :is="blockComponents[block.type]"
+                        v-bind="getBlockProps(block)"
+                ></component>
+                <!-- other blocks -->
+                <component
+                        v-for="(block, blockIndex) in footerSections"
+                        :key="block?.id ?? 'footer-' + blockIndex"
+                        :is="blockComponents[block.type]"
+                        v-bind="getBlockProps(block)"
+                ></component>
+        </template>
         <!-- Order Modal -->
         <order :class="{ 'active': orderModalOpen }" @close="closeOrderModal"></order>
         <!-- Cart Selector Modal -->
