@@ -9,6 +9,7 @@ NV.ready(() => {
         register: window.Register,
         actual: window.Actual,
         products: window.Products,
+        projects: window.Projects,
         features: window.Features,
         buttons: window.Buttons,
         history: window.HistoryBlock,
