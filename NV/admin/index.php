@@ -50,7 +50,7 @@ if (!$auth->isAdmin()): ?>
             <div class="login-form" style="text-align:center;">
                 <h2>Вход в админ-панель</h2>
                 <p style="margin-top:10px;">Только для администраторов.</p>
-                <form method="post" action="../../index.php" style="max-width:320px; margin:20px auto 0; text-align:left;">
+                <form method="post" action="<?=ROOT?>/admin/index.php" style="max-width:320px; margin:20px auto 0; text-align:left;">
                     <input type="hidden" name="action" value="login">
                     <div class="form-group">
                         <label>Имя пользователя</label>

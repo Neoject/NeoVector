@@ -15,7 +15,7 @@ use NeoVector\Params;
             </button>
             <a class="logo" href="#"
                @click.prevent="currentProduct ? closeProductPage() : goHome()">
-                <img :src="'<?=Params::getLogo()?>'" alt="<?=Params::getTitle()?>" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+                <img :src="'<?=Params::getLogo()?>'" alt="<?=Params::getTitle()?>" style="max-height: 64px; max-width: 100%" />
             </a>
             <div class="mobile-cart-icon" @click="toggleCart">
                 <i class="fas fa-shopping-cart"></i>
