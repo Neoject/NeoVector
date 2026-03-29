@@ -14,10 +14,11 @@ API::setupSession();
 $db = Database::getInstance()->getConnection();
 $auth = new Auth();
 $loginError = '';
+$adminPublicPath = rtrim($HOME_URL, '/') . '/admin';
 
 if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'logout') {
     $auth->logout();
-    header('Location: ../');
+    header('Location: ' . $HOME_URL);
     exit;
 }
 
@@ -32,14 +33,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $result = $auth->login($username, $password, $remember);
     } catch (Exception $e) {
         error_log($e->getMessage());
+        $result = ['success' => false, 'error' => 'Ошибка сервера'];
     }
 
-    if ($result['success'] && ($result['role'] ?? '') === 'admin') {
-        header('Location: index.php');
+    if (!empty($result['success']) && ($result['role'] ?? '') === 'admin') {
+        header('Location: ' . $adminPublicPath);
         exit;
     }
 
-    $loginError = ($result['role'] ?? '') !== 'admin' ? 'Недостаточно прав' : ($result['error'] ?? 'Неверные учетные данные');
+    if (!empty($result['success']) && ($result['role'] ?? '') !== 'admin') {
+        $auth->logout();
+        $loginError = 'Недостаточно прав';
+    } else {
+        $loginError = $result['error'] ?? 'Неверные учетные данные';
+    }
 }
 
 require_once ROOT_PATH . '/NV/main/admin/header.php';
@@ -50,7 +57,7 @@ if (!$auth->isAdmin()): ?>
             <div class="login-form" style="text-align:center;">
                 <h2>Вход в админ-панель</h2>
                 <p style="margin-top:10px;">Только для администраторов.</p>
-                <form method="post" action="<?=ROOT?>/admin/index.php" style="max-width:320px; margin:20px auto 0; text-align:left;">
+                <form method="post" action="<?= htmlspecialchars($adminPublicPath, ENT_QUOTES, 'UTF-8') ?>" style="max-width:320px; margin:20px auto 0; text-align:left;">
                     <input type="hidden" name="action" value="login">
                     <div class="form-group">
                         <label>Имя пользователя</label>
@@ -125,10 +132,9 @@ $adminUser = $auth->getCurrentUser();
                                     title="Дополнительные параметры">
                                     <i class="fa-solid fa-cog"></i>
                                 </button>
-                                <a href="../../index.php?action=logout" @click.prevent="confirmLogout"
-                                   class="btn btn-secondary" title="Выйти">
+                                <button type="button" @click="logout" class="btn btn-secondary" title="Выйти">
                                     <i class="fas fa-sign-out-alt"></i>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -173,10 +179,10 @@ $adminUser = $auth->getCurrentUser();
                             <i class="fas fa-user"></i>
                             <span>Профиль</span>
                         </button>
-                        <a href="../../index.php?action=logout" class="mobile-nav-btn logout-btn">
+                        <button type="button" @click="logout" class="mobile-nav-btn logout-btn">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Выйти</span>
-                        </a>
+                        </button>
                     </nav>
                 </div>
                 <div class="overlay" :class="{ 'active': mobileMenuOpen }" @click="closeMobileMenu"></div>
@@ -375,14 +381,14 @@ $adminUser = $auth->getCurrentUser();
         window.__ADMIN_AUTH__ = <?= json_encode($adminUser ?? ['authenticated' => false]); ?>;
     </script>
 
-    <script src="<?=ROOT?>/main/js/admin/modal.js"></script>
-    <script src="<?=ROOT?>/main/js/admin/auth.js"></script>
-    <script src="<?=ROOT?>/main/js/admin/category.js"></script>
-    <script src="<?=ROOT?>/main/js/admin/mail.js"></script>
-    <script src="<?=ROOT?>/main/js/admin/admin.js"></script>
+    <script src="<?=NV?>/main/js/admin/modal.js"></script>
+    <script src="<?=NV?>/main/js/admin/auth.js"></script>
+    <script src="<?=NV?>/main/js/admin/category.js"></script>
+    <script src="<?=NV?>/main/js/admin/mail.js"></script>
+    <script src="<?=NV?>/main/js/admin/admin.js"></script>
 
     <?php foreach ($scripts as $script) {
-        echo '<script src="'.ROOT.'/main/js/admin/pages/'.$script.'.js"></script>';
+        echo '<script src="'.NV.'/main/js/admin/pages/'.$script.'.js"></script>';
     } ?>
 
     <script type="text/x-template" id="admin-dashboard-template">

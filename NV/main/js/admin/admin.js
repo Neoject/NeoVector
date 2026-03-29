@@ -148,17 +148,7 @@ NV.ready(() => {
                     delivered: 'Доставлен',
                     cancelled: 'Отменен'
                 },
-                analyticsData: null,
-                analyticsLoading: false,
-                analyticsError: '',
-                analyticsPeriod: '7',
-                analyticsFilters: {
-                    ip: '',
-                    url: '',
-                    referer: '',
-                    date: '',
-                    topPagesSearch: ''
-                },
+
                 productTableColumns: {
                     id: true,
                     image: true,
@@ -411,112 +401,12 @@ NV.ready(() => {
 
                 return u.length > 0 && p.length > 0 && u.length <= 50;
             },
-            filteredRecentVisits() {
-                if (!this.analyticsData || !this.analyticsData.recent_visits) {
-                    return [];
-                }
-
-                let filtered = this.analyticsData.recent_visits.filter(visit => {
-                    return !visit.url || !visit.url.startsWith('/?');
-                });
-
-                if (Array.isArray(this.badIps) && this.badIps.length > 0) {
-                    filtered = filtered.filter(visit => {
-                        const ip = visit.ip ? String(visit.ip).trim().toLowerCase() : '';
-                        if (!ip) {
-                            return true;
-                        }
-
-                        return !this.badIps.some(blockedIp =>
-                            blockedIp &&
-                            String(blockedIp).trim().toLowerCase() === ip
-                        );
-                    });
-                }
-
-                if (this.analyticsFilters.ip) {
-                    const ipFilter = this.analyticsFilters.ip.toLowerCase().trim();
-
-                    filtered = filtered.filter(visit => {
-                        if (!visit.ip) {
-                            return false;
-                        }
-                        return visit.ip.toLowerCase().includes(ipFilter);
-                    });
-                }
-
-                const currentHost = (this.win && this.win.location && this.win.location.host) || '';
-                filtered = filtered.filter(visit => {
-                    if (!visit.referer) {
-                        return false;
-                    }
-
-                    try {
-                        const url = new URL(visit.referer, this.win ? this.win.location.origin : undefined);
-                        return !currentHost || url.host !== currentHost;
-                    } catch (e) {
-                        return false;
-                    }
-                });
-
-                if (this.analyticsFilters.url) {
-                    const urlFilter = this.analyticsFilters.url.toLowerCase().trim();
-
-                    filtered = filtered.filter(visit => {
-                        const url = visit.url === '/' ? 'домашняя' : visit.url.toLowerCase();
-                        return url.includes(urlFilter);
-                    });
-                }
-
-                if (this.analyticsFilters.referer) {
-                    const refererFilter = this.analyticsFilters.referer.toLowerCase().trim();
-
-                    filtered = filtered.filter(visit =>
-                        visit.referer && visit.referer.toLowerCase().includes(refererFilter)
-                    );
-                }
-
-                if (this.analyticsFilters.date) {
-                    filtered = filtered.filter(visit => visit.date === this.analyticsFilters.date);
-                }
-
-                return filtered;
-            },
-            filteredTopPages() {
-                if (!this.analyticsData || !this.analyticsData.top_pages) {
-                    return [];
-                }
-
-                let filtered = this.analyticsData.top_pages.filter(page => {
-                    return !page.url || !page.url.startsWith('/?');
-                });
-
-                if (!this.analyticsFilters.topPagesSearch) {
-                    return filtered;
-                }
-
-                const searchFilter = this.analyticsFilters.topPagesSearch.toLowerCase().trim();
-
-                return filtered.filter(page => {
-                    const url = page.url === '/' ? 'домашняя' : page.url.toLowerCase();
-                    return url.includes(searchFilter);
-                });
-            },
             filteredTopVirtualPages() {
                 if (!this.analyticsData || !this.analyticsData.top_virtual_pages) {
                     return [];
                 }
 
                 return this.analyticsData.top_virtual_pages.filter(page => {
-                    return !page.url || !page.url.startsWith('/?');
-                });
-            },
-            filteredTopPhpPages() {
-                if (!this.analyticsData || !this.analyticsData.top_php_pages) {
-                    return [];
-                }
-
-                return this.analyticsData.top_php_pages.filter(page => {
                     return !page.url || !page.url.startsWith('/?');
                 });
             },
@@ -4141,10 +4031,16 @@ NV.ready(() => {
                     }, 500);
                 }
             },
-            confirmLogout() {
-                if (confirm('Вы уверены, что хотите выйти?')) {
-                    window.location.href = 'index.php?action=logout'
+            async logout() {
+                if (this.closeMobileMenu) {
+                    this.closeMobileMenu();
                 }
+                if (!confirm('Вы уверены, что хотите выйти из профиля?')) {
+                    return;
+                }
+                await NV.logout();
+                this.auth = NV.getAuth();
+                window.location.reload();
             },
             //TODO
             generateProductSlug() {

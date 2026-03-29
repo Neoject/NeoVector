@@ -1,6 +1,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
+    # Должно быть выше catch-all: иначе для /subfolder/admin условие !^/admin не срабатывает и запрос уходит в index.php
+    RewriteRule ^admin/?$ NV/admin/index.php [L,QSA]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} !^/api\.php
@@ -9,7 +11,6 @@
     RewriteCond %{REQUEST_URI} !^/assets/
     RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|gif|css|js|ico|svg|woff|woff2|ttf|eot|mp4|webm|ogg)$ [NC]
     RewriteRule ^(.*)$ index.php [L,QSA]
-    RewriteRule ^admin/?$ NV/admin/index.php [L]
 </IfModule>
 
 php_value upload_max_filesize 256M

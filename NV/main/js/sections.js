@@ -654,6 +654,7 @@ NV.ready(() => {
                 }
 
                 this.loginLoading = false;
+                window.location.reload();
             },
             openLogin() {
                 this.loginError = '';
@@ -774,6 +775,7 @@ NV.ready(() => {
                     } else {
                         this.closeRegister();
                         const loginRef = this.$root.$refs.authLogin;
+
                         if (loginRef) {
                             loginRef.loginData.username = username;
                             loginRef.loginError = 'Регистрация успешна. Войдите в аккаунт.';
@@ -784,6 +786,7 @@ NV.ready(() => {
                     this.registerError = err.message || 'Ошибка регистрации';
                 } finally {
                     this.registerLoading = false;
+                    window.location.reload();
                 }
             },
         }

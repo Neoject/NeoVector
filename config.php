@@ -36,15 +36,20 @@ session_start();
 Auth::init(Database::db());
 
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-$basePath = dirname($scriptName);
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 
-$projectBasePath = dirname($basePath);
-
-if ($projectBasePath === '/' || $projectBasePath === '\\' || $projectBasePath === '.' || $projectBasePath === '') {
-    $HOME_URL = '/';
+// Корень сайта в URL — каталог с NV/, а не dirname(SCRIPT_NAME) для скриптов внутри NV/
+// (иначе для NV/admin/index.php получается .../NV/ и редирект ведёт на .../NV/admin вместо .../admin).
+if (str_contains($scriptName, '/NV/')) {
+    $prefix = substr($scriptName, 0, strpos($scriptName, '/NV/'));
+    $HOME_URL = ($prefix === '' || $prefix === '/') ? '/' : $prefix . '/';
 } else {
-    $HOME_URL = rtrim($projectBasePath, "/\\\\") . '/';
+    $dir = dirname($scriptName);
+    if ($dir === '/' || $dir === '.' || $dir === '') {
+        $HOME_URL = '/';
+    } else {
+        $HOME_URL = rtrim($dir, '/') . '/';
+    }
 }
 
 define('ROOT', $HOME_URL === '/' ? '' : rtrim($HOME_URL, '/'));
