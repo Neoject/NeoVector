@@ -2,16 +2,23 @@ NV.ready(() => {
     const { createApp } = Vue;
 
     NV.admin = Vue.createApp({
-        mixins: [Modal, Auth, Category, Mail, Service, Settings],
+        mixins: [window.Values, window.Modal, window.Auth, Category, Service, window.Messages],
         components: {
             Service,
-            Settings
+            options: window.Options,
+            users: window.Users,
+            messages: window.Messages,
+            message: window.Message,
+            reply: window.Reply,
+            analytics: window.Analytics,
+            profile: window.Profile,
+            settings: window.Settings,
         },
         data() {
             return {
                 origin: window.location.origin,
                 page: 'admin',
-                mobileMenuOpen: false,
+
                 showAddUser: false,
                 showAddProduct: false,
                 editingProduct: null,
@@ -77,21 +84,11 @@ NV.ready(() => {
                 orders: [],
                 ordersLoading: false,
                 ordersError: '',
-                users: [],
-                usersLoading: false,
-                usersError: '',
+
                 editingOrderStatus: null,
-                productOptions: [],
-                newOptionTypeName: '',
-                optionsLoading: false,
-                optionsError: '',
-                optionsSuccess: '',
-                productTypes: [],
-                newProductTypeName: '',
-                selectedProductTypeId: null,
-                typesLoading: false,
-                typesError: '',
-                typesSuccess: '',
+
+
+
                 isUploading: false,
                 uploadProgress: 0,
                 uploadSuccess: false,
@@ -330,13 +327,6 @@ NV.ready(() => {
             iconSearchQuery() {
                 this.updateFilteredIcons();
             },
-            selectedProductTypeId(newVal) {
-                if (newVal) {
-                    this.loadProductOptions().then(() => null);
-                } else {
-                    this.productOptions = [];
-                }
-            }
         },
         mounted() {
             this.cleanupOldOrders().then(() => null);
@@ -344,10 +334,7 @@ NV.ready(() => {
             this.loadCategories().then(() => null);
             this.loadPageBlocks().then(() => null);
             this.loadOrders().then(() => null);
-            this.loadUsers().then(() => null);
             this.loadPages().then(() => null);
-            this.loadProductTypes().then(() => null);
-            this.loadParams().then(() => null);
             this.loadColumnSettings();
             this.loadModalSizes();
 
@@ -373,6 +360,7 @@ NV.ready(() => {
 
             try {
                 const search = this.win && this.win.location ? this.win.location.search : '';
+
                 if (search) {
                     const params = new URLSearchParams(search);
                     const pageParam = params.get('page');
@@ -381,9 +369,11 @@ NV.ready(() => {
                     if ((pageParam === 'message' || pageParam === 'message-reply') && messageId) {
                         this.getMessages().then(() => {
                             const message = this.messages.find(m => m.id == messageId);
+
                             if (message) {
                                 this.selectedMessage = message;
                             }
+
                             this.changePage(pageParam);
                         });
                     } else if (pageParam) {
@@ -427,9 +417,6 @@ NV.ready(() => {
                 });
 
                 this.initColumnResize();
-            },
-            isMobileDevice() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             },
             closeMinimizedModal(modalId) {
 
@@ -628,12 +615,7 @@ NV.ready(() => {
                     console.error('Ошибка сохранения порядка товаров:', e);
                 }
             },
-            toggleMobileMenu() {
-                this.mobileMenuOpen = !this.mobileMenuOpen;
-            },
-            closeMobileMenu() {
-                this.mobileMenuOpen = false;
-            },
+
             editProduct(product) {
                 this.editingProduct = product;
 
@@ -2631,24 +2613,6 @@ NV.ready(() => {
 
                 this.ordersLoading = false;
             },
-            async loadUsers() {
-                this.usersLoading = true;
-                this.usersError = '';
-
-                try {
-                    const response = await fetch('../api.php?action=users', { credentials: 'same-origin' });
-                    if (response.ok) {
-                        this.users = await response.json();
-                    } else {
-                        this.usersError = 'Ошибка загрузки пользователей';
-                    }
-                } catch (error) {
-                    console.error('Error loading users:', error);
-                    this.usersError = 'Ошибка загрузки пользователей';
-                }
-
-                this.usersLoading = false;
-            },
             async updateOrderStatus(orderId, newStatus) {
                 try {
                     const formData = new FormData();
@@ -2726,11 +2690,7 @@ NV.ready(() => {
             getDeliveryTypeLabel(type) {
                 return type === 'pickup' ? 'Самовывоз' : 'Доставка';
             },
-            formatDate(dateString) {
-                if (!dateString) return '-';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            },
+
             getUserName(userId) {
                 if (!userId) return '-';
                 const user = this.users.find(u => u.id === userId);
@@ -2809,127 +2769,7 @@ NV.ready(() => {
                     this.closePageModal();
                 }
             },
-            changePage(page) {
-                this.page = page;
-                this.closeMobileMenu();
 
-                const loader = document.getElementById('block_loader');
-                if (loader) loader.style.display = 'flex';
-
-                if (page === 'analytics') {
-                    this.$nextTick(() => {
-                        const analyticsComponent = this.$refs.analyticsView;
-                        if (analyticsComponent && typeof analyticsComponent.loadAnalytics === 'function') {
-                            analyticsComponent.loadAnalytics().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'orders') {
-                    this.$nextTick(() => {
-                        const ordersComponent = this.$refs.ordersList;
-                        if (ordersComponent && typeof ordersComponent.loadOrders === 'function') {
-                            ordersComponent.loadOrders().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'users') {
-                    this.$nextTick(() => {
-                        const usersComponent = this.$refs['users-list'];
-                        if (usersComponent && typeof usersComponent.loadUsers === 'function') {
-                            usersComponent.loadUsers().then(() => null);
-                        } else {
-                            this.loadUsers().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'messages') {
-                    this.selectedMessage = null;
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('id');
-                    history.pushState({}, '', url.toString());
-                    this.getMessages().then(r => null);
-                }
-
-                if (page === 'message') {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const messageId = urlParams.get('id');
-                    if (messageId) {
-                        if (this.messages && this.messages.length > 0) {
-                            const message = this.messages.find(m => m.id == messageId);
-                            if (message) {
-                                this.selectedMessage = message;
-                            }
-                        } else {
-                            this.getMessages().then(() => {
-                                const message = this.messages.find(m => m.id == messageId);
-                                if (message) {
-                                    this.selectedMessage = message;
-                                }
-                            });
-                        }
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message');
-                        url.searchParams.set('id', messageId);
-                        history.pushState({}, '', url.toString());
-                    } else if (this.selectedMessage) {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message');
-                        url.searchParams.set('id', this.selectedMessage.id);
-                        history.pushState({}, '', url.toString());
-                    }
-                }
-
-                if (page === 'message-reply') {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const messageId = urlParams.get('id');
-                    if (messageId) {
-                        if (this.messages && this.messages.length > 0) {
-                            const message = this.messages.find(m => m.id == messageId);
-                            if (message) {
-                                this.selectedMessage = message;
-                            }
-                        } else {
-                            this.getMessages().then(() => {
-                                const message = this.messages.find(m => m.id == messageId);
-                                if (message) {
-                                    this.selectedMessage = message;
-                                }
-                            });
-                        }
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message-reply');
-                        url.searchParams.set('id', messageId);
-                        history.pushState({}, '', url.toString());
-                    } else if (this.selectedMessage) {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message-reply');
-                        url.searchParams.set('id', this.selectedMessage.id);
-                        history.pushState({}, '', url.toString());
-                    }
-                }
-
-                const url = new URL(window.location.href);
-                url.searchParams.set('page', page);
-                if (page !== 'message' || !url.searchParams.get('id')) {
-                    url.searchParams.delete('id');
-                }
-                history.pushState({}, '', url.toString());
-
-                window.scrollTo(0, 0);
-                document.body.style.overflow = 'hidden'
-
-                setTimeout(() => {
-                    const loader = document.getElementById('block_loader');
-
-                    if (loader) {
-                        document.body.style.overflow = 'auto'
-                        loader.style.display = 'none';
-                    }
-                }, 800);
-            },
             update() {
                 this.getAllProducts().then(r => null);
             },
@@ -3484,256 +3324,7 @@ NV.ready(() => {
                     alert('Ошибка загрузки изображения');
                 }
             },
-            async loadProductOptions() {
-                try {
-                    const params = new URLSearchParams();
-                    params.set('action', 'product_options');
 
-                    if (this.selectedProductTypeId) {
-                        params.set('type_id', this.selectedProductTypeId);
-                    }
-
-                    const response = await fetch('../api.php?' + params.toString(), { credentials: 'same-origin' });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        this.productOptions = data.options.map((type) => ({
-                            id: type.id || null,
-                            name: type.name || '',
-                            values: Array.isArray(type.values) && type.values.length ? [...type.values] : ['']
-                        }));
-                    } else {
-                        console.error('Failed to load options', response.error);
-                    }
-
-                    this.newOptionTypeName = '';
-                } catch (error) {
-                    alert(`Error loading product options: ${error}`);
-                    this.newOptionTypeName = '';
-                }
-            },
-            async loadProductTypes() {
-                try {
-                    const response = await fetch('../api.php?action=product_types', { credentials: 'same-origin' });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        this.productTypes = Array.isArray(data.types)
-                            ? data.types.map((type) => ({
-                                id: type.id || null,
-                                name: type.name || '',
-                            }))
-                            : [];
-
-                        if (!this.selectedProductTypeId && this.productTypes.length) {
-                            this.selectedProductTypeId = this.productTypes[0].id || null;
-                        }
-                    } else {
-                        console.error('Failed to load product types', response.error);
-                    }
-
-                    this.newProductTypeName = '';
-                } catch (error) {
-                    alert(`Error loading product types: ${error}`);
-                    this.newProductTypeName = '';
-                }
-            },
-            async saveProductOptions() {
-                this.optionsLoading = true;
-                this.optionsError = '';
-                this.optionsSuccess = '';
-
-                try {
-                    const currentTypeId = this.selectedProductTypeId ? parseInt(this.selectedProductTypeId, 10) : 0;
-
-                    if (!currentTypeId) {
-                        this.optionsError = 'Сначала выберите тип товара';
-                        this.optionsLoading = false;
-                        return;
-                    }
-
-                    const preparedOptions = this.productOptions.map(type => {
-                        const name = type.name ? type.name.trim() : '';
-                        const values = Array.isArray(type.values)
-                            ? type.values
-                                .map(value => value && value.trim())
-                                .filter(Boolean)
-                            : [];
-                        return {
-                            name,
-                            values
-                        };
-                    }).filter(type => type.name && type.values.length);
-
-                    const formData = new FormData();
-                    formData.append('action', 'save_product_options');
-                    formData.append('option_types', JSON.stringify(preparedOptions));
-                    formData.append('type_id', String(currentTypeId));
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            this.optionsSuccess = 'Опции успешно сохранены';
-                            setTimeout(() => {
-                                this.optionsSuccess = '';
-                            }, 3000);
-                        } else {
-                            this.optionsError = result.error || 'Ошибка сохранения';
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        this.optionsError = errorData.error || 'Ошибка сохранения';
-                    }
-                } catch (error) {
-                    console.error('Error saving product options:', error);
-                    this.optionsError = 'Ошибка сохранения опций';
-                }
-
-                this.optionsLoading = false;
-            },
-            async saveProductTypes() {
-                this.typesLoading = true;
-                this.typesError = '';
-                this.typesSuccess = '';
-
-                try {
-                    const preparedTypes = this.productTypes
-                        .map(type => {
-                            const name = type.name ? type.name.trim() : '';
-                            return { name };
-                        })
-                        .filter(type => type.name);
-
-                    if (!preparedTypes.length) {
-                        this.typesError = 'Добавьте хотя бы один тип товара';
-                        this.typesLoading = false;
-                        return;
-                    }
-
-                    const formData = new FormData();
-                    formData.append('action', 'save_product_types');
-                    formData.append('types', JSON.stringify(preparedTypes));
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            this.typesSuccess = 'Типы товаров успешно сохранены';
-                            setTimeout(() => {
-                                this.typesSuccess = '';
-                            }, 3000);
-                        } else {
-                            this.typesError = result.error || 'Ошибка сохранения';
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        this.typesError = errorData.error || 'Ошибка сохранения';
-                    }
-                } catch (error) {
-                    console.error('Error saving product types:', error);
-                    this.typesError = 'Ошибка сохранения типов товаров';
-                }
-
-                this.typesLoading = false;
-            },
-            addOptionType() {
-                const name = this.newOptionTypeName.trim();
-                if (!name) {
-                    this.optionsError = 'Введите название типа опций';
-                    return;
-                }
-                this.productOptions.push({
-                    id: null,
-                    name,
-                    values: ['']
-                });
-                this.newOptionTypeName = '';
-                this.optionsError = '';
-            },
-            addProductType() {
-                const name = (this.newProductTypeName || '').trim();
-                if (!name) {
-                    this.typesError = 'Введите название типа товара';
-                    return;
-                }
-
-                this.productTypes.push({
-                    id: null,
-                    name,
-                });
-
-                this.newProductTypeName = '';
-                this.typesError = '';
-            },
-            removeOptionType(index) {
-                if (confirm('Вы действительно хотите удалить этот список опций?')) {
-                    this.productOptions.splice(index, 1);
-                }
-            },
-            removeProductType(index) {
-                if (!this.productTypes[index]) {
-                    return;
-                }
-
-                if (confirm('Вы действительно хотите удалить этот тип товара?')) {
-                    this.productTypes.splice(index, 1);
-                }
-            },
-            moveOptionTypeUp(typeIndex) {
-                if (typeIndex <= 0 || typeIndex >= this.productOptions.length) {
-                    return;
-                }
-                const temp = this.productOptions[typeIndex];
-                this.productOptions[typeIndex] = this.productOptions[typeIndex - 1];
-                this.productOptions[typeIndex - 1] = temp;
-            },
-            moveProductTypeUp(index) {
-                if (index <= 0 || index >= this.productTypes.length) {
-                    return;
-                }
-
-                const temp = this.productTypes[index];
-                this.productTypes[index] = this.productTypes[index - 1];
-                this.productTypes[index - 1] = temp;
-            },
-            moveOptionTypeDown(typeIndex) {
-                if (typeIndex < 0 || typeIndex >= this.productOptions.length - 1) {
-                    return;
-                }
-                const temp = this.productOptions[typeIndex];
-                this.productOptions[typeIndex] = this.productOptions[typeIndex + 1];
-                this.productOptions[typeIndex + 1] = temp;
-            },
-            moveProductTypeDown(index) {
-                if (index < 0 || index >= this.productTypes.length - 1) {
-                    return;
-                }
-
-                const temp = this.productTypes[index];
-                this.productTypes[index] = this.productTypes[index + 1];
-                this.productTypes[index + 1] = temp;
-            },
-            addOptionValue(typeIndex) {
-                if (!this.productOptions[typeIndex]) {
-                    return;
-                }
-                this.productOptions[typeIndex].values.push('');
-            },
-            removeOptionValue(typeIndex, valueIndex) {
-                const optionType = this.productOptions[typeIndex];
-                optionType.values.splice(valueIndex, 1);
-            },
             async deleteOrder(orderId) {
                 if (!orderId) {
                     alert('ID заказа не указан');

@@ -8,7 +8,7 @@ require_once ROOT_PATH . '/config.php';
 
 Order::createTable();
 
-$scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-reply', 'options', 'orders', 'product-modal', 'users', 'profile'];
+$scripts = ['block-modal', 'messages', 'message-detail', 'message-reply', 'orders', 'product-modal', 'users', 'profile'];
 ?>
 
 <!doctype html>
