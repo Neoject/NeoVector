@@ -28,13 +28,13 @@ $scripts = ['analytics', 'block-modal', 'messages', 'message-detail', 'message-r
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="text/javascript" src="https://js.bepaid.by/widget/be_gateway.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="<?=ROOT?>/main/js/nv_object.js"></script>
-    <script src="<?=ROOT?>/main/js/admin/pages/admin-dashboard.js"></script>
+    <script src="<?=NV?>/main/js/nv_object.js"></script>
+    <script src="<?=NV?>/main/js/admin/pages/admin-dashboard.js"></script>
     <?php foreach ($scripts as $script): ?>
-        <script src="<?=ROOT?>/main/js/admin/pages/<?=$script?>.js"></script>
+        <script src="<?=NV?>/main/js/admin/pages/<?=$script?>.js"></script>
     <?php endforeach; ?>
-    <link rel="icon" href="<?=ROOT?>/../favicon.ico" type="image/x-icon">
+    <link rel="icon" href="<?=NV?>/../favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="<?=ROOT?>/main/styles/admin.css">
+    <link rel="stylesheet" href="<?=NV?>/main/styles/admin.css">
     <title>Админ панель - <?= Params::getTitle() ?></title>
 </head>
