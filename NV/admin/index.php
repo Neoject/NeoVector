@@ -380,11 +380,6 @@ $adminUser = $auth->getCurrentUser();
         window.__ADMIN_AUTH__ = <?= json_encode($adminUser ?? ['authenticated' => false]); ?>;
     </script>
 
-    <script src="<?=NV?>/main/js/admin/modal.js"></script>
-    <script src="<?=NV?>/main/js/admin/auth.js"></script>
-    <script src="<?=NV?>/main/js/admin/category.js"></script>
-    <script src="<?=NV?>/main/js/admin/mail.js"></script>
-
     <?php foreach ($scripts as $script) {
         echo '<script src="'.NV.'/main/js/admin/pages/'.$script.'.js"></script>';
     } ?>

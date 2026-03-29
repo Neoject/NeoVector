@@ -2,7 +2,7 @@ NV.ready(() => {
     const { createApp } = Vue;
 
     NV.admin = Vue.createApp({
-        mixins: [window.Values, window.Modal, window.Auth, Category, Service, window.Messages],
+        mixins: [window.Values, window.Modal, window.Auth, window.Category, Service, window.Messages],
         components: {
             Service,
             options: window.Options,
