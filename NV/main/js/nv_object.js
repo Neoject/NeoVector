@@ -139,6 +139,21 @@ const NV = {
     },
     getApiUrl() {
         try {
+            const pathname = window.location.pathname.replace(/\/$/, '') || '/';
+            if (pathname.endsWith('/admin')) {
+                const base = pathname.slice(0, -'/admin'.length);
+                return `${base === '' ? '' : base}/api.php`;
+            }
+            const nvAdmin = pathname.indexOf('/NV/admin');
+            if (nvAdmin !== -1) {
+                const base = pathname.slice(0, nvAdmin);
+                return `${base === '' ? '' : base}/api.php`;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        try {
             const scriptEl = document.querySelector('script[src*="script.js"]');
 
             if (scriptEl && scriptEl.src) {

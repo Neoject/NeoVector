@@ -132,10 +132,9 @@ $adminUser = $auth->getCurrentUser();
                                     title="Дополнительные параметры">
                                     <i class="fa-solid fa-cog"></i>
                                 </button>
-                                <a href="<?= htmlspecialchars($adminPublicPath . '?action=logout', ENT_QUOTES, 'UTF-8') ?>" @click.prevent="confirmLogout"
-                                   class="btn btn-secondary" title="Выйти">
+                                <button type="button" @click="logout" class="btn btn-secondary" title="Выйти">
                                     <i class="fas fa-sign-out-alt"></i>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -180,10 +179,10 @@ $adminUser = $auth->getCurrentUser();
                             <i class="fas fa-user"></i>
                             <span>Профиль</span>
                         </button>
-                        <a href="<?= htmlspecialchars($adminPublicPath . '?action=logout', ENT_QUOTES, 'UTF-8') ?>" class="mobile-nav-btn logout-btn">
+                        <button type="button" @click="logout" class="mobile-nav-btn logout-btn">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Выйти</span>
-                        </a>
+                        </button>
                     </nav>
                 </div>
                 <div class="overlay" :class="{ 'active': mobileMenuOpen }" @click="closeMobileMenu"></div>

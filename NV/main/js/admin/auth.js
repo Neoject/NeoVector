@@ -89,12 +89,6 @@ const Auth = {
             }
             this.registerLoading = false;
         },
-        logout() {
-            if (this.closeMobileMenu) {
-                this.closeMobileMenu();
-            }
-            window.location.href = 'index.php?action=logout';
-        },
         openProfileModal() {
             this.showProfileModal = true;
             this.profileError = '';
