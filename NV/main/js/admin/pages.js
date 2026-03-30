@@ -3555,13 +3555,13 @@ NV.ready(() => {
                       <div class="order-info">
                         <h3>Заказ #{{ order.id }}</h3>
                         <div class="order-meta">
-                                                    <span class="order-date">
-                                                        <i class="fas fa-calendar"></i>
-                                                      {{ formatDate(order.created_at) }}
-                                                    </span>
+                          <span class="order-date">
+                            <i class="fas fa-calendar"></i>
+                            {{ formatDate(order.created_at) }}
+                          </span>
                           <span class="order-total">
-                                                        {{ formatPrice(order.total_amount) }}
-                                                    </span>
+                            {{ formatPrice(order.total_amount) }}
+                          </span>
                         </div>
                       </div>
                       <div class="order-payment">
@@ -3585,11 +3585,13 @@ NV.ready(() => {
                       <div class="order-status">
                             <span
                                 v-if="Object.keys(orderStatuses)[(Object.keys(orderStatuses).indexOf(order.status)) + 1]"
-                                class="next-order-status">Статус заказа:
+                                class="next-order-status"
+                            >Статус заказа:
                                 <select :value="order.status"
                                         @change="updateOrderStatus(order.id, $event.target.value)"
                                         class="new-order-status"
-                                        :class="['status-select', getStatusClass(order.status)]">
+                                        :class="['status-select', getStatusClass(order.status)]"
+                                >
                                     <option value="pending">Ожидает</option>
                                     <option value="confirmed">Подтвержден</option>
                                     <option value="processing">В обработке</option>
@@ -3611,8 +3613,8 @@ NV.ready(() => {
                           <p><strong>{{ order.customer_name }}</strong></p>
                           <p><i class="fas fa-phone"></i> {{ order.customer_phone }}</p>
                           <p v-if="order.customer_email"><i class="fas fa-envelope"></i> {{
-                              order.customer_email
-                            }}</p>
+                              order.customer_email }}
+                          </p>
                         </div>
                       </div>
                       <div class="order-delivery">
@@ -3621,13 +3623,15 @@ NV.ready(() => {
                           <p><strong>{{ getDeliveryTypeLabel(order.delivery_type) }}</strong>
                           </p>
                           <div v-if="order.delivery_type === 'delivery'">
-                            <p><i class="fas fa-map-marker-alt"></i> {{
-                                order.delivery_address
-                              }}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> 
+                              {{ order.delivery_address }}
+                            </p>
                             <p v-if="order.delivery_date"><i class="fas fa-calendar"></i>
-                              Дата: {{ order.delivery_date }}</p>
+                              Дата: {{ order.delivery_date }}
+                            </p>
                             <p v-if="order.delivery_time"><i class="fas fa-clock"></i>
-                              Время: {{ order.delivery_time }}</p>
+                              Время: {{ order.delivery_time }}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -3649,10 +3653,7 @@ NV.ready(() => {
                               <p>{{ item.material }}</p>
                               <div class="item-quantity">
                                 <span>Количество: {{ item.quantity }}</span>
-                                <span class="item-price">{{
-                                    formatPrice(item.price *
-                                        item.quantity)
-                                  }}</span>
+                                <span class="item-price">{{ formatPrice(item.price * item.quantity) }}</span>
                               </div>
                             </div>
                           </div>
@@ -3694,6 +3695,7 @@ NV.ready(() => {
 
                 try {
                     const response = await fetch('../api.php?action=orders', { credentials: 'same-origin' });
+
                     if (response.ok) {
                         this.orders = await response.json();
                     } else {
@@ -3721,9 +3723,10 @@ NV.ready(() => {
 
                     if (response.ok) {
                         const result = await response.json();
-                        if (result.success) {
 
+                        if (result.success) {
                             const order = this.orders.find(o => o.id === orderId);
+
                             if (order) {
                                 order.status = newStatus;
                             }
@@ -3753,8 +3756,10 @@ NV.ready(() => {
 
                     if (response.ok) {
                         const result = await response.json();
+
                         if (result.success) {
                             const order = this.orders.find(o => o.id === orderId);
+
                             if (order) {
                                 order.payment_status = paymentStatus;
                             }
@@ -3778,6 +3783,7 @@ NV.ready(() => {
                     'delivered': 'status-delivered',
                     'cancelled': 'status-cancelled'
                 };
+
                 return statusClasses[status] || '';
             },
             getDeliveryTypeLabel(type) {
