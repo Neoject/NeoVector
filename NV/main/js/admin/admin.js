@@ -2,39 +2,35 @@ NV.ready(() => {
     const { createApp } = Vue;
 
     NV.admin = Vue.createApp({
-        mixins: [Modal, Auth, Category, Mail, Service, Settings],
+        mixins: [window.Values, window.Modal, window.Auth, window.Category, window.ProductFormMixin, Service, window.Messages],
         components: {
             Service,
-            Settings
+            options: window.Options,
+            product: window.Product,
+            users: window.Users,
+            messages: window.Messages,
+            message: window.Message,
+            reply: window.Reply,
+            orders: window.Orders,
+            analytics: window.Analytics,
+            profile: window.Profile,
+            settings: window.Settings,
         },
         data() {
             return {
                 origin: window.location.origin,
                 page: 'admin',
-                mobileMenuOpen: false,
+
                 showAddUser: false,
                 showAddProduct: false,
-                editingProduct: null,
+
                 win: null,
-                productForm: {
-                    name: '',
-                    description: '',
-                    peculiarities: [],
-                    material: '',
-                    price: '',
-                    price_sale: '',
-                    category: '',
-                    product_type_id: null,
-                    image: '',
-                    image_description: '',
-                    additionalImages: [],
-                    additionalVideos: []
-                },
+
                 aiGeneratingDescription: false,
                 aiGenerationError: '',
-                newPeculiarity: '',
-                selectedFile: null,
-                selectOpen: false,
+
+
+
                 draggingProductId: null,
                 productDragScrollInterval: null,
                 products: [],
@@ -74,25 +70,8 @@ NV.ready(() => {
                 draggedOverBlockId: null,
                 hasUnsavedChanges: false,
                 originalBlocksOrder: [],
-                orders: [],
-                ordersLoading: false,
-                ordersError: '',
-                users: [],
-                usersLoading: false,
-                usersError: '',
                 editingOrderStatus: null,
-                productOptions: [],
-                newOptionTypeName: '',
-                optionsLoading: false,
-                optionsError: '',
-                optionsSuccess: '',
-                productTypes: [],
-                newProductTypeName: '',
-                selectedProductTypeId: null,
-                typesLoading: false,
-                typesError: '',
-                typesSuccess: '',
-                isUploading: false,
+
                 uploadProgress: 0,
                 uploadSuccess: false,
                 uploadError: false,
@@ -140,14 +119,7 @@ NV.ready(() => {
                     { name: 'sports', label: 'Спорт', icon: 'fas fa-football-ball' },
                     { name: 'weather', label: 'Погода', icon: 'fas fa-sun' }
                 ],
-                orderStatuses: {
-                    pending: 'Ожидает',
-                    confirmed: 'Подтвержден',
-                    processing: 'В обработке',
-                    shipped: 'Отправлен',
-                    delivered: 'Доставлен',
-                    cancelled: 'Отменен'
-                },
+
 
                 productTableColumns: {
                     id: true,
@@ -330,24 +302,15 @@ NV.ready(() => {
             iconSearchQuery() {
                 this.updateFilteredIcons();
             },
-            selectedProductTypeId(newVal) {
-                if (newVal) {
-                    this.loadProductOptions().then(() => null);
-                } else {
-                    this.productOptions = [];
-                }
-            }
         },
         mounted() {
             this.cleanupOldOrders().then(() => null);
             this.getAllProducts().then(() => null);
             this.loadCategories().then(() => null);
-            this.loadPageBlocks().then(() => null);
-            this.loadOrders().then(() => null);
-            this.loadUsers().then(() => null);
-            this.loadPages().then(() => null);
             this.loadProductTypes().then(() => null);
-            this.loadParams().then(() => null);
+            this.loadPageBlocks().then(() => null);
+
+            this.loadPages().then(() => null);
             this.loadColumnSettings();
             this.loadModalSizes();
 
@@ -373,6 +336,7 @@ NV.ready(() => {
 
             try {
                 const search = this.win && this.win.location ? this.win.location.search : '';
+
                 if (search) {
                     const params = new URLSearchParams(search);
                     const pageParam = params.get('page');
@@ -381,9 +345,11 @@ NV.ready(() => {
                     if ((pageParam === 'message' || pageParam === 'message-reply') && messageId) {
                         this.getMessages().then(() => {
                             const message = this.messages.find(m => m.id == messageId);
+
                             if (message) {
                                 this.selectedMessage = message;
                             }
+
                             this.changePage(pageParam);
                         });
                     } else if (pageParam) {
@@ -428,9 +394,6 @@ NV.ready(() => {
 
                 this.initColumnResize();
             },
-            isMobileDevice() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            },
             closeMinimizedModal(modalId) {
 
                 if (this.minimizedModals[modalId]) {
@@ -463,6 +426,7 @@ NV.ready(() => {
                             category: '',
                             product_type_id: null,
                             image: '',
+                            image_description: '',
                             additionalImages: [],
                             additionalVideos: []
                         };
@@ -628,12 +592,7 @@ NV.ready(() => {
                     console.error('Ошибка сохранения порядка товаров:', e);
                 }
             },
-            toggleMobileMenu() {
-                this.mobileMenuOpen = !this.mobileMenuOpen;
-            },
-            closeMobileMenu() {
-                this.mobileMenuOpen = false;
-            },
+
             editProduct(product) {
                 this.editingProduct = product;
 
@@ -700,125 +659,31 @@ NV.ready(() => {
                     }
                 }
             },
-            async saveProduct() {
+
+            async loadProductTypes() {
                 try {
-                    const formData = new FormData();
+                    const response = await fetch('../api.php?action=product_types', { credentials: 'same-origin' });
 
-                    if (this.editingProduct) {
-                        formData.append('action', 'update_product');
-                        formData.append('id', this.editingProduct.id);
-                        formData.append('name', this.productForm.name);
-                        formData.append('description', this.productForm.description);
-                        formData.append('peculiarities', JSON.stringify(this.productForm.peculiarities));
-                        formData.append('material', this.productForm.material);
-                        formData.append('price', this.productForm.price);
-                        formData.append('price_sale', this.productForm.price_sale || '');
-                        formData.append('category', this.productForm.category);
-                        formData.append('product_type_id', this.productForm.product_type_id || '');
-                        formData.append('image', this.productForm.image);
-                        formData.append('image_description', this.productForm.image_description)
+                    if (response.ok) {
+                        const data = await response.json();
 
-                        if (this.selectedFile) {
-                            formData.append('product_image', this.selectedFile);
-                        }
-
-                        const response = await fetch('../api.php', {
-                            method: 'POST',
-                            body: formData,
-                            credentials: 'same-origin'
-                        });
-
-                        if (response.ok) {
-                            const payload = await response.json();
-                            const index = this.products.findIndex(p => p.id === this.editingProduct.id);
-
-                            if (index !== -1) {
-                                this.products[index] = {
-                                    ...this.products[index],
-                                    name: this.productForm.name,
-                                    description: this.productForm.description,
-                                    peculiarities: this.productForm.peculiarities,
-                                    material: this.productForm.material,
-                                    price: parseInt(this.productForm.price),
-                                    price_sale: parseInt(this.productForm.price_sale),
-                                    category: this.productForm.category,
-                                    product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
-                                    image: (payload && payload.image) ? payload.image : this.products[index].image
-                                };
-                            }
-
-                            this.update();
-                        } else {
-                            const errorData = await response.json();
-
-                            console.error('Failed to update product:', errorData.error || 'Unknown error');
-                            alert('Ошибка при обновлении товара');
-
-                            return;
-                        }
+                        this.productTypes = Array.isArray(data.types)
+                            ? data.types.map((type) => ({
+                                id: type.id || null,
+                                name: type.name || '',
+                            }))
+                            : [];
                     } else {
-                        formData.append('action', 'add_product');
-                        formData.append('name', this.productForm.name);
-                        formData.append('description', this.productForm.description);
-                        formData.append('peculiarities', JSON.stringify(this.productForm.peculiarities));
-                        formData.append('material', this.productForm.material);
-                        formData.append('price', this.productForm.price);
-                        formData.append('price_sale', this.productForm.price_sale || '');
-                        formData.append('category', this.productForm.category);
-                        formData.append('product_type_id', this.productForm.product_type_id || '');
-                        formData.append('image', this.productForm.image || '');
-                        formData.append('image_description', this.productForm.image_description || '');
-
-                        if (this.selectedFile) {
-                            formData.append('product_image', this.selectedFile);
-                        }
-
-                        const response = await fetch('../api.php', {
-                            method: 'POST',
-                            body: formData,
-                            credentials: 'same-origin'
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-
-                            this.products.push({
-                                id: result.id,
-                                name: this.productForm.name,
-                                description: this.productForm.description,
-                                peculiarities: this.productForm.peculiarities,
-                                material: this.productForm.material,
-                                price: parseInt(this.productForm.price),
-                                price_sale: parseInt(this.productForm.price_sale),
-                                category: this.productForm.category,
-                                product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
-                                image: result && result.image ? result.image : ''
-                            });
-                        } else {
-                            const errorData = await response.json();
-
-                            console.error('Failed to add product:', errorData.error || 'Unknown error');
-                            alert('Ошибка при добавлении товара');
-
-                            return;
-                        }
+                        console.error('Failed to load product types', response.statusText);
                     }
-
-                    if (this.selectedFile) {
-                        this.selectedFile = null;
-                        this.$refs.fileInput.value = '';
-                    }
-
-                    this.changePage('admin');
-                    this.closeModal();
                 } catch (error) {
-                    console.error('Error saving product:', error);
-                    alert('Ошибка при сохранении товара');
+                    console.error('Error loading product types:', error);
                 }
             },
             async refreshProducts() {
                 await this.getAllProducts();
                 await Category.methods.loadCategories();
+                await this.loadProductTypes();
 
                 let productsLoader = document.querySelector('.products-table-loader');
                 let categoriesLoader = document.querySelector('.categories-loader');
@@ -874,58 +739,6 @@ NV.ready(() => {
                     this.aiGeneratingDescription = false;
                 }
             },
-            closeModal(event) {
-                this._closeModalGeneric('productModal', event, {
-                    showProperty: 'showAddProduct',
-                    mobilePage: 'admin',
-                    beforeClose: () => {
-                        if (this.editingProduct !== undefined) {
-                            this.editingProduct = null;
-                        }
-                        if (this.selectedFile !== undefined) {
-                            this.selectedFile = null;
-                        }
-                        if (this.productForm) {
-                            this.productForm = {
-                                name: '',
-                                description: '',
-                                peculiarities: [],
-                                material: '',
-                                price: '',
-                                price_sale: '',
-                                category: '',
-                                image: '',
-                                additionalImages: [],
-                                additionalVideos: []
-                            };
-                        }
-                        if (this.aiGeneratingDescription !== undefined) {
-                            this.aiGeneratingDescription = false;
-                        }
-                        if (this.aiGenerationError !== undefined) {
-                            this.aiGenerationError = '';
-                        }
-                        if (this.newPeculiarity !== undefined) {
-                            this.newPeculiarity = '';
-                        }
-                        if (this.$refs && this.$refs.fileInput) {
-                            this.$refs.fileInput.value = '';
-                        }
-                        if (this.$refs && this.$refs.additionalImagesInput) {
-                            this.$refs.additionalImagesInput.value = '';
-                        }
-                    }
-                });
-            },
-            addPeculiarity() {
-                if (this.newPeculiarity.trim()) {
-                    this.productForm.peculiarities.push(this.newPeculiarity.trim());
-                    this.newPeculiarity = '';
-                }
-            },
-            removePeculiarity(index) {
-                this.productForm.peculiarities.splice(index, 1);
-            },
             async getAllProducts() {
                 try {
                     const response = await fetch('../api.php?action=products', { credentials: 'same-origin' });
@@ -952,47 +765,8 @@ NV.ready(() => {
 
                 return products;
             },
-            triggerFileUpload() {
-                this.$refs.fileInput.click();
-            },
-            async handleFileSelect(event) {
-                const file = event.target.files[0];
-                if (!file) return;
 
-                const isVideo = file.type.startsWith('video/');
-                const maxSize = isVideo ? (256 * 1024 * 1024) : (64 * 1024 * 1024);
-                const sizeLimit = isVideo ? '256MB' : '64MB';
 
-                if (file.size > maxSize) {
-                    alert(`Размер файла не должен превышать ${sizeLimit}`);
-                    event.target.value = '';
-                    return;
-                }
-
-                this.selectedFile = file;
-                const objectURL = URL.createObjectURL(file);
-                this.productForm.image = objectURL;
-                this.isUploading = true;
-                this.uploadProgress = 0;
-                this.uploadSuccess = false;
-                this.uploadError = false;
-                this.uploadErrorMessage = '';
-
-                try {
-                    await this.uploadMainFile(file);
-                    URL.revokeObjectURL(objectURL);
-                    this.uploadSuccess = true;
-                    this.isUploading = false;
-                    setTimeout(() => { this.uploadSuccess = false; }, 2000);
-                } catch (e) {
-                    console.error('Upload error:', e);
-                    URL.revokeObjectURL(objectURL);
-                    this.uploadError = true;
-                    this.uploadErrorMessage = e.message || 'Ошибка загрузки';
-                    this.isUploading = false;
-                    alert('Ошибка загрузки файла: ' + this.uploadErrorMessage);
-                }
-            },
             uploadMainFile(file) {
                 return new Promise((resolve, reject) => {
                     try {
@@ -1082,61 +856,18 @@ NV.ready(() => {
                     }
                 });
             },
-            cancelUpload() {
-                if (this.uploadXhr) {
-                    this.uploadXhr.abort();
-                }
-                this.isUploading = false;
-                this.uploadProgress = 0;
-                this.uploadError = false;
-                this.uploadSuccess = false;
-            },
-            resetUploadStatus() {
-                this.uploadSuccess = false;
-                this.uploadError = false;
-                this.uploadErrorMessage = '';
-            },
-            removeImage() {
-                this.selectedFile = null;
-                this.productForm.image = '';
-            },
-            getImageUrl() {
-                if (this.selectedFile) {
-                    return this.productForm.image;
-                } else if (this.productForm.image) {
-                    return '../' + this.productForm.image;
-                }
-                return '';
-            },
-            isVideoPreview(url) {
-                if (!url || typeof url !== 'string') {
-                    return false;
-                }
-                return url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('video');
-            },
+
+
+
+
+
             isVideo(url) {
                 if (!url || typeof url !== 'string') {
                     return false;
                 }
                 return url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('video');
             },
-            onSelectFocus() {
-                this.selectOpen = true;
-            },
-            onSelectBlur() {
-                setTimeout(() => {
-                    this.selectOpen = false;
-                }, 200);
-            },
-            onSelectChange() {
-                this.selectOpen = false;
-            },
-            onSelectClick() {
-                this.selectOpen = !this.selectOpen;
-            },
-            onSelectMouseDown() {
-                this.selectOpen = true;
-            },
+
             turnTextareaResize() {
                 this.$nextTick(() => {
                     const wrapper = document.querySelector('.textarea-wrapper');
@@ -1400,156 +1131,10 @@ NV.ready(() => {
                     }
                 });
             },
-            triggerAdditionalImagesUpload() {
-                this.$refs.additionalImagesInput.click();
-            },
-            async handleAdditionalImagesSelect(event) {
-                const files = Array.from(event.target.files);
-                if (files.length === 0) return;
 
-                for (const file of files) {
-                    const isVideo = file.type.startsWith('video/');
-                    const maxSize = isVideo ? (256 * 1024 * 1024) : (64 * 1024 * 1024);
-                    const sizeLimit = isVideo ? '256MB' : '64MB';
 
-                    if (file.size > maxSize) {
-                        alert(`Файл "${file.name}" слишком большой. Максимальный размер: ${sizeLimit}`);
-                        event.target.value = '';
-                        return;
-                    }
-                }
 
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'add_product_images');
-                    formData.append('product_id', this.editingProduct.id);
 
-                    files.forEach((file, index) => {
-                        formData.append('additional_images[]', file);
-                    });
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'same-origin'
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            if (result.uploaded_images) {
-                                this.productForm.additionalImages.push(...result.uploaded_images);
-                            }
-                            if (result.uploaded_videos) {
-                                if (!this.productForm.additionalVideos) {
-                                    this.productForm.additionalVideos = [];
-                                }
-                                this.productForm.additionalVideos.push(...result.uploaded_videos);
-                            }
-
-                            const productIndex = this.products.findIndex(p => p.id === this.editingProduct.id);
-                            if (productIndex !== -1) {
-                                if (result.uploaded_images) {
-                                    this.products[productIndex].additional_images = this.products[productIndex].additional_images ? [...this.products[productIndex].additional_images, ...result.uploaded_images] : result.uploaded_images;
-                                }
-                                if (result.uploaded_videos) {
-                                    this.products[productIndex].additional_videos = this.products[productIndex].additional_videos ? [...this.products[productIndex].additional_videos, ...result.uploaded_videos] : result.uploaded_videos;
-                                }
-                            }
-
-                            console.log('Additional images and videos uploaded successfully');
-                        } else {
-                            alert('Ошибка загрузки: ' + (result.error || 'Неизвестная ошибка'));
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        alert('Ошибка загрузки: ' + (errorData.error || 'Неизвестная ошибка'));
-                    }
-                } catch (error) {
-                    console.error('Error uploading additional images:', error);
-                    alert('Ошибка при загрузке изображений');
-                }
-
-                this.$refs.additionalImagesInput.value = '';
-            },
-            async removeAdditionalImage(index) {
-                if (confirm('Вы уверены, что хотите удалить это изображение?')) {
-                    const imagePath = this.productForm.additionalImages[index];
-
-                    try {
-                        const response = await fetch(`../api.php?action=get_image_id&product_id=${this.editingProduct.id}&image_path=${encodeURIComponent(imagePath)}`, { credentials: 'same-origin' });
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result.image_id) {
-                                const formData = new FormData();
-                                formData.append('action', 'delete_product_image');
-                                formData.append('image_id', result.image_id);
-
-                                const deleteResponse = await fetch('../api.php', {
-                                    method: 'POST',
-                                    body: formData,
-                                    credentials: 'same-origin'
-                                });
-
-                                if (deleteResponse.ok) {
-                                    this.productForm.additionalImages.splice(index, 1);
-
-                                    const productIndex = this.products.findIndex(p => p.id === this.editingProduct.id);
-                                    if (productIndex !== -1) {
-                                        this.products[productIndex].additional_images = [...this.productForm.additionalImages];
-                                    }
-
-                                    console.log('Additional image deleted successfully');
-                                } else {
-                                    alert('Ошибка удаления изображения');
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error deleting additional image:', error);
-                        alert('Ошибка при удалении изображения');
-                    }
-                }
-            },
-            async removeAdditionalVideo(index) {
-                if (confirm('Вы уверены, что хотите удалить это видео?')) {
-                    const videoPath = this.productForm.additionalVideos[index];
-
-                    try {
-                        const response = await fetch(`../api.php?action=get_image_id&product_id=${this.editingProduct.id}&image_path=${encodeURIComponent(videoPath)}`, { credentials: 'same-origin' });
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result.image_id) {
-                                const formData = new FormData();
-                                formData.append('action', 'delete_product_image');
-                                formData.append('image_id', result.image_id);
-
-                                const deleteResponse = await fetch('../api.php', {
-                                    method: 'POST',
-                                    body: formData,
-                                    credentials: 'same-origin'
-                                });
-
-                                if (deleteResponse.ok) {
-                                    this.productForm.additionalVideos.splice(index, 1);
-
-                                    const productIndex = this.products.findIndex(p => p.id === this.editingProduct.id);
-                                    if (productIndex !== -1) {
-                                        this.products[productIndex].additional_videos = [...this.productForm.additionalVideos];
-                                    }
-
-                                    console.log('Additional video deleted successfully');
-                                } else {
-                                    alert('Ошибка удаления видео');
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error deleting additional video:', error);
-                        alert('Ошибка при удалении видео');
-                    }
-                }
-            },
             addContentItem(section) {
                 if (section === 'features') {
                     this.featuresContent.push({
@@ -2613,124 +2198,12 @@ NV.ready(() => {
                     }, 3000);
                 }
             },
-            async loadOrders() {
-                this.ordersLoading = true;
-                this.ordersError = '';
 
-                try {
-                    const response = await fetch('../api.php?action=orders', { credentials: 'same-origin' });
-                    if (response.ok) {
-                        this.orders = await response.json();
-                    } else {
-                        this.ordersError = 'Ошибка загрузки заказов';
-                    }
-                } catch (error) {
-                    console.error('Error loading orders:', error);
-                    this.ordersError = 'Ошибка загрузки заказов';
-                }
 
-                this.ordersLoading = false;
-            },
-            async loadUsers() {
-                this.usersLoading = true;
-                this.usersError = '';
 
-                try {
-                    const response = await fetch('../api.php?action=users', { credentials: 'same-origin' });
-                    if (response.ok) {
-                        this.users = await response.json();
-                    } else {
-                        this.usersError = 'Ошибка загрузки пользователей';
-                    }
-                } catch (error) {
-                    console.error('Error loading users:', error);
-                    this.usersError = 'Ошибка загрузки пользователей';
-                }
 
-                this.usersLoading = false;
-            },
-            async updateOrderStatus(orderId, newStatus) {
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'update_order_status');
-                    formData.append('order_id', orderId);
-                    formData.append('status', newStatus);
 
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'same-origin'
-                    });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-
-                            const order = this.orders.find(o => o.id === orderId);
-                            if (order) {
-                                order.status = newStatus;
-                            }
-                        } else {
-                            alert('Ошибка обновления статуса: ' + (result.error || 'Неизвестная ошибка'));
-                        }
-                    } else {
-                        alert('Ошибка обновления статуса');
-                    }
-                } catch (error) {
-                    console.error('Error updating order status:', error);
-                    alert('Ошибка обновления статуса');
-                }
-            },
-            async updatePaymentStatus(orderId, paymentStatus) {
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'update_payment_status');
-                    formData.append('order_id', orderId);
-                    formData.append('payment_status', paymentStatus);
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'same-origin'
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            const order = this.orders.find(o => o.id === orderId);
-                            if (order) {
-                                order.payment_status = paymentStatus;
-                            }
-                        } else {
-                            alert('Ошибка обновления статуса оплаты: ' + (result.error || 'Неизвестная ошибка'));
-                        }
-                    } else {
-                        alert('Ошибка обновления статуса оплаты');
-                    }
-                } catch (error) {
-                    console.error('Error updating payment status:', error);
-                    alert('Ошибка обновления статуса оплаты');
-                }
-            },
-            getStatusClass(status) {
-                const statusClasses = {
-                    'pending': 'status-pending',
-                    'confirmed': 'status-confirmed',
-                    'processing': 'status-processing',
-                    'shipped': 'status-shipped',
-                    'delivered': 'status-delivered',
-                    'cancelled': 'status-cancelled'
-                };
-                return statusClasses[status] || '';
-            },
-            getDeliveryTypeLabel(type) {
-                return type === 'pickup' ? 'Самовывоз' : 'Доставка';
-            },
-            formatDate(dateString) {
-                if (!dateString) return '-';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            },
             getUserName(userId) {
                 if (!userId) return '-';
                 const user = this.users.find(u => u.id === userId);
@@ -2791,9 +2264,7 @@ NV.ready(() => {
                 };
                 return labels[column] || column;
             },
-            formatPrice(price) {
-                return new Intl.NumberFormat('ru-RU').format(price) + ' руб.';
-            },
+
             closeAllMenus() {
                 if (this.showContentModal) {
                     this.closeContentModal();
@@ -2809,127 +2280,7 @@ NV.ready(() => {
                     this.closePageModal();
                 }
             },
-            changePage(page) {
-                this.page = page;
-                this.closeMobileMenu();
 
-                const loader = document.getElementById('block_loader');
-                if (loader) loader.style.display = 'flex';
-
-                if (page === 'analytics') {
-                    this.$nextTick(() => {
-                        const analyticsComponent = this.$refs.analyticsView;
-                        if (analyticsComponent && typeof analyticsComponent.loadAnalytics === 'function') {
-                            analyticsComponent.loadAnalytics().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'orders') {
-                    this.$nextTick(() => {
-                        const ordersComponent = this.$refs.ordersList;
-                        if (ordersComponent && typeof ordersComponent.loadOrders === 'function') {
-                            ordersComponent.loadOrders().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'users') {
-                    this.$nextTick(() => {
-                        const usersComponent = this.$refs['users-list'];
-                        if (usersComponent && typeof usersComponent.loadUsers === 'function') {
-                            usersComponent.loadUsers().then(() => null);
-                        } else {
-                            this.loadUsers().then(() => null);
-                        }
-                    });
-                }
-
-                if (page === 'messages') {
-                    this.selectedMessage = null;
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('id');
-                    history.pushState({}, '', url.toString());
-                    this.getMessages().then(r => null);
-                }
-
-                if (page === 'message') {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const messageId = urlParams.get('id');
-                    if (messageId) {
-                        if (this.messages && this.messages.length > 0) {
-                            const message = this.messages.find(m => m.id == messageId);
-                            if (message) {
-                                this.selectedMessage = message;
-                            }
-                        } else {
-                            this.getMessages().then(() => {
-                                const message = this.messages.find(m => m.id == messageId);
-                                if (message) {
-                                    this.selectedMessage = message;
-                                }
-                            });
-                        }
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message');
-                        url.searchParams.set('id', messageId);
-                        history.pushState({}, '', url.toString());
-                    } else if (this.selectedMessage) {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message');
-                        url.searchParams.set('id', this.selectedMessage.id);
-                        history.pushState({}, '', url.toString());
-                    }
-                }
-
-                if (page === 'message-reply') {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const messageId = urlParams.get('id');
-                    if (messageId) {
-                        if (this.messages && this.messages.length > 0) {
-                            const message = this.messages.find(m => m.id == messageId);
-                            if (message) {
-                                this.selectedMessage = message;
-                            }
-                        } else {
-                            this.getMessages().then(() => {
-                                const message = this.messages.find(m => m.id == messageId);
-                                if (message) {
-                                    this.selectedMessage = message;
-                                }
-                            });
-                        }
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message-reply');
-                        url.searchParams.set('id', messageId);
-                        history.pushState({}, '', url.toString());
-                    } else if (this.selectedMessage) {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('page', 'message-reply');
-                        url.searchParams.set('id', this.selectedMessage.id);
-                        history.pushState({}, '', url.toString());
-                    }
-                }
-
-                const url = new URL(window.location.href);
-                url.searchParams.set('page', page);
-                if (page !== 'message' || !url.searchParams.get('id')) {
-                    url.searchParams.delete('id');
-                }
-                history.pushState({}, '', url.toString());
-
-                window.scrollTo(0, 0);
-                document.body.style.overflow = 'hidden'
-
-                setTimeout(() => {
-                    const loader = document.getElementById('block_loader');
-
-                    if (loader) {
-                        document.body.style.overflow = 'auto'
-                        loader.style.display = 'none';
-                    }
-                }, 800);
-            },
             update() {
                 this.getAllProducts().then(r => null);
             },
@@ -3484,296 +2835,8 @@ NV.ready(() => {
                     alert('Ошибка загрузки изображения');
                 }
             },
-            async loadProductOptions() {
-                try {
-                    const params = new URLSearchParams();
-                    params.set('action', 'product_options');
 
-                    if (this.selectedProductTypeId) {
-                        params.set('type_id', this.selectedProductTypeId);
-                    }
 
-                    const response = await fetch('../api.php?' + params.toString(), { credentials: 'same-origin' });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        this.productOptions = data.options.map((type) => ({
-                            id: type.id || null,
-                            name: type.name || '',
-                            values: Array.isArray(type.values) && type.values.length ? [...type.values] : ['']
-                        }));
-                    } else {
-                        console.error('Failed to load options', response.error);
-                    }
-
-                    this.newOptionTypeName = '';
-                } catch (error) {
-                    alert(`Error loading product options: ${error}`);
-                    this.newOptionTypeName = '';
-                }
-            },
-            async loadProductTypes() {
-                try {
-                    const response = await fetch('../api.php?action=product_types', { credentials: 'same-origin' });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        this.productTypes = Array.isArray(data.types)
-                            ? data.types.map((type) => ({
-                                id: type.id || null,
-                                name: type.name || '',
-                            }))
-                            : [];
-
-                        if (!this.selectedProductTypeId && this.productTypes.length) {
-                            this.selectedProductTypeId = this.productTypes[0].id || null;
-                        }
-                    } else {
-                        console.error('Failed to load product types', response.error);
-                    }
-
-                    this.newProductTypeName = '';
-                } catch (error) {
-                    alert(`Error loading product types: ${error}`);
-                    this.newProductTypeName = '';
-                }
-            },
-            async saveProductOptions() {
-                this.optionsLoading = true;
-                this.optionsError = '';
-                this.optionsSuccess = '';
-
-                try {
-                    const currentTypeId = this.selectedProductTypeId ? parseInt(this.selectedProductTypeId, 10) : 0;
-
-                    if (!currentTypeId) {
-                        this.optionsError = 'Сначала выберите тип товара';
-                        this.optionsLoading = false;
-                        return;
-                    }
-
-                    const preparedOptions = this.productOptions.map(type => {
-                        const name = type.name ? type.name.trim() : '';
-                        const values = Array.isArray(type.values)
-                            ? type.values
-                                .map(value => value && value.trim())
-                                .filter(Boolean)
-                            : [];
-                        return {
-                            name,
-                            values
-                        };
-                    }).filter(type => type.name && type.values.length);
-
-                    const formData = new FormData();
-                    formData.append('action', 'save_product_options');
-                    formData.append('option_types', JSON.stringify(preparedOptions));
-                    formData.append('type_id', String(currentTypeId));
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            this.optionsSuccess = 'Опции успешно сохранены';
-                            setTimeout(() => {
-                                this.optionsSuccess = '';
-                            }, 3000);
-                        } else {
-                            this.optionsError = result.error || 'Ошибка сохранения';
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        this.optionsError = errorData.error || 'Ошибка сохранения';
-                    }
-                } catch (error) {
-                    console.error('Error saving product options:', error);
-                    this.optionsError = 'Ошибка сохранения опций';
-                }
-
-                this.optionsLoading = false;
-            },
-            async saveProductTypes() {
-                this.typesLoading = true;
-                this.typesError = '';
-                this.typesSuccess = '';
-
-                try {
-                    const preparedTypes = this.productTypes
-                        .map(type => {
-                            const name = type.name ? type.name.trim() : '';
-                            return { name };
-                        })
-                        .filter(type => type.name);
-
-                    if (!preparedTypes.length) {
-                        this.typesError = 'Добавьте хотя бы один тип товара';
-                        this.typesLoading = false;
-                        return;
-                    }
-
-                    const formData = new FormData();
-                    formData.append('action', 'save_product_types');
-                    formData.append('types', JSON.stringify(preparedTypes));
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            this.typesSuccess = 'Типы товаров успешно сохранены';
-                            setTimeout(() => {
-                                this.typesSuccess = '';
-                            }, 3000);
-                        } else {
-                            this.typesError = result.error || 'Ошибка сохранения';
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        this.typesError = errorData.error || 'Ошибка сохранения';
-                    }
-                } catch (error) {
-                    console.error('Error saving product types:', error);
-                    this.typesError = 'Ошибка сохранения типов товаров';
-                }
-
-                this.typesLoading = false;
-            },
-            addOptionType() {
-                const name = this.newOptionTypeName.trim();
-                if (!name) {
-                    this.optionsError = 'Введите название типа опций';
-                    return;
-                }
-                this.productOptions.push({
-                    id: null,
-                    name,
-                    values: ['']
-                });
-                this.newOptionTypeName = '';
-                this.optionsError = '';
-            },
-            addProductType() {
-                const name = (this.newProductTypeName || '').trim();
-                if (!name) {
-                    this.typesError = 'Введите название типа товара';
-                    return;
-                }
-
-                this.productTypes.push({
-                    id: null,
-                    name,
-                });
-
-                this.newProductTypeName = '';
-                this.typesError = '';
-            },
-            removeOptionType(index) {
-                if (confirm('Вы действительно хотите удалить этот список опций?')) {
-                    this.productOptions.splice(index, 1);
-                }
-            },
-            removeProductType(index) {
-                if (!this.productTypes[index]) {
-                    return;
-                }
-
-                if (confirm('Вы действительно хотите удалить этот тип товара?')) {
-                    this.productTypes.splice(index, 1);
-                }
-            },
-            moveOptionTypeUp(typeIndex) {
-                if (typeIndex <= 0 || typeIndex >= this.productOptions.length) {
-                    return;
-                }
-                const temp = this.productOptions[typeIndex];
-                this.productOptions[typeIndex] = this.productOptions[typeIndex - 1];
-                this.productOptions[typeIndex - 1] = temp;
-            },
-            moveProductTypeUp(index) {
-                if (index <= 0 || index >= this.productTypes.length) {
-                    return;
-                }
-
-                const temp = this.productTypes[index];
-                this.productTypes[index] = this.productTypes[index - 1];
-                this.productTypes[index - 1] = temp;
-            },
-            moveOptionTypeDown(typeIndex) {
-                if (typeIndex < 0 || typeIndex >= this.productOptions.length - 1) {
-                    return;
-                }
-                const temp = this.productOptions[typeIndex];
-                this.productOptions[typeIndex] = this.productOptions[typeIndex + 1];
-                this.productOptions[typeIndex + 1] = temp;
-            },
-            moveProductTypeDown(index) {
-                if (index < 0 || index >= this.productTypes.length - 1) {
-                    return;
-                }
-
-                const temp = this.productTypes[index];
-                this.productTypes[index] = this.productTypes[index + 1];
-                this.productTypes[index + 1] = temp;
-            },
-            addOptionValue(typeIndex) {
-                if (!this.productOptions[typeIndex]) {
-                    return;
-                }
-                this.productOptions[typeIndex].values.push('');
-            },
-            removeOptionValue(typeIndex, valueIndex) {
-                const optionType = this.productOptions[typeIndex];
-                optionType.values.splice(valueIndex, 1);
-            },
-            async deleteOrder(orderId) {
-                if (!orderId) {
-                    alert('ID заказа не указан');
-                    return false;
-                }
-
-                if (!confirm('Вы действительно хотите удалить этот заказ? Это действие необратимо')) {
-                    return false;
-                }
-
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'delete_order');
-                    formData.append('order_id', orderId);
-
-                    const response = await fetch('../api.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-
-                        alert('Заказ успешно удален');
-                        await this.loadOrders();
-                        return true;
-                    } else {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                    }
-                } catch (error) {
-                    console.error('Error deleting order:', error);
-                    alert(`Произошла ошибка: ${error.message || 'Неизвестная ошибка'}`);
-                    return false;
-                }
-            },
             async cleanupOldOrders() {
                 try {
                     const formData = new FormData();

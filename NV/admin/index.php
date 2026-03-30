@@ -190,16 +190,16 @@ $adminUser = $auth->getCurrentUser();
                     <admin-dashboard-view v-if="isAuthenticated"></admin-dashboard-view>
                 </template>
                 <template v-if="page === 'users'">
-                    <users-list ref="users-list"></users-list>
+                    <users></users>
                 </template>
                 <template v-if="page === 'analytics'">
-                    <analytics-view ref="analyticsView"></analytics-view>
+                    <analytics></analytics>
                 </template>
                 <template v-if="page === 'orders'">
-                    <orders-list ref="ordersList"></orders-list>
+                    <orders></orders>
                 </template>
                 <template v-if="page === 'options'">
-                    <options-view v-if="isAuthenticated"></options-view>
+                    <options></options>
                 </template>
                 <template v-if="page === 'user'">
                     <div class="modal-header">
@@ -238,26 +238,25 @@ $adminUser = $auth->getCurrentUser();
                     </div>
                 </template>
                 <template v-if="page === 'product'">
-                    <product-modal-view></product-modal-view>
+                    <product></product>
                 </template>
                 <template v-if="page === 'block'">
                     <block-modal-view></block-modal-view>
                 </template>
                 <template v-if="page === 'settings'">
-                    <Settings/>
-<!--                    <settings-view v-if="isAuthenticated"></settings-view>-->
+                    <settings></settings>
                 </template>
                 <template v-if="page === 'messages'">
-                    <messages-view v-if="isAuthenticated"></messages-view>
+                    <messages></messages>
                 </template>
                 <template v-if="page === 'message' && selectedMessage">
-                    <message-detail-view v-if="isAuthenticated"></message-detail-view>
+                    <message></message>
                 </template>
                 <template v-if="page === 'message-reply' && selectedMessage">
-                    <message-reply-view v-if="isAuthenticated"></message-reply-view>
+                    <reply></reply>
                 </template>
                 <template v-if="page === 'profile'">
-                    <profile-params v-if="isAuthenticated"></profile-params>
+                    <profile></profile>
                 </template>
             </template>
 
@@ -381,12 +380,6 @@ $adminUser = $auth->getCurrentUser();
         window.__ADMIN_AUTH__ = <?= json_encode($adminUser ?? ['authenticated' => false]); ?>;
     </script>
 
-    <script src="<?=NV?>/main/js/admin/modal.js"></script>
-    <script src="<?=NV?>/main/js/admin/auth.js"></script>
-    <script src="<?=NV?>/main/js/admin/category.js"></script>
-    <script src="<?=NV?>/main/js/admin/mail.js"></script>
-    <script src="<?=NV?>/main/js/admin/admin.js"></script>
-
     <?php foreach ($scripts as $script) {
         echo '<script src="'.NV.'/main/js/admin/pages/'.$script.'.js"></script>';
     } ?>
@@ -404,10 +397,4 @@ endif;
 Service::adminJS('components/service');
 
 require_once ROOT_PATH . '/NV/main/admin/footer.php';
-
-$pages = ['settings'];
-
-foreach ($pages as $page) {
-    Service::adminJS('pages/'.$page);
-}
 ?>

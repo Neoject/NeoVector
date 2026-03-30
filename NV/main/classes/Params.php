@@ -97,7 +97,6 @@ class Params
         Auth::requireAuth();
 
         $fields = [
-            'logo' => trim($data['logo'] ?? ''),
             'title' => trim((string) ($data['title'] ?? '')),
             'description' => trim((string) ($data['description'] ?? '')),
             'image_meta_tags' => trim((string) ($data['image_meta_tags'] ?? '')),

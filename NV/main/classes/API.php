@@ -176,7 +176,7 @@ class API
                     Category::update((int) $_POST['id'], $_POST);
                     break;
                 case 'delete_category':
-                    Category::delete((int) $_POST['id']);
+                    Category::delete((int) ($_POST['id'] ?? 0));
                     break;
                 case 'save_categories_order':
                     Category::updateOrder(json_decode($_POST['categories_order'], true));

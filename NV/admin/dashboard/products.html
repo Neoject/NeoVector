@@ -6,7 +6,7 @@
             <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
         <div class="products-actions-toolbar">
-            <button class="btn btn-primary" @click="root.openAddProductModal" title="Добавить товар">
+            <button class="btn btn-primary" @click="root.openAddProductModal()" title="Добавить товар">
                 <i class="fa-solid fa-plus"></i>
             </button>
             <button class="btn btn-primary" @click="root.manageCategoryEdit" title="Категории">
@@ -131,13 +131,16 @@
 
                     <div v-if="root.categoryError" class="error-message">{{ root.categoryError }}
                     </div>
-                    <div v-if="root.categorySuccess" class="success-message">{{
-                            root.categorySuccess }}</div>
+                    <div v-if="root.categorySuccess" class="success-message">{{ root.categorySuccess }}</div>
                     <div class="form-actions">
                         <button class="btn btn-primary"
-                                :disabled="root.categoryLoading || !(root.categoryForm && root.categoryForm.name && root.categoryForm.name.trim())"
-                                @click="root.saveCategory">{{ root.categoryLoading ? 'Сохранение...' :
-                            (root.categoryForm.id ? 'Сохранить' : 'Добавить') }}</button>
+                                :disabled="root.categoryLoading ||
+                                !(root.categoryForm && root.categoryForm.name && root.categoryForm.name.trim())"
+                                @click="root.saveCategory">
+                            {{ root.categoryLoading ?
+                                'Сохранение...' :
+                                (root.categoryForm.id ? 'Сохранить' : 'Добавить') }}
+                        </button>
                         <button class="btn btn-secondary" style="margin-left:8px;"
                                 @click="root.startAddCategory">X</button>
                     </div>
