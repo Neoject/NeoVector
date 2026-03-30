@@ -5,6 +5,10 @@ NV.ready(() => {
                 mobileMenuOpen: false,
                 _messages: [],
                 _selectedMessage: null,
+                uploadSuccess: false,
+                uploadError: false,
+                uploadErrorMessage: '',
+                uploadXhr: null,
             }
         },
         computed: {
@@ -207,7 +211,7 @@ NV.ready(() => {
     }
 
     const Modal = {
-        template: ``,
+        template: '',
         data() {
             return {
                 modalSizes: {},
@@ -245,6 +249,62 @@ NV.ready(() => {
             }
         },
         methods: {
+            closeModal(event) {
+                this._closeModalGeneric('productModal', event, {
+                    showProperty: 'showAddProduct',
+                    mobilePage: 'admin',
+                    beforeClose: () => {
+                        if (this.editingProduct !== undefined) {
+                            this.editingProduct = null;
+                        }
+                        if (this.selectedFile !== undefined) {
+                            this.selectedFile = null;
+                        }
+                        if (this.productForm) {
+                            this.productForm = {
+                                name: '',
+                                description: '',
+                                peculiarities: [],
+                                material: '',
+                                price: '',
+                                price_sale: '',
+                                category: '',
+                                product_type_id: null,
+                                image: '',
+                                image_description: '',
+                                additionalImages: [],
+                                additionalVideos: []
+                            };
+                        }
+                        if (this.aiGeneratingDescription !== undefined) {
+                            this.aiGeneratingDescription = false;
+                        }
+                        if (this.aiGenerationError !== undefined) {
+                            this.aiGenerationError = '';
+                        }
+                        if (this.newPeculiarity !== undefined) {
+                            this.newPeculiarity = '';
+                        }
+                        if (this.$refs && this.$refs.fileInput) {
+                            this.$refs.fileInput.value = '';
+                        }
+                        if (this.$refs && this.$refs.additionalImagesInput) {
+                            this.$refs.additionalImagesInput.value = '';
+                        }
+                    }
+                });
+            },
+            openAddProductModal() {
+                this.openModal('productModal', {
+                    showProperty: 'showAddProduct',
+                    mobilePage: 'product',
+                    beforeOpen: () => {
+                        if (typeof this.turnTextareaResize === 'function') {
+                            this.turnTextareaResize();
+                        }
+                    }
+                });
+            },
             loadModalSizes() {
                 try {
                     const saved = localStorage.getItem('admin_modal_sizes');
@@ -267,7 +327,7 @@ NV.ready(() => {
                 const modalIds = ['addUserModal', 'contentModal', 'pageModal', 'blockModal', 'iconPickerModal', 'productModal'];
 
                 modalIds.forEach(modalId => {
-                    const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                    const modal = document.querySelector('[data-modal-id=' + modalId + ']');
 
                     if (modal && window.getComputedStyle(modal).display !== 'none') {
                         this.constrainModalToViewport(modal);
@@ -336,7 +396,7 @@ NV.ready(() => {
             },
             applyModalSize(modalId, params = {}) {
                 this.$nextTick(() => {
-                    const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                    const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                     if (!modal) return;
 
                     const size = this.modalSizes[modalId];
@@ -445,7 +505,7 @@ NV.ready(() => {
                 this.resizingModal = modalId;
                 this.resizeDirection = direction;
 
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
 
                 if (!modal) return;
 
@@ -467,7 +527,7 @@ NV.ready(() => {
             handleResize(event) {
                 if (!this.resizingModal || !this.resizeDirection) return;
 
-                const modal = document.querySelector(`[data-modal-id="${this.resizingModal}"]`);
+                const modal = document.querySelector('[data-modal-id="' + this.resizingModal + '"]');
                 if (!modal) return;
 
                 const deltaX = event.clientX - this.resizeStartX;
@@ -575,7 +635,7 @@ NV.ready(() => {
             stopResize() {
                 if (!this.resizingModal) return;
 
-                const modal = document.querySelector(`[data-modal-id="${this.resizingModal}"]`);
+                const modal = document.querySelector('[data-modal-id="' + this.resizingModal + '"]');
 
                 if (modal) {
                     const rect = modal.getBoundingClientRect();
@@ -623,7 +683,7 @@ NV.ready(() => {
                 }
             },
             toggleResizeMaximize(modalId, direction) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 if (this.maximizedModals[modalId]) {
@@ -655,7 +715,7 @@ NV.ready(() => {
                 }
             },
             maximizeResize(modalId, direction) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 const computedStyle = window.getComputedStyle(modal);
@@ -728,7 +788,7 @@ NV.ready(() => {
             restoreResizeSize(modalId, isHorizontal = null, isVertical = null) {
                 if (!this.resizeRestoreData[modalId]) return;
 
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 const restoreData = this.resizeRestoreData[modalId];
@@ -805,7 +865,7 @@ NV.ready(() => {
                 this.saveModalSizes();
             },
             minimizeModal(modalId) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 const rect = modal.getBoundingClientRect();
@@ -842,7 +902,7 @@ NV.ready(() => {
                 this.$forceUpdate();
             },
             restoreModal(modalId) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal || !this.minimizedModals[modalId]) return;
 
                 const minimizedData = this.minimizedModals[modalId];
@@ -898,7 +958,7 @@ NV.ready(() => {
                 this.$forceUpdate();
             },
             maximizeModal(modalId) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 const computedStyle = window.getComputedStyle(modal);
@@ -930,7 +990,7 @@ NV.ready(() => {
                 this.$forceUpdate();
             },
             restoreFromMaximize(modalId) {
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal || !this.maximizedModals[modalId]) return;
 
                 const restoreData = this.maximizedModals[modalId];
@@ -1021,7 +1081,7 @@ NV.ready(() => {
                     return;
                 }
 
-                const modal = document.querySelector(`[data-modal-id="${modalId}"]`);
+                const modal = document.querySelector('[data-modal-id="' + modalId + '"]');
                 if (!modal) return;
 
                 event.preventDefault();
@@ -1046,7 +1106,7 @@ NV.ready(() => {
             handleDragModal(event) {
                 if (!this.draggingModal) return;
 
-                const modal = document.querySelector(`[data-modal-id="${this.draggingModal}"]`);
+                const modal = document.querySelector('[data-modal-id="' + this.draggingModal + '"]');
                 if (!modal) return;
 
                 const deltaX = event.clientX - this.dragStartX;
@@ -1073,7 +1133,7 @@ NV.ready(() => {
             stopDragModal() {
                 if (!this.draggingModal) return;
 
-                const modal = document.querySelector(`[data-modal-id="${this.draggingModal}"]`);
+                const modal = document.querySelector('[data-modal-id="' + this.draggingModal + '"]');
 
                 if (modal) {
                     modal.classList.remove('dragging');
@@ -1122,7 +1182,7 @@ NV.ready(() => {
                     modal.style.zIndex = '999';
                 });
 
-                const activeModal = document.querySelector(`.modal[data-modal-id="${modalId}"]`);
+                const activeModal = document.querySelector('.modal[data-modal-id="' + modalId + '"]');
                 if (activeModal) {
                     activeModal.style.zIndex = '1000';
                 }
@@ -1225,60 +1285,6 @@ NV.ready(() => {
                         }
                         if (this.registerSuccess !== undefined) {
                             this.registerSuccess = '';
-                        }
-                    }
-                });
-            },
-            openAddProductModal() {
-                this.openModal('productModal', {
-                    showProperty: 'showAddProduct',
-                    mobilePage: 'product',
-                    beforeOpen: () => {
-                        if (this.turnTextareaResize) {
-                            this.turnTextareaResize();
-                        }
-                    }
-                });
-            },
-            closeProductModal(event) {
-                this._closeModalGeneric('productModal', event, {
-                    showProperty: 'showAddProduct',
-                    mobilePage: 'admin',
-                    beforeClose: () => {
-                        if (this.editingProduct !== undefined) {
-                            this.editingProduct = null;
-                        }
-                        if (this.selectedFile !== undefined) {
-                            this.selectedFile = null;
-                        }
-                        if (this.productForm) {
-                            this.productForm = {
-                                name: '',
-                                description: '',
-                                peculiarities: [],
-                                material: '',
-                                price: '',
-                                price_sale: '',
-                                category: '',
-                                image: '',
-                                additionalImages: [],
-                                additionalVideos: []
-                            };
-                        }
-                        if (this.aiGeneratingDescription !== undefined) {
-                            this.aiGeneratingDescription = false;
-                        }
-                        if (this.aiGenerationError !== undefined) {
-                            this.aiGenerationError = '';
-                        }
-                        if (this.newPeculiarity !== undefined) {
-                            this.newPeculiarity = '';
-                        }
-                        if (this.$refs && this.$refs.fileInput) {
-                            this.$refs.fileInput.value = '';
-                        }
-                        if (this.$refs && this.$refs.additionalImagesInput) {
-                            this.$refs.additionalImagesInput.value = '';
                         }
                     }
                 });
@@ -1932,7 +1938,7 @@ NV.ready(() => {
                                 @click="removeOptionType(typeIndex)" class="btn btn-danger">
                           <i class="fas fa-trash"></i>
                         </button>
-                        <button @click="moveOptionTypeDown(typeIndex)" 
+                        <button @click="moveOptionTypeDown(typeIndex)"
                                 class="btn btn-secondary"
                                 style="margin-right: auto"
                                 :disabled="typeIndex === productOptions.length - 1"
@@ -2382,6 +2388,611 @@ NV.ready(() => {
                 const optionType = this.productOptions[typeIndex];
                 optionType.values.splice(valueIndex, 1);
             },
+        }
+    }
+
+    const ProductFormMixin = {
+        data() {
+            return {
+                productForm: {
+                    name: '',
+                    description: '',
+                    peculiarities: [],
+                    material: '',
+                    price: '',
+                    price_sale: '',
+                    category: '',
+                    product_type_id: null,
+                    image: '',
+                    image_description: '',
+                    additionalImages: [],
+                    additionalVideos: []
+                },
+                editingProduct: null,
+                newPeculiarity: '',
+                selectOpen: false,
+                selectedFile: null,
+                isUploading: false,
+                productTypes: []
+            };
+        },
+        methods: {
+            async saveProduct() {
+                const products = this.$root.products;
+                try {
+                    const formData = new FormData();
+
+                    if (this.editingProduct) {
+                        formData.append('action', 'update_product');
+                        formData.append('id', this.editingProduct.id);
+                        formData.append('name', this.productForm.name);
+                        formData.append('description', this.productForm.description);
+                        formData.append('peculiarities', JSON.stringify(this.productForm.peculiarities));
+                        formData.append('material', this.productForm.material);
+                        formData.append('price', this.productForm.price);
+                        formData.append('price_sale', this.productForm.price_sale || '');
+                        formData.append('category', this.productForm.category);
+                        formData.append('product_type_id', this.productForm.product_type_id || '');
+                        formData.append('image', this.productForm.image);
+                        formData.append('image_description', this.productForm.image_description);
+
+                        if (this.selectedFile) {
+                            formData.append('product_image', this.selectedFile);
+                        }
+
+                        const response = await fetch('../api.php', {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const payload = await response.json();
+                            const index = products.findIndex(p => p.id === this.editingProduct.id);
+
+                            if (index !== -1) {
+                                products[index] = {
+                                    ...products[index],
+                                    name: this.productForm.name,
+                                    description: this.productForm.description,
+                                    peculiarities: this.productForm.peculiarities,
+                                    material: this.productForm.material,
+                                    price: parseInt(this.productForm.price),
+                                    price_sale: parseInt(this.productForm.price_sale),
+                                    category: this.productForm.category,
+                                    product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
+                                    image: (payload && payload.image) ? payload.image : products[index].image
+                                };
+                            }
+
+                            if (typeof this.update === 'function') {
+                                this.update();
+                            }
+                        } else {
+                            const errorData = await response.json();
+
+                            console.error('Failed to update product:', errorData.error || 'Unknown error');
+                            alert('Ошибка при обновлении товара');
+
+                            return;
+                        }
+                    } else {
+                        formData.append('action', 'add_product');
+                        formData.append('name', this.productForm.name);
+                        formData.append('description', this.productForm.description);
+                        formData.append('peculiarities', JSON.stringify(this.productForm.peculiarities));
+                        formData.append('material', this.productForm.material);
+                        formData.append('price', this.productForm.price);
+                        formData.append('price_sale', this.productForm.price_sale || '');
+                        formData.append('category', this.productForm.category);
+                        formData.append('product_type_id', this.productForm.product_type_id || '');
+                        formData.append('image', this.productForm.image || '');
+                        formData.append('image_description', this.productForm.image_description || '');
+
+                        if (this.selectedFile) {
+                            formData.append('product_image', this.selectedFile);
+                        }
+
+                        const response = await fetch('../api.php', {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+
+                            products.push({
+                                id: result.id,
+                                name: this.productForm.name,
+                                description: this.productForm.description,
+                                peculiarities: this.productForm.peculiarities,
+                                material: this.productForm.material,
+                                price: parseInt(this.productForm.price),
+                                price_sale: parseInt(this.productForm.price_sale),
+                                category: this.productForm.category,
+                                product_type_id: this.productForm.product_type_id ? parseInt(this.productForm.product_type_id) : null,
+                                image: result && result.image ? result.image : ''
+                            });
+                        } else {
+                            const errorData = await response.json();
+
+                            console.error('Failed to add product:', errorData.error || 'Unknown error');
+                            alert('Ошибка при добавлении товара');
+
+                            return;
+                        }
+                    }
+
+                    if (this.selectedFile && this.$refs.fileInput) {
+                        this.selectedFile = null;
+                        this.$refs.fileInput.value = '';
+                    }
+
+                    this.changePage('admin');
+                    this.closeModal();
+                } catch (error) {
+                    console.error('Error saving product:', error);
+                    alert('Ошибка при сохранении товара');
+                }
+            },
+            addPeculiarity() {
+                if (this.newPeculiarity.trim()) {
+                    this.productForm.peculiarities.push(this.newPeculiarity.trim());
+                    this.newPeculiarity = '';
+                }
+            },
+            removePeculiarity(index) {
+                this.productForm.peculiarities.splice(index, 1);
+            },
+            onSelectFocus() {
+                this.selectOpen = true;
+            },
+            onSelectBlur() {
+                setTimeout(() => {
+                    this.selectOpen = false;
+                }, 200);
+            },
+            onSelectChange() {
+                this.selectOpen = false;
+            },
+            onSelectClick() {
+                this.selectOpen = !this.selectOpen;
+            },
+            onSelectMouseDown() {
+                this.selectOpen = true;
+            },
+            triggerFileUpload() {
+                if (this.$refs.fileInput) {
+                    this.$refs.fileInput.click();
+                }
+            },
+            triggerAdditionalImagesUpload() {
+                if (this.$refs.additionalImagesInput) {
+                    this.$refs.additionalImagesInput.click();
+                }
+            },
+            async handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const isVideo = file.type.startsWith('video/');
+                const maxSize = isVideo ? (256 * 1024 * 1024) : (64 * 1024 * 1024);
+                const sizeLimit = isVideo ? '256MB' : '64MB';
+
+                if (file.size > maxSize) {
+                    alert(`Размер файла не должен превышать ${sizeLimit}`);
+                    event.target.value = '';
+                    return;
+                }
+
+                this.selectedFile = file;
+                const objectURL = URL.createObjectURL(file);
+                this.productForm.image = objectURL;
+                this.isUploading = true;
+                this.uploadProgress = 0;
+                this.uploadSuccess = false;
+                this.uploadError = false;
+                this.uploadErrorMessage = '';
+
+                try {
+                    await this.uploadMainFile(file);
+                    URL.revokeObjectURL(objectURL);
+                    this.uploadSuccess = true;
+                    this.isUploading = false;
+                    setTimeout(() => { this.uploadSuccess = false; }, 2000);
+                } catch (e) {
+                    console.error('Upload error:', e);
+                    URL.revokeObjectURL(objectURL);
+                    this.uploadError = true;
+                    this.uploadErrorMessage = e.message || 'Ошибка загрузки';
+                    this.isUploading = false;
+                    alert('Ошибка загрузки файла: ' + this.uploadErrorMessage);
+                }
+            },
+            cancelUpload() {
+                if (this.uploadXhr) {
+                    this.uploadXhr.abort();
+                }
+                this.isUploading = false;
+                this.uploadProgress = 0;
+                this.uploadError = false;
+                this.uploadSuccess = false;
+            },
+            resetUploadStatus() {
+                this.uploadSuccess = false;
+                this.uploadError = false;
+                this.uploadErrorMessage = '';
+            },
+            getImageUrl() {
+                if (this.selectedFile) {
+                    return this.productForm.image;
+                } else if (this.productForm.image) {
+                    return '../' + this.productForm.image;
+                }
+                return '';
+            },
+            isVideoPreview(url) {
+                if (!url || typeof url !== 'string') {
+                    return false;
+                }
+                return url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('video');
+            },
+            removeImage() {
+                this.selectedFile = null;
+                this.productForm.image = '';
+            },
+            async removeAdditionalImage(index) {
+                if (confirm('Вы уверены, что хотите удалить это изображение?')) {
+                    const imagePath = this.productForm.additionalImages[index];
+                    const products = this.$root.products;
+
+                    try {
+                        const response = await fetch(`../api.php?action=get_image_id&product_id=${this.editingProduct.id}&image_path=${encodeURIComponent(imagePath)}`, { credentials: 'same-origin' });
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.image_id) {
+                                const formData = new FormData();
+                                formData.append('action', 'delete_product_image');
+                                formData.append('image_id', result.image_id);
+
+                                const deleteResponse = await fetch('../api.php', {
+                                    method: 'POST',
+                                    body: formData,
+                                    credentials: 'same-origin'
+                                });
+
+                                if (deleteResponse.ok) {
+                                    this.productForm.additionalImages.splice(index, 1);
+
+                                    const productIndex = products.findIndex(p => p.id === this.editingProduct.id);
+                                    if (productIndex !== -1) {
+                                        products[productIndex].additional_images = [...this.productForm.additionalImages];
+                                    }
+
+                                    console.log('Additional image deleted successfully');
+                                } else {
+                                    alert('Ошибка удаления изображения');
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deleting additional image:', error);
+                        alert('Ошибка при удалении изображения');
+                    }
+                }
+            },
+            async removeAdditionalVideo(index) {
+                if (confirm('Вы уверены, что хотите удалить это видео?')) {
+                    const videoPath = this.productForm.additionalVideos[index];
+                    const products = this.$root.products;
+
+                    try {
+                        const response = await fetch(`../api.php?action=get_image_id&product_id=${this.editingProduct.id}&image_path=${encodeURIComponent(videoPath)}`, { credentials: 'same-origin' });
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.image_id) {
+                                const formData = new FormData();
+                                formData.append('action', 'delete_product_image');
+                                formData.append('image_id', result.image_id);
+
+                                const deleteResponse = await fetch('../api.php', {
+                                    method: 'POST',
+                                    body: formData,
+                                    credentials: 'same-origin'
+                                });
+
+                                if (deleteResponse.ok) {
+                                    this.productForm.additionalVideos.splice(index, 1);
+
+                                    const productIndex = products.findIndex(p => p.id === this.editingProduct.id);
+                                    if (productIndex !== -1) {
+                                        products[productIndex].additional_videos = [...this.productForm.additionalVideos];
+                                    }
+
+                                    console.log('Additional video deleted successfully');
+                                } else {
+                                    alert('Ошибка удаления видео');
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deleting additional video:', error);
+                        alert('Ошибка при удалении видео');
+                    }
+                }
+            },
+            async handleAdditionalImagesSelect(event) {
+                const files = Array.from(event.target.files);
+                if (files.length === 0) return;
+                const products = this.$root.products;
+
+                for (const file of files) {
+                    const isVideo = file.type.startsWith('video/');
+                    const maxSize = isVideo ? (256 * 1024 * 1024) : (64 * 1024 * 1024);
+                    const sizeLimit = isVideo ? '256MB' : '64MB';
+
+                    if (file.size > maxSize) {
+                        alert(`Файл "${file.name}" слишком большой. Максимальный размер: ${sizeLimit}`);
+                        event.target.value = '';
+                        return;
+                    }
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'add_product_images');
+                    formData.append('product_id', this.editingProduct.id);
+
+                    files.forEach((file) => {
+                        formData.append('additional_images[]', file);
+                    });
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            if (result.uploaded_images) {
+                                this.productForm.additionalImages.push(...result.uploaded_images);
+                            }
+                            if (result.uploaded_videos) {
+                                if (!this.productForm.additionalVideos) {
+                                    this.productForm.additionalVideos = [];
+                                }
+                                this.productForm.additionalVideos.push(...result.uploaded_videos);
+                            }
+
+                            const productIndex = products.findIndex(p => p.id === this.editingProduct.id);
+                            if (productIndex !== -1) {
+                                if (result.uploaded_images) {
+                                    products[productIndex].additional_images = products[productIndex].additional_images ? [...products[productIndex].additional_images, ...result.uploaded_images] : result.uploaded_images;
+                                }
+                                if (result.uploaded_videos) {
+                                    products[productIndex].additional_videos = products[productIndex].additional_videos ? [...products[productIndex].additional_videos, ...result.uploaded_videos] : result.uploaded_videos;
+                                }
+                            }
+
+                            console.log('Additional images and videos uploaded successfully');
+                        } else {
+                            alert('Ошибка загрузки: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        alert('Ошибка загрузки: ' + (errorData.error || 'Неизвестная ошибка'));
+                    }
+                } catch (error) {
+                    console.error('Error uploading additional images:', error);
+                    alert('Ошибка при загрузке изображений');
+                }
+
+                if (this.$refs.additionalImagesInput) {
+                    this.$refs.additionalImagesInput.value = '';
+                }
+            }
+        }
+    };
+
+    const Product = {
+        mixins: [Values, Modal, Category, Options, ProductFormMixin],
+        template: `
+          <div class="modal-header">
+            <span class="fas fa-backward-step" style="font-size: 24px" @click="closeModal"></span>
+            <h3>{{ editingProduct ? 'Редактировать товар' : 'Добавить товар' }}</h3>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveProduct">
+              <div class="form-group">
+                <label>Название товара</label>
+                <input type="text" v-model="productForm.name" required>
+              </div>
+              <div class="form-group">
+                <label>Тип товара</label>
+                <select v-model="productForm.product_type_id" required>
+                  <option v-for="type in productTypes" :key="type.id" :value="type.id">
+                    {{ type.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Описание товара</label>
+                <textarea v-model="productForm.description"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Особенности товара</label>
+                <div class="peculiarities-editor">
+                  <div class="peculiarities-list">
+                    <div v-for="(peculiarity, index) in productForm.peculiarities" :key="index"
+                         class="peculiarity-item">
+                      <input type="text" v-model="productForm.peculiarities[index]"
+                             class="peculiarity-input">
+                      <button type="button" @click="removePeculiarity(index)"
+                              class="btn btn-sm btn-delete">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="add-peculiarity">
+                    <input type="text" v-model="newPeculiarity" @keyup.enter="addPeculiarity"
+                           placeholder="Добавить особенность" class="peculiarity-input">
+                    <button type="button" @click="addPeculiarity" class="btn btn-sm btn-primary">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Материал</label>
+                <input type="text" v-model="productForm.material" required>
+              </div>
+              <div class="form-group">
+                <label>Цена (руб.)</label>
+                <input type="text" v-model="productForm.price" required min="0">
+              </div>
+              <div class="form-group">
+                <label>Цена по скидке (руб.)</label>
+                <input type="text" v-model="productForm.price_sale" min="0">
+              </div>
+              <div class="form-group select-group" :class="{ 'open': selectOpen }">
+                <label>Категория</label>
+                <select v-model="productForm.category" @focus="onSelectFocus" @blur="onSelectBlur"
+                        @change="onSelectChange" @click="onSelectClick" @mousedown="onSelectMouseDown"
+                        required>
+                  <option v-for="category in categories" :key="category.id" :value="category.id">
+                    {{ category.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group image-upload-group">
+                <label>Основное изображение/видео товара</label>
+                <div class="image-upload-container">
+                  <div class="file-upload-area"
+                       :class="{ 'has-file': selectedFile, 'uploading': isUploading, 'upload-success': uploadSuccess, 'upload-error': uploadError }"
+                       @click="!isUploading && triggerFileUpload()">
+                    <input ref="fileInput" type="file" @change="handleFileSelect"
+                           accept="image/*,video/*" style="display: none;" :disabled="isUploading">
+                    <div v-if="isUploading" class="upload-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: uploadProgress + '%' }">
+                        </div>
+                      </div>
+                      <p>Загрузка... {{ uploadProgress }}%</p>
+                      <button type="button" @click.stop="cancelUpload" class="cancel-upload-btn">
+                        <i class="fas fa-times"></i> Отмена
+                      </button>
+                    </div>
+                    <div v-else-if="uploadSuccess" class="upload-status success">
+                      <i class="fas fa-check-circle"></i>
+                      <p>Файл успешно загружен!</p>
+                      <button type="button" @click.stop="resetUploadStatus"
+                              class="status-close-btn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div v-else-if="uploadError" class="upload-status error">
+                      <i class="fas fa-exclamation-circle"></i>
+                      <p>Ошибка загрузки: {{ uploadErrorMessage }}</p>
+                      <button type="button" @click.stop="resetUploadStatus"
+                              class="status-close-btn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div v-else-if="!selectedFile && !productForm.image" class="upload-placeholder">
+                      <i class="fas fa-cloud-upload-alt"></i>
+                      <p>Нажмите для выбора изображения или видео</p>
+                      <span>или перетащите файл сюда</span>
+                    </div>
+                    <div v-else class="image-preview-container">
+                      <img v-if="!isVideoPreview(getImageUrl())" :src="getImageUrl()"
+                           :alt="productForm.name" class="current-image">
+                      <video v-else :src="getImageUrl()" controls class="current-image"></video>
+                      <button type="button" @click.stop="removeImage" class="remove-image-btn"
+                              :disabled="isUploading">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="image-info">
+                    <small v-if="selectedFile && !isUploading">Выбран файл: {{ selectedFile.name
+                      }}</small>
+                    <small v-else-if="productForm.image && !isUploading">Текущее изображение/видео:
+                      {{ productForm.image }}</small>
+                    <small v-else-if="isUploading">Загрузка файла...</small>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Описание изображения</label>
+                <input type="text" v-model="productForm.image_description">
+              </div>
+              <div class="form-group additional-images-group">
+                <label>Дополнительные изображения и видео</label>
+                <div class="additional-images-container">
+                  <div class="additional-images-list">
+                    <div v-for="(image, index) in productForm.additionalImages" :key="index"
+                         class="additional-image-item">
+                      <img :src="'../' + image" :alt="productForm.name"
+                           class="additional-image-preview">
+                      <button type="button" @click="removeAdditionalImage(index)"
+                              class="remove-additional-image-btn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="additional-videos-list" style="margin-top: 15px;"
+                       v-if="productForm.additionalVideos && productForm.additionalVideos.length > 0">
+                    <div v-for="(video, index) in productForm.additionalVideos"
+                         :key="'video-' + index" class="additional-video-item">
+                      <video :src="'../' + video" controls
+                             class="additional-video-preview"></video>
+                      <button type="button" @click="removeAdditionalVideo(index)"
+                              class="remove-additional-image-btn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="add-additional-images" v-if="editingProduct">
+                    <input ref="additionalImagesInput" type="file"
+                           @change="handleAdditionalImagesSelect" accept="image/*,video/*" multiple
+                           style="display: none;">
+                    <button type="button" @click="triggerAdditionalImagesUpload"
+                            class="btn btn-secondary">
+                      <i class="fas fa-plus"></i>
+                      Добавить изображения и видео
+                    </button>
+                  </div>
+                  <div v-else class="help-text"
+                       style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    <p style="margin-top: 5px;">Сохраните товар, чтобы добавлять дополнительные
+                      изображения и видео</p>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions mobile">
+                <button type="submit" class="btn btn-primary">
+                  {{ editingProduct ? 'Сохранить изменения' : 'Добавить товар' }}
+                </button>
+                <button type="button" @click="closeModal" class="btn btn-secondary">Отмена</button>
+              </div>
+            </form>
+          </div>
+        `,
+        methods: {
+            openAddProductModal() {
+                if (this.$root && typeof this.$root.openAddProductModal === 'function') {
+                    this.$root.openAddProductModal();
+                }
+            },
+            closeModal(event) {
+                if (this.$root && typeof this.$root.closeModal === 'function') {
+                    this.$root.closeModal(event);
+                }
+            }
         }
     }
 
@@ -2908,6 +3519,313 @@ NV.ready(() => {
                     this.replyLoading = false;
                 }
             }
+        }
+    }
+
+    const Orders = {
+        mixins: [Values],
+        template: `
+          <div class="admin-content orders-content">
+            <div class="container orders-container">
+              <section>
+                <div class="content-header">
+                  <h2>Управление заказами</h2>
+                  <div class="header-actions">
+                    <button @click="loadOrders" class="btn btn-secondary" :disabled="ordersLoading">
+                      <i class="fas fa-sync-alt" :class="{ 'fa-spin': ordersLoading }"></i>
+                      <span class="btn-text">Обновить</span>
+                    </button>
+                  </div>
+                </div>
+                <div v-if="ordersError" class="error-message">
+                  {{ ordersError }}
+                </div>
+                <div v-if="ordersLoading" class="loading-state">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <p>Загрузка заказов...</p>
+                </div>
+                <div v-else-if="orders.length === 0" class="empty-state">
+                  <i class="fas fa-shopping-cart"></i>
+                  <h3>Заказов пока нет</h3>
+                  <p>Когда клиенты будут оформлять заказы, они появятся здесь.</p>
+                </div>
+                <div v-else class="orders-list">
+                  <div v-for="order in orders" :key="order.id" class="order-card">
+                    <div class="order-header">
+                      <div class="order-info">
+                        <h3>Заказ #{{ order.id }}</h3>
+                        <div class="order-meta">
+                                                    <span class="order-date">
+                                                        <i class="fas fa-calendar"></i>
+                                                      {{ formatDate(order.created_at) }}
+                                                    </span>
+                          <span class="order-total">
+                                                        {{ formatPrice(order.total_amount) }}
+                                                    </span>
+                        </div>
+                      </div>
+                      <div class="order-payment">
+                        <div class="payment-info">
+                          <div class="payment-type">
+                            <i :class="order.payment_type === 'online' ? 'fas fa-credit-card' : 'fas fa-money-bill-wave'"></i>
+                            <span>{{ order.payment_type === 'online' ? 'Онлайн оплата' : 'Наличные' }}</span>
+                          </div>
+                          <div class="payment-status" :class="order.payment_status === 1 ? 'paid' : 'unpaid'">
+                            <i :class="order.payment_status === 1 ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
+                            <span>{{ order.payment_status === 1 ? 'Оплачено' : 'Не оплачено' }}</span>
+                          </div>
+                        </div>
+                        <button v-if="order.payment_status !== 1"
+                                @click="updatePaymentStatus(order.id, 1)"
+                                class="btn btn-sm btn-primary payment-status-btn"
+                                title="Отметить как оплачено">
+                          <i class="fas fa-check"></i> Оплачено
+                        </button>
+                      </div>
+                      <div class="order-status">
+                            <span
+                                v-if="Object.keys(orderStatuses)[(Object.keys(orderStatuses).indexOf(order.status)) + 1]"
+                                class="next-order-status">Статус заказа:
+                                <select :value="order.status"
+                                        @change="updateOrderStatus(order.id, $event.target.value)"
+                                        class="new-order-status"
+                                        :class="['status-select', getStatusClass(order.status)]">
+                                    <option value="pending">Ожидает</option>
+                                    <option value="confirmed">Подтвержден</option>
+                                    <option value="processing">В обработке</option>
+                                    <option value="shipped">Отправлен</option>
+                                    <option value="delivered">Доставлен</option>
+                                    <option value="cancelled">Отменен</option>
+                                </select>
+                            </span>
+                      </div>
+                      <div class="order-delete" @click="deleteOrder(order.id)">
+                        <i class="fas fa-trash"></i>
+                        <p>Удалить</p>
+                      </div>
+                    </div>
+                    <div class="order-content">
+                      <div class="order-customer">
+                        <h4>Клиент</h4>
+                        <div class="customer-info">
+                          <p><strong>{{ order.customer_name }}</strong></p>
+                          <p><i class="fas fa-phone"></i> {{ order.customer_phone }}</p>
+                          <p v-if="order.customer_email"><i class="fas fa-envelope"></i> {{
+                              order.customer_email
+                            }}</p>
+                        </div>
+                      </div>
+                      <div class="order-delivery">
+                        <h4>Доставка</h4>
+                        <div class="delivery-info">
+                          <p><strong>{{ getDeliveryTypeLabel(order.delivery_type) }}</strong>
+                          </p>
+                          <div v-if="order.delivery_type === 'delivery'">
+                            <p><i class="fas fa-map-marker-alt"></i> {{
+                                order.delivery_address
+                              }}</p>
+                            <p v-if="order.delivery_date"><i class="fas fa-calendar"></i>
+                              Дата: {{ order.delivery_date }}</p>
+                            <p v-if="order.delivery_time"><i class="fas fa-clock"></i>
+                              Время: {{ order.delivery_time }}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="order-items">
+                        <h4>Товары</h4>
+                        <div class="items-list">
+                          <div v-for="item in order.order_items" :key="item.id"
+                               class="order-item">
+                            <img :src="'../' + item.image" :alt="item.name"
+                                 class="item-image">
+                            <div class="item-details">
+                              <h5>{{ item.name }}</h5>
+                              <template v-if="item.options && item.options.length">
+                                <p v-for="option in item.options"
+                                   :key="'order-item-option-' + item.id + '-' + option.slug">
+                                  {{ option.name }}: {{ option.value }}
+                                </p>
+                              </template>
+                              <p>{{ item.material }}</p>
+                              <div class="item-quantity">
+                                <span>Количество: {{ item.quantity }}</span>
+                                <span class="item-price">{{
+                                    formatPrice(item.price *
+                                        item.quantity)
+                                  }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-if="order.notes" class="order-notes">
+                        <h4>Комментарий</h4>
+                        <p>{{ order.notes }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        `,
+        data() {
+            return {
+                orders: [],
+                ordersLoading: false,
+                ordersError: '',
+                orderStatuses: {
+                    pending: 'Ожидает',
+                    confirmed: 'Подтвержден',
+                    processing: 'В обработке',
+                    shipped: 'Отправлен',
+                    delivered: 'Доставлен',
+                    cancelled: 'Отменен'
+                },
+            }
+        },
+        mounted() {
+            this.loadOrders().then(() => null);
+        },
+        methods: {
+            async loadOrders() {
+                this.ordersLoading = true;
+                this.ordersError = '';
+
+                try {
+                    const response = await fetch('../api.php?action=orders', { credentials: 'same-origin' });
+                    if (response.ok) {
+                        this.orders = await response.json();
+                    } else {
+                        this.ordersError = 'Ошибка загрузки заказов';
+                    }
+                } catch (error) {
+                    console.error('Error loading orders:', error);
+                    this.ordersError = 'Ошибка загрузки заказов';
+                }
+
+                this.ordersLoading = false;
+            },
+            async updateOrderStatus(orderId, newStatus) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'update_order_status');
+                    formData.append('order_id', orderId);
+                    formData.append('status', newStatus);
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+
+                            const order = this.orders.find(o => o.id === orderId);
+                            if (order) {
+                                order.status = newStatus;
+                            }
+                        } else {
+                            alert('Ошибка обновления статуса: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } else {
+                        alert('Ошибка обновления статуса');
+                    }
+                } catch (error) {
+                    console.error('Error updating order status:', error);
+                    alert('Ошибка обновления статуса');
+                }
+            },
+            async updatePaymentStatus(orderId, paymentStatus) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'update_payment_status');
+                    formData.append('order_id', orderId);
+                    formData.append('payment_status', paymentStatus);
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            const order = this.orders.find(o => o.id === orderId);
+                            if (order) {
+                                order.payment_status = paymentStatus;
+                            }
+                        } else {
+                            alert('Ошибка обновления статуса оплаты: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } else {
+                        alert('Ошибка обновления статуса оплаты');
+                    }
+                } catch (error) {
+                    console.error('Error updating payment status:', error);
+                    alert('Ошибка обновления статуса оплаты');
+                }
+            },
+            getStatusClass(status) {
+                const statusClasses = {
+                    'pending': 'status-pending',
+                    'confirmed': 'status-confirmed',
+                    'processing': 'status-processing',
+                    'shipped': 'status-shipped',
+                    'delivered': 'status-delivered',
+                    'cancelled': 'status-cancelled'
+                };
+                return statusClasses[status] || '';
+            },
+            getDeliveryTypeLabel(type) {
+                return type === 'pickup' ? 'Самовывоз' : 'Доставка';
+            },
+            formatPrice(price) {
+                return new Intl.NumberFormat('ru-RU').format(price) + ' руб.';
+            },
+            async deleteOrder(orderId) {
+                if (!orderId) {
+                    alert('ID заказа не указан');
+                    return false;
+                }
+
+                if (!confirm('Вы действительно хотите удалить этот заказ? Это действие необратимо')) {
+                    return false;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'delete_order');
+                    formData.append('order_id', orderId);
+
+                    const response = await fetch('../api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+
+                        alert('Заказ успешно удален');
+                        await this.loadOrders();
+                        return true;
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'HTTP error! status: ' + response.status);
+                    }
+                } catch (error) {
+                    console.error('Error deleting order:', error);
+                    alert('Произошла ошибка: ' + error.message || 'Неизвестная ошибка');
+                    return false;
+                }
+            },
         }
     }
 
@@ -3801,10 +4719,13 @@ NV.ready(() => {
     window.Auth = Auth;
     window.Category = Category;
     window.Options = Options;
+    window.ProductFormMixin = ProductFormMixin;
+    window.Product = Product;
     window.Users = Users;
     window.Messages = Messages;
     window.Message = Message;
     window.Reply = Reply;
+    window.Orders = Orders;
     window.Analytics = Analytics;
     window.Profile = Profile;
     window.Settings = Settings;

@@ -196,7 +196,7 @@ $adminUser = $auth->getCurrentUser();
                     <analytics></analytics>
                 </template>
                 <template v-if="page === 'orders'">
-                    <orders-list ref="ordersList"></orders-list>
+                    <orders></orders>
                 </template>
                 <template v-if="page === 'options'">
                     <options></options>
@@ -238,7 +238,7 @@ $adminUser = $auth->getCurrentUser();
                     </div>
                 </template>
                 <template v-if="page === 'product'">
-                    <product-modal-view></product-modal-view>
+                    <product></product>
                 </template>
                 <template v-if="page === 'block'">
                     <block-modal-view></block-modal-view>
