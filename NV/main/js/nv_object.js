@@ -57,7 +57,6 @@ const NV = {
         const savedWishlist = localStorage.getItem('wishlist');
         return savedWishlist ? JSON.parse(savedWishlist) : [];
     },
-
     saveWishlist(wishlist) {
         localStorage.setItem('wishlist', JSON.stringify(wishlist));
     },

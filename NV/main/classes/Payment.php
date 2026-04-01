@@ -6,8 +6,6 @@ class Payment
 {
     public static function getPaymentToken($data = []): void
     {
-        global $HOME_URL;
-
         if (empty($data)) {
             $rawInput = file_get_contents('php://input');
             if ($rawInput) {
@@ -25,12 +23,7 @@ class Payment
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
 
-        if (!empty($HOME_URL) && $HOME_URL !== '/') {
-            $basePath = rtrim($HOME_URL, '/');
-        } else {
-            $basePath = $scriptDir ?: '';
-        }
-        
+        $basePath = $scriptDir ?: '';
         $baseUrl = $protocol . '://' . $host . $basePath;
 
         if (!empty($_GET['id'])) {

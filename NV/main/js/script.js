@@ -117,7 +117,7 @@ NV.ready(() => {
                 deliveryBel: '',
                 deliveryRus: '',
                 defaultVirtualPageTitleSuffix: ' - ' + NV.title,
-                virtualPageNotFoundDocumentTitle: 'Страница не найдена - ' + NV.title,
+                // virtualPageNotFoundDocumentTitle: 'Страница не найдена - ' + NV.title,
                 virtualPageLoadErrorDocumentTitle: 'Ошибка - ' + NV.title,
             }
         },
@@ -1142,7 +1142,7 @@ NV.ready(() => {
                     }
 
                     const normalizedTarget = target.startsWith('/') ? target.substring(1) : target;
-                    this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
+                    /*this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
                         if (!page) {
                             this.virtualPageError = 'Страница не найдена';
                             document.title = this.virtualPageNotFoundDocumentTitle;
@@ -1150,7 +1150,7 @@ NV.ready(() => {
                     }).catch(() => {
                         this.virtualPageError = 'Ошибка загрузки страницы';
                         document.title = this.virtualPageLoadErrorDocumentTitle;
-                    });
+                    });*/
                 } else if (button.linkType === 'section') {
                     event.preventDefault();
                     this.smoothScrollTo(target);
@@ -1167,7 +1167,7 @@ NV.ready(() => {
                     }
 
                     const normalizedTarget = target.startsWith('/') ? target.substring(1) : target;
-                    this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
+                    /*this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
                         if (!page) {
                             this.virtualPageError = 'Страница не найдена';
                             document.title = this.virtualPageNotFoundDocumentTitle;
@@ -1175,7 +1175,7 @@ NV.ready(() => {
                     }).catch(() => {
                         this.virtualPageError = 'Ошибка загрузки страницы';
                         document.title = this.virtualPageLoadErrorDocumentTitle;
-                    });
+                    });*/
                 } else if (button.linkType === 'section') {
                     event.preventDefault();
                     this.smoothScrollTo(button.target);

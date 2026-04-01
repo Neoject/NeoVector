@@ -26,14 +26,12 @@ class Router
      * @param $uri
      * @return mixed|string
      */
-    public function dispatch($method, $uri)
+    public function dispatch($method, $uri): mixed
     {
-        global $HOME_URL;
-
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) continue;
 
-            $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^/]+)', $route['path']);
+            $pattern = preg_replace('/\{([a-zA-Z0-9_]+)}/', '(?P<$1>[^/]+)', $route['path']);
             $pattern = '#^' . $pattern . '$#';
 
             if (preg_match($pattern, $uri, $matches)) {
@@ -45,7 +43,7 @@ class Router
         http_response_code(404);
 
         ob_start();
-        require $HOME_URL . '404.php';
+        require ROOT . '404.php';
         return ob_get_clean();
     }
 }

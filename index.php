@@ -4,11 +4,15 @@ use NeoVector\ApiController;
 use NeoVector\Database;
 use NeoVector\Log;
 use NeoVector\PageBlock;
+use NeoVector\Params;
 use NeoVector\Router;
+use NeoVector\Service;
 
 require_once __DIR__ . '/header.php';
 
-global $HOME_URL, $_DESCRIPTION;
+global $_DESCRIPTION;
+
+Service::setTitle(Params::getTitle());
 
 try {
     $router = new Router();
@@ -86,18 +90,18 @@ try {
         <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
         <template v-if="!currentVirtualPage && !virtualPageError">
             <component
-                        v-for="(block, blockIndex) in pageSections"
-                        :key="block?.id ?? 'block-' + blockIndex"
-                        :is="blockComponents[block.type]"
-                        v-bind="getBlockProps(block)"
-                ></component>
-                <!-- other blocks -->
-                <component
-                        v-for="(block, blockIndex) in footerSections"
-                        :key="block?.id ?? 'footer-' + blockIndex"
-                        :is="blockComponents[block.type]"
-                        v-bind="getBlockProps(block)"
-                ></component>
+                    v-for="(block, blockIndex) in pageSections"
+                    :key="block?.id ?? 'block-' + blockIndex"
+                    :is="blockComponents[block.type]"
+                    v-bind="getBlockProps(block)"
+            ></component>
+            <!-- other blocks -->
+            <component
+                    v-for="(block, blockIndex) in footerSections"
+                    :key="block?.id ?? 'footer-' + blockIndex"
+                    :is="blockComponents[block.type]"
+                    v-bind="getBlockProps(block)"
+            ></component>
         </template>
         <!-- Order Modal -->
         <order :class="{ 'active': orderModalOpen }" @close="closeOrderModal"></order>

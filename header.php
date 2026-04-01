@@ -7,12 +7,9 @@ use NeoVector\VisitTracker;
 
 require_once __DIR__ . '/config.php';
 
-global $HOME_URL, $TITLE;
+global $TITLE;
 
-if (!$TITLE) $TITLE = Params::getTitle();
-
-Service::setTitle($TITLE);
-
+$TITLE = Params::getTitle();
 $vars = [];
 
 try {
@@ -43,7 +40,7 @@ if (isset($_GET['id'])) {
 
     $mainImageUrl = '';
     if ($product && !empty($product['image'])) {
-        $mainImageUrl = NeoVector\Config::normalize_media_url($product['image'], $HOME_URL);
+        $mainImageUrl = NeoVector\Config::normalize_media_url($product['image'], ROOT);
     }
 
     $allMedia = [];
@@ -59,13 +56,13 @@ if (isset($_GET['id'])) {
 
     if ($product) {
         foreach ($product['additional_images'] as $img) {
-            $u = NeoVector\Config::normalize_media_url((string) $img, $HOME_URL);
+            $u = NeoVector\Config::normalize_media_url((string) $img, ROOT);
             if ($u !== '')
                 $allMedia[] = ['type' => 'image', 'url' => $u];
         }
 
         foreach ($product['additional_videos'] as $vid) {
-            $u = NeoVector\Config::normalize_media_url((string) $vid, $HOME_URL);
+            $u = NeoVector\Config::normalize_media_url((string) $vid, ROOT);
             if ($u !== '')
                 $allMedia[] = ['type' => 'video', 'url' => $u];
         }
