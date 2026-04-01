@@ -1,7 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    # Должно быть выше catch-all: иначе для /subfolder/admin условие !^/admin не срабатывает и запрос уходит в index.php
     RewriteRule ^admin/?$ NV/admin/index.php [L,QSA]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

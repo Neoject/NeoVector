@@ -26,14 +26,14 @@ class Router
      * @param $uri
      * @return mixed|string
      */
-    public function dispatch($method, $uri)
+    public function dispatch($method, $uri): mixed
     {
         global $HOME_URL;
 
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) continue;
 
-            $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^/]+)', $route['path']);
+            $pattern = preg_replace('/\{([a-zA-Z0-9_]+)}/', '(?P<$1>[^/]+)', $route['path']);
             $pattern = '#^' . $pattern . '$#';
 
             if (preg_match($pattern, $uri, $matches)) {
