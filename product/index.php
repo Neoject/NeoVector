@@ -5,7 +5,7 @@ use NeoVector\Params;
 
 require_once __DIR__ . '/../header.php';
 
-global $HOME_URL, $_DESCRIPTION;
+global $_DESCRIPTION;
 
 if (isset($product) && $product) {
     if (isset($product['price'])) {
@@ -22,7 +22,7 @@ if (isset($product) && $product) {
         <header class="scrolled">
             <div class="container nav-container">
                 <div class="nav-left">
-                    <a class="logo" href="<?php echo e($HOME_URL); ?>">
+                    <a class="logo" href="<?=ROOT?>">
                         <img :src="'<?=Params::getLogo()?>'" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
                     </a>
                     <div class="mobile-cart-icon" @click="toggleCart">
@@ -35,7 +35,7 @@ if (isset($product) && $product) {
                     </div>
                 </div>
                 <nav class="nav-links">
-                    <a href="<?php echo e($HOME_URL); ?>" class="btn btn-outline" style="width:auto;">На главную</a>
+                    <a href="<?=ROOT?>" class="btn btn-outline" style="width:auto;">На главную</a>
                     <div class="cart-icon" @click="toggleCart">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" v-if="getCartItemsCount() > 0">{{ getCartItemsCount() }}</span>
@@ -56,7 +56,7 @@ if (isset($product) && $product) {
                         <div class="error-content">
                             <h2>Товар не найден</h2>
                             <p>Возможно, товар был удалён или вы перешли по неверной ссылке.</p>
-                            <a href="<?php echo e($HOME_URL); ?>" class="btn btn-primary">На главную</a>
+                            <a href="<?=ROOT?>" class="btn btn-primary">На главную</a>
                         </div>
                     </div>
                 </section>
@@ -347,7 +347,7 @@ if (isset($product) && $product) {
                 <?php
                 $hasAutocomplete = false;
                 $normalizeImageUrl = function($url) {
-                    return Config::normalize_media_url($url, $HOME_URL);
+                    return Config::normalize_media_url($url, ROOT);
                 };
                 include NV . '/order_modal.php';
                 ?>
@@ -477,7 +477,7 @@ if (isset($product) && $product) {
                 data() {
                     return {
                         product: <?php echo $product ? json_encode($product, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS) : 'null'; ?>,
-                        homeUrl: <?php echo json_encode($HOME_URL, JSON_UNESCAPED_UNICODE); ?>,
+                        homeUrl: <?= json_encode(ROOT, JSON_UNESCAPED_UNICODE); ?>,
                         cartItems: [],
                         wishlist: [],
                         products: [],
@@ -1351,5 +1351,5 @@ if (isset($product) && $product) {
         })
     </script>
 <?php
-require_once $HOME_URL . 'footer.php';
+require_once ROOT . 'footer.php';
 ?>

@@ -35,7 +35,7 @@ NV.ready(() => {
                 isMobileDevice: false,
                 currentOrderProduct: null,
                 defaultVirtualPageTitleSuffix: '',
-                virtualPageNotFoundDocumentTitle: 'Страница не найдена',
+                // virtualPageNotFoundDocumentTitle: 'Страница не найдена',
                 virtualPageLoadErrorDocumentTitle: 'Ошибка загрузки',
             }
         },
@@ -88,7 +88,7 @@ NV.ready(() => {
 
                     const normalizedTarget = target.startsWith('/') ? target.substring(1) : target;
 
-                    this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
+                    /*this.openVirtualPage(normalizedTarget, { updateHistory: true, scrollToTop: true }).then((page) => {
                         if (!page) {
                             this.virtualPageError = 'Страница не найдена';
                             document.title = this.virtualPageNotFoundDocumentTitle;
@@ -96,7 +96,7 @@ NV.ready(() => {
                     }).catch(() => {
                         this.virtualPageError = 'Ошибка загрузки страницы';
                         document.title = this.virtualPageLoadErrorDocumentTitle;
-                    });
+                    });*/
                 } else if (button.linkType === 'section') {
                     event.preventDefault();
                     this.smoothScrollTo(target);
@@ -228,23 +228,23 @@ NV.ready(() => {
                 }
 
                 try {
-                    const page = await this.loadVirtualPage(normalizedSlug);
+                    // const page = await this.loadVirtualPage(normalizedSlug);
 
-                    if (!page) {
+                    /*if (!page) {
                         this.currentVirtualPage = null;
                         this.virtualPageError = 'Страница не найдена';
                         return null;
-                    }
+                    }*/
 
-                    this.currentVirtualPage = page;
+                    // this.currentVirtualPage = page;
                     this.virtualPageError = null;
                     this.currentProduct = null;
 
-                    if (page.navigation_buttons && Array.isArray(page.navigation_buttons)) {
+                    /*if (page.navigation_buttons && Array.isArray(page.navigation_buttons)) {
                         this.headerNavigation.other = page.navigation_buttons;
                     } else if (this.headerNavigation) {
                         this.headerNavigation.other = [];
-                    }
+                    }*/
 
                     document.title = this.formatVirtualPageDocumentTitle(page);
 
@@ -260,7 +260,7 @@ NV.ready(() => {
 
                     this.$nextTick(() => this.$forceUpdate);
 
-                    return page;
+                    // return page;
                 } catch (error) {
                     console.error('Error opening page:', error);
                     this.currentVirtualPage = null;
@@ -296,7 +296,7 @@ NV.ready(() => {
                 const normalizedSlug = (slug || '').replace(/^nv\//, '').replace(/^nv$/, '');
                 if (!normalizedSlug) return;
 
-                const page = await this.loadVirtualPage(normalizedSlug);
+                /*const page = await this.loadVirtualPage(normalizedSlug);
                 if (page) {
                     this.currentVirtualPage = page;
                     this.virtualPageError = null;
@@ -305,15 +305,15 @@ NV.ready(() => {
                     document.title = this.formatVirtualPageDocumentTitle(page);
                     this.$nextTick(() => this.$forceUpdate());
                     return;
-                }
+                }*/
 
-                this.currentVirtualPage = null;
-                this.currentProduct = null;
-                this.virtualPageError = 'Страница не найдена';
-                document.title = this.virtualPageNotFoundDocumentTitle;
-                this.$nextTick(() => this.$forceUpdate());
+                // this.currentVirtualPage = null;
+                // this.currentProduct = null;
+                // this.virtualPageError = 'Страница не найдена';
+                // document.title = this.virtualPageNotFoundDocumentTitle;
+                // this.$nextTick(() => this.$forceUpdate());
             },
-            async loadVirtualPage(slug) {
+            /*async loadVirtualPage(slug) {
                 try {
                     const basePath = this.getBasePath();
                     const apiUrl = basePath + 'api.php?action=page&slug=' + encodeURIComponent(slug);
@@ -336,7 +336,7 @@ NV.ready(() => {
                     console.error('Error loading virtual page:', error);
                     return null;
                 }
-            },
+            },*/
             closeOtherMenus() {
                 this.mobileMenuOpen = false;
                 this.cartOpen = false;
