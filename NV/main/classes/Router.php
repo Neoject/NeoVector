@@ -28,8 +28,6 @@ class Router
      */
     public function dispatch($method, $uri): mixed
     {
-        global $HOME_URL;
-
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) continue;
 
@@ -45,7 +43,7 @@ class Router
         http_response_code(404);
 
         ob_start();
-        require $HOME_URL . '404.php';
+        require ROOT . '404.php';
         return ob_get_clean();
     }
 }
