@@ -2,19 +2,22 @@
 export default {
   name: "NavBar",
   props: {
-    logo: String,
-    loadAnalytics: Function,
-    loadOrders: Function,
-    loadUsers: Function,
-    getMessages: Function,
+    logo: {
+      type: String,
+      default: ''
+    },
+    page: {
+      type: String,
+      default: ''
+    },
     messages: {
       type: Array,
       default: () => []
     }
   },
+  emits: ['update:page', 'load-analytics', 'load-orders', 'load-users', 'get-messages'],
   data() {
     return {
-      page: '',
       mobileMenuOpen: false,
       selectedMessage: null,
     }
@@ -32,61 +35,69 @@ export default {
       try {
         const form = new FormData();
         form.append('action', 'logout');
-        await fetch("../api.php", { method: 'POST', body: form, credentials: 'same-origin' });
+        await fetch("../api.php", {
+          method: 'POST',
+          body: form,
+          credentials: 'same-origin'
+        });
       } catch (e) {
-        console.log('Logout error:', e);
+        console.error('Logout error:', e);
       }
 
       localStorage.removeItem('global_auth');
-
       this.closeMobileMenu();
-
       window.location.reload();
     },
     async changePage(page) {
-      this.page = page;
       this.closeMobileMenu();
+      // this.showLoader();
 
-      this.showLoader();
+      try {
+        const handlers = {
+          analytics: () => this.$emit('load-analytics'),
+          orders:    () => this.$emit('load-orders'),
+          users:     () => this.$emit('load-users'),
+          messages:  () => this.loadMessages(),
+          message:   () => this.loadSingleMessage(),
+          'message-reply': () => this.loadSingleMessage(),
+        };
 
-      const handlers = {
-        analytics: this.loadAnalytics,
-        orders: this.loadOrders,
-        users: this.loadUsers,
-        messages: this.loadMessages,
-        message: this.loadSingleMessage,
-        'message-reply': this.loadSingleMessage
-      };
-
-      if (handlers[page]) {
-        await handlers[page]();
+        if (handlers[page]) {
+          await handlers[page]();
+        }
+      } catch (e) {
+        console.error('changePage error:', e);
       }
 
+      this.$emit('update:page', page);
       this.updateUrl(page);
-      this.hideLoader();
+      // this.hideLoader();
     },
     async loadMessages() {
       this.selectedMessage = null;
-      await this.getMessages();
+      this.$emit('get-messages');
     },
     async loadSingleMessage() {
       const id = new URLSearchParams(location.search).get('id');
       if (!id) return;
 
       if (!this.messages.length) {
-        await this.getMessages();
+        this.$emit('get-messages');
       }
 
       this.selectedMessage = this.messages.find(m => m.id === Number(id)) || null;
     },
     updateUrl(page) {
       const url = new URL(location.href);
-      const id = this.selectedMessage?.id;
 
-      url.searchParams.set('page', page);
+      if (page) {
+        url.searchParams.set('page', page);
+      } else {
+        url.searchParams.delete('page');
+      }
 
-      if (id && page.includes('message')) {
-        url.searchParams.set('id', id);
+      if (this.selectedMessage?.id && page.includes('message')) {
+        url.searchParams.set('id', this.selectedMessage.id);
       } else {
         url.searchParams.delete('id');
       }
@@ -95,14 +106,12 @@ export default {
       window.scrollTo(0, 0);
     },
     showLoader() {
-      const loader = document.getElementById('block_loader');
-      if (loader) loader.style.display = 'flex';
+      this.$refs.loader.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     },
     hideLoader() {
       setTimeout(() => {
-        const loader = document.getElementById('block_loader');
-        if (loader) loader.style.display = 'none';
+        this.$refs.loader.style.display = 'none';
         document.body.style.overflow = 'auto';
       }, 500);
     }
@@ -119,16 +128,15 @@ export default {
             <i class="fas fa-bars"></i>
           </button>
           <a class="logo logo-admin" href="/">
-            <img :src="logo" alt="Логотип" style="max-height: 64px; background: src('/assets/logo/logo_69bbe34818bc2.png')" />
+            <img v-if="logo" :src="logo" alt="Логотип" style="max-height: 64px;" />
           </a>
         </div>
         <div class="admin-actions">
-          <button @click="changePage('admin')" class="btn btn-secondary" title="Управление">
+          <button @click="changePage('')" class="btn btn-secondary" title="Управление">
             <i class="fa-solid fa-house"></i>
           </button>
-          <button @click="changePage('users')" class="btn btn-secondary"
-                  title="Управление пользователями">
-            <i class="fa-solid fa-users"></i>
+          <button @click="changePage('options')" class="btn btn-secondary" title="Опции товаров">
+            <i class="fa-solid fa-sliders"></i>
           </button>
           <button @click="changePage('orders')" class="btn btn-secondary" title="Заказы">
             <i class="fa-solid fa-indent"></i>
@@ -136,17 +144,16 @@ export default {
           <button @click="changePage('analytics')" class="btn btn-secondary" title="Аналитика">
             <i class="fas fa-chart-line"></i>
           </button>
-          <button @click="changePage('options')" class="btn btn-secondary" title="Опции товаров">
-            <i class="fa-solid fa-sliders"></i>
-          </button>
           <button @click="changePage('messages')" class="btn btn-secondary" title="Сообщения">
             <i class="fa-solid fa-envelope-open"></i>
           </button>
           <button @click="changePage('profile')" class="btn btn-secondary" title="Профиль">
             <i class="fas fa-user"></i>
           </button>
-          <button @click="changePage('settings')" class="btn btn-secondary"
-                  title="Дополнительные параметры">
+          <button @click="changePage('users')" class="btn btn-secondary" title="Пользователи">
+            <i class="fa-solid fa-users"></i>
+          </button>
+          <button @click="changePage('settings')" class="btn btn-secondary" title="Настройки">
             <i class="fa-solid fa-cog"></i>
           </button>
           <button type="button" @click="logout" class="btn btn-secondary" title="Выйти">
@@ -156,9 +163,11 @@ export default {
       </div>
     </div>
     <div class="header-bottom"></div>
+    <div ref="loader" class="block_loader" id="block_loader">
+      <div class="loader"></div>
+    </div>
   </header>
 </template>
 
 <style scoped>
-
 </style>

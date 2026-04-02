@@ -2,22 +2,10 @@
 export default {
   name: "Auth",
   props: {
-    form_action: {
-      type: String,
-      default: ""
-    },
-    username: {
-      type: String,
-      default: ""
-    },
-    remember: {
-      type: Boolean,
-      default: false
-    },
-    error_message: {
-      type: String,
-      default: ""
-    }
+    form_action: String,
+    username: String,
+    remember: Boolean,
+    error_message: String
   },
   data() {
     return {
@@ -51,7 +39,6 @@ export default {
         <template v-if="error">
           <div class="error-message">{{ error_message }}</div>
         </template>
-    } ?>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Войти</button>
       <a class="btn btn-secondary" href="../.." style="margin-left:10px;">На главную</a>
