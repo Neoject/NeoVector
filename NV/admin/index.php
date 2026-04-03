@@ -82,6 +82,7 @@ $credits = [
     <link rel="icon" href="<?=NV?>/../favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?=NV?>/main/styles/admin.css">
+    <link rel="stylesheet" href="index-CzmG9flJ.css">
     <title>Админ панель - <?= Params::getTitle() ?></title>
 </head>
 <body>

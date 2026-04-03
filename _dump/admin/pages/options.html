@@ -1,0 +1,259 @@
+<div class="admin-dashboard">
+    <main class="admin-main">
+        <div class="container">
+            <section v-if="!isMobileDevice()">
+                <h2>Типы товаров</h2>
+                <p style="margin-bottom: 20px; color: #ccc;">
+                    Создавайте собственные типы товаров и управляйте ими
+                </p>
+                <div class="options-section">
+                    <div class="options-group" v-for="(type, index) in productTypes"
+                         :key="type.id ? `product-type-${type.id}` : `product-type-${index}`">
+                        <div class="options-group-header">
+                            <button v-if="productTypes.length > 1"
+                                    @click="removeProductType(index)" class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="option-item-title">
+                            <label>Название типа товара</label>
+                            <input type="text"
+                                   v-model="type.name"
+                                   class="option-input option-type-input option-title"
+                                   placeholder="Ремешки"
+                                   style="flex: 1; width: 100%">
+                        </div>
+                    </div>
+
+                    <div class="options-group new-option-type">
+                        <h3>Новый тип товара</h3>
+                        {{ newProductTypeName }}
+                        <div class="options-list">
+                            <div class="option-item">
+                                <input type="text"
+                                       v-model="newProductTypeName"
+                                       class="option-input"
+                                       placeholder="Ремешки">
+                                <button @click="addProductType"
+                                        class="btn btn-primary"
+                                        style="padding: 10px 16px;"
+                                        :disabled="!newProductTypeName || !newProductTypeName.trim()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="options-actions" style="margin-top: 30px;">
+                    <button @click="saveProductTypes" class="btn btn-primary"
+                            :disabled="typesLoading">
+                        <i class="fas fa-save"></i> {{ typesLoading ? 'Сохранение...' : 'Сохранить типы' }}
+                    </button>
+                    <button @click="loadProductTypes" class="btn btn-secondary"
+                            :disabled="typesLoading">
+                        <i class="fas fa-sync"></i> Обновить
+                    </button>
+                </div>
+                <div v-if="typesError" class="alert alert-error" style="margin-top: 15px;">
+                    {{ typesError }}
+                </div>
+                <div v-if="typesSuccess" class="alert alert-success" style="margin-top: 15px;">
+                    {{ typesSuccess }}
+                </div>
+            </section>
+            <section v-if="!isMobileDevice()">
+                <h2>Опции товаров</h2>
+                <p style="margin-bottom: 20px; color: #ccc;">Создавайте типы опций и управляйте ими</p>
+                <div class="options-section">
+                    <div class="option-item-title" style="grid-column: span 3">
+                        <label>Тип товара</label>
+                        <select v-model="selectedProductTypeId"
+                                class="option-input option-type-input option-title"
+                                style="flex: 1; width: 100%">
+                            <option v-for="type in productTypes"
+                                    :key="type.id"
+                                    :value="type.id">
+                                {{ type.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="options-group" v-for="(optionType, typeIndex) in productOptions"
+                        :key="optionType.id ? `type-${optionType.id}` : `type-${typeIndex}`">
+                        <div class="options-group-header">
+                            <button @click="moveOptionTypeUp(typeIndex)" class="btn btn-secondary"
+                                style="margin-left: auto" :disabled="typeIndex === 0"
+                                title="Переместить вверх">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button v-if="productOptions.length > 1"
+                                @click="removeOptionType(typeIndex)" class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button @click="moveOptionTypeDown(typeIndex)" class="btn btn-secondary"
+                                style="margin-right: auto"
+                                :disabled="typeIndex === productOptions.length - 1"
+                                title="Переместить вниз">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        <div class="option-item-title">
+                            <label>Название группы опций</label>
+                            <input type="text" v-model="optionType.name"
+                                class="option-input option-type-input option-title"
+                                placeholder="Название типа (например, Размеры)"
+                                style="flex: 1; width: 100%">
+                        </div>
+
+                        <div class="options-list">
+                            <div v-for="(value, valueIndex) in optionType.values"
+                                :key="`type-${typeIndex}-value-${valueIndex}`" class="option-item">
+                                <input type="text" v-model="optionType.values[valueIndex]"
+                                    class="option-input"
+                                    :placeholder="`Значение для ${optionType.name || 'опции'}`">
+                                <button @click="removeOptionValue(typeIndex, valueIndex)"
+                                    class="btn btn-danger" style="padding: 6px 12px;"
+                                    :disabled="optionType.values.length <= 1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <button @click="addOptionValue(typeIndex)" class="btn btn-primary"
+                                style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Добавить значение
+                            </button>
+                        </div>
+                    </div>
+                    <div class="options-group new-option-type">
+                        <h3>Новый тип опций</h3>
+                        <div class="options-list">
+                            <div class="option-item">
+                                <input type="text" v-model="newOptionName" class="option-input"
+                                    placeholder="Например: Цвета">
+                                <button @click="addOptionType" class="btn btn-primary"
+                                    style="padding: 10px 16px;"
+                                    :disabled="!newOptionName || !newOptionName.trim()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="options-actions" style="margin-top: 30px;">
+                    <button @click="saveProductOptions" class="btn btn-primary"
+                        :disabled="optionsLoading">
+                        <i class="fas fa-save"></i> {{ optionsLoading ? 'Сохранение...' : 'Сохранить опции' }}
+                    </button>
+                    <button @click="loadProductOptions" class="btn btn-secondary"
+                        :disabled="optionsLoading">
+                        <i class="fas fa-sync"></i> Обновить
+                    </button>
+                </div>
+                <div v-if="optionsError" class="alert alert-error" style="margin-top: 15px;">
+                    {{ optionsError }}
+                </div>
+                <div v-if="optionsSuccess" class="alert alert-success" style="margin-top: 15px;">
+                    {{ optionsSuccess }}
+                </div>
+            </section>
+            <div class="product-options-container opt-mobile" v-else>
+                <h2>Опции товаров</h2>
+                <div class="options-section">
+                    <div class="options-group">
+                        <div class="options-group-header"
+                             style="display: flex; align-items: center; gap: 10px;">
+                            <div class="options-group-controls" style="width: 100%;">
+                                <label>Тип товара</label>
+                                <select v-model="selectedProductTypeId"
+                                        class="option-input option-type-input option-title"
+                                        style="width: 100%;">
+                                    <option v-for="type in productTypes"
+                                            :key="type.id"
+                                            :value="type.id">
+                                        {{ type.name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="options-section">
+                    <div class="options-group" v-for="(optionType, typeIndex) in productOptions"
+                        :key="optionType.id ? `type-${optionType.id}` : `type-${typeIndex}`">
+                        <div class="options-group-header"
+                            style="display: flex; align-items: center; gap: 10px;">
+                            <div class="options-group-controls">
+                                <button @click="moveOptionTypeUp(typeIndex)"
+                                    class="btn btn-secondary" style="margin: 0"
+                                    :disabled="typeIndex === 0" title="Переместить вверх">
+                                    <i class="fas fa-arrow-left"></i>
+                                </button>
+                                <button @click="moveOptionTypeDown(typeIndex)"
+                                    class="btn btn-secondary" style="margin: 0"
+                                    :disabled="typeIndex === productOptions.length - 1"
+                                    title="Переместить вниз">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                                <button v-if="productOptions.length > 1"
+                                    @click="removeOptionType(typeIndex)" class="btn btn-danger"
+                                    style="margin: 0">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <input type="text" v-model="optionType.name"
+                            class="option-input option-type-input option-title"
+                            placeholder="Название типа (например, Размеры)"
+                            style="flex: 1; width: 100%">
+                        <div class="options-list">
+                            <div v-for="(value, valueIndex) in optionType.values"
+                                :key="`type-${typeIndex}-value-${valueIndex}`" class="option-item">
+                                <input type="text" v-model="optionType.values[valueIndex]"
+                                    class="option-input"
+                                    :placeholder="`Значение для ${optionType.name || 'опции'}`">
+                                <button @click="removeOptionValue(typeIndex, valueIndex)"
+                                    class="btn btn-danger" style="padding: 6px 12px;"
+                                    :disabled="optionType.values.length <= 1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <button @click="addOptionValue(typeIndex)" class="btn btn-primary"
+                                style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Добавить значение
+                            </button>
+                        </div>
+                    </div>
+                    <div class="options-group new-option-type">
+                        <h3>Новый тип опций</h3>
+                        <div class="options-list">
+                            <div class="option-item">
+                                <input type="text" v-model="newOptionName" class="option-input"
+                                    placeholder="Например: Цвета"
+                                    style="height: -webkit-fill-available">
+                                <button @click="addOptionType" class="btn btn-primary"
+                                    style="margin: 0"
+                                    :disabled="!newOptionTypeName || !newOptionTypeName.trim()">
+                                    <i class="fas fa-plus"></i> Добавить тип
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="options-actions" style="margin-top: 30px;">
+                    <button @click="saveProductOptions" class="btn btn-primary"
+                        :disabled="optionsLoading">
+                        <i class="fas fa-save"></i> {{ optionsLoading ? 'Сохранение...' : 'Сохранить опции' }}
+                    </button>
+                    <button @click="loadProductOptions" class="btn btn-secondary"
+                        :disabled="optionsLoading">
+                        <i class="fas fa-sync"></i> Обновить
+                    </button>
+                </div>
+                <div v-if="optionsError" class="alert alert-error" style="margin-top: 15px;">
+                    {{ optionsError }}
+                </div>
+                <div v-if="optionsSuccess" class="alert alert-success" style="margin-top: 15px;">
+                    {{ optionsSuccess }}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
