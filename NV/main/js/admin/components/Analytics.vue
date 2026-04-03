@@ -617,4 +617,153 @@ export default {
   border-radius: 4px;
   color: #fff;
 }
+
+.analytics-dashboard {
+  padding: 20px;
+}
+
+.analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  font-size: 24px;
+}
+
+.stat-content h3 { font-size: 32px; margin: 0; color: var(--text-main); }
+.stat-content p { margin: 5px 0 0 0; color: #aaa; font-size: 14px; }
+
+.analytics-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.chart-card {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.chart-card h3 { margin: 0 0 20px 0; color: var(--text-main); }
+.chart-container { height: 300px; position: relative; }
+
+.analytics-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 20px;
+}
+
+.table-card {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.table-card h3 { margin: 0 0 20px 0; color: var(--text-main); }
+.table-responsive { overflow-x: auto; }
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.analytics-table th {
+  background: var(--background-secondary);
+  color: var(--text-main);
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  position: relative;
+  user-select: none;
+}
+
+.analytics-table th:not(:last-child) {
+  border-right: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.analytics-table th:not(:last-child):hover {
+  border-right-color: var(--border-primary-strong);
+}
+
+.analytics-table .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 20;
+  transition: background-color 0.3s ease;
+}
+
+.analytics-table .column-resize-handle:hover { background: var(--background-additional); }
+.analytics-table .column-resize-handle.active { background: var(--background-additional); box-shadow: 0 0 10px var(--shadow-primary); }
+.analytics-table .column-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+  background: var(--background-secondary);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.analytics-table .column-resize-handle:hover::before { opacity: 1; }
+.analytics-table .column-resize-handle.active::before { background: var(--background-additional); opacity: 1; }
+
+.analytics-table td {
+  padding: 12px;
+  border-top: 1px solid var(--background);
+  color: var(--text-additional-light);
+  user-select: text;
+}
+
+.analytics-table tr:hover {
+  background: var(--hover-table);
+}
+
+.resize-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100vh;
+  background: var(--primary);
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-indicator.active {
+  opacity: 1;
+}
 </style>
