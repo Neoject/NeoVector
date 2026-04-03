@@ -1,0 +1,62 @@
+<main class="admin-main">
+    <div class="container">
+        <section class="messages-section">
+            <div class="message-header">
+                <button class="btn btn-secondary" @click="handleBack">
+                    ← Назад
+                </button>
+                <div class="message-field date">
+                    <label>Дата отправки:</label>
+                    <div class="message-value">{{ formatDate(selectedMessage.created_at) }}</div>
+                </div>
+            </div>
+            <div class="message-details">
+                <h1>Ответить на сообщение от <a :href="'mailto:' + selectedMessage.email">{{ selectedMessage.email }}</a></h1>
+
+                <div class="message-field">
+                    <label>Исходное сообщение:</label>
+                    <div class="message-value message-text">
+                        {{ selectedMessage.message }}
+                    </div>
+                </div>
+            </div>
+            <div class="message-reply-form">
+                <form @submit.prevent="sendReply">
+                    <div class="form-group">
+                        <label for="reply-subject">Тема письма <span style="color: red;">*</span></label>
+                        <input 
+                            type="text" 
+                            id="reply-subject" 
+                            v-model="replySubject" 
+                            :disabled="replyLoading"
+                            placeholder="Введите тему письма"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="reply-message">Текст ответа <span style="color: red;">*</span></label>
+                        <textarea 
+                            id="reply-message" 
+                            v-model="replyMessage" 
+                            :disabled="replyLoading"
+                            placeholder="Введите текст ответа"
+                            rows="10"
+                            required
+                        ></textarea>
+                    </div>
+                    <div v-if="replyError" class="error-message">{{ replyError }}</div>
+                    <div v-if="replySuccess" class="success-message">{{ replySuccess }}</div>
+                    <div class="message-footer">
+                        <button type="submit" class="btn btn-primary" :disabled="replyLoading || !replySubject.trim() || !replyMessage.trim()">
+                            <span v-if="replyLoading">Отправка...</span>
+                            <span v-else>Отправить ответ</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" @click="changePage('message')" :disabled="replyLoading">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
