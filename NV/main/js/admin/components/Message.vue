@@ -28,7 +28,6 @@ export default {
   },
   methods: {
     formatDate,
-
     changePage(page) {
       const url = new URL(window.location.href);
       url.searchParams.set("page", page);

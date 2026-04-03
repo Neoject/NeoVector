@@ -1,561 +1,631 @@
 <script>
+import { registerMinimized, unregisterMinimized } from './modalRegistry.js'
+
+const RESIZE_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+const PAD = 2;
+const MIN_W = 360;
+const MIN_H = 180;
+
 export default {
-  name: "Modal",
+  name: 'Modal',
+
+  props: {
+    modelValue: {
+      type: Boolean,
+      default: false,
+    },
+    modalId: {
+      type: String,
+      required: true,
+    },
+    title: {
+      type: String,
+      default: 'Окно',
+    },
+    defaultWidth: {
+      type: String,
+      default: '560px',
+    },
+    defaultHeight: {
+      type: String,
+      default: '480px',
+    },
+    resizable: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  emits: ['update:modelValue', 'close'],
   data() {
     return {
-      modalSizes: {},
-      resizingModal: null,
-      resizeDirection: null,
-      resizeStartX: 0,
-      resizeStartY: 0,
-      resizeStartWidth: 0,
-      resizeStartHeight: 0,
-      resizeStartLeft: 0,
-      resizeStartTop: 0,
-      boundHandleResize: null,
-      boundStopResize: null,
-      draggingModal: null,
-      dragStartX: 0,
-      dragStartY: 0,
-      dragStartLeft: 0,
-      dragStartTop: 0,
-      boundHandleDrag: null,
-      boundStopDrag: null,
-      lastResizeClick: { modalId: null, direction: null, time: 0 },
-      resizeRestoreData: {},
-      minimizedModals: {},
-      maximizedModals: {},
-      modalTitles: {
-        addUserModal: 'Создать пользователя',
-        contentModal: 'Редактирование контента',
-        pageModal: 'Управление страницей',
-        blockModal: 'Управление блоком',
-        iconPickerModal: 'Выбор иконки',
-        productModal: 'Управление товаром',
-        navigationModal: 'Управление навигацией',
-        profileModal: 'Управление профилем',
-      },
-    }
+      state: 'normal', // 'normal' | 'minimized' | 'maximized'
+      resizeDirections: RESIZE_DIRECTIONS,
+      // Resize
+      resizing: false,
+      resizeDir: null,
+      resizeStart: {},
+      // Drag
+      dragging: false,
+      dragStart: {},
+      // Pre-maximize snapshot
+      snapshot: null,
+      // Bound listeners
+      _onMouseMove: null,
+      _onMouseUp: null,
+    };
+  },
+  computed: {
+    isVisible() {
+      return this.modelValue;
+    },
+    storageKey() {
+      return `modal_state_${this.modalId}`;
+    },
+  },
+  watch: {
+    modelValue(val) {
+      if (val) {
+        this.$nextTick(() => this._openModal());
+      }
+    },
+  },
+  beforeUnmount() {
+    unregisterMinimized(this.modalId)
+    this._clearListeners()
   },
   methods: {
-    closeModal(event) {
-      this._closeModalGeneric('productModal', event, {
-        showProperty: 'showAddProduct',
-        mobilePage: 'admin',
-        beforeClose: () => {
-          if (this.editingProduct !== undefined) this.editingProduct = null
-          if (this.selectedFile !== undefined) this.selectedFile = null
-          if (this.productForm) {
-            this.productForm = {
-              name: '', description: '', peculiarities: [], material: '',
-              price: '', price_sale: '', category: '', product_type_id: null,
-              image: '', image_description: '', additionalImages: [], additionalVideos: [],
-            }
-          }
-          if (this.aiGeneratingDescription !== undefined) this.aiGeneratingDescription = false
-          if (this.aiGenerationError !== undefined) this.aiGenerationError = ''
-          if (this.newPeculiarity !== undefined) this.newPeculiarity = ''
-          if (this.$refs?.fileInput) this.$refs.fileInput.value = ''
-          if (this.$refs?.additionalImagesInput) this.$refs.additionalImagesInput.value = ''
-        },
-      })
+    // ─── Public API ──────────────────────────────────────────────────────────
+    close() {
+      this._save();
+      unregisterMinimized(this.modalId);
+      this.state = 'normal';
+      this.$emit('update:modelValue', false);
+      this.$emit('close');
     },
-    openAddProductModal() {
-      this.openModal('productModal', {
-        showProperty: 'showAddProduct',
-        mobilePage: 'product',
-        beforeOpen: () => {
-          if (typeof this.turnTextareaResize === 'function') this.turnTextareaResize()
-        },
-      })
-    },
-    loadModalSizes() {
-      try {
-        const saved = localStorage.getItem('admin_modal_sizes')
-        if (saved) this.modalSizes = JSON.parse(saved)
-      } catch (e) {
-        console.error('Error loading modal sizes', e)
+    minimize() {
+      if (this.state === 'minimized') {
+        this.restore();
+        return;
       }
+      this._save();
+      this.state = 'minimized';
+      registerMinimized(this.modalId, this.title, () => this.restore(), () => this.close());
     },
-    saveModalSizes() {
-      try {
-        localStorage.setItem('admin_modal_sizes', JSON.stringify(this.modalSizes))
-      } catch (e) {
-        console.error('Error saving modal sizes', e)
+    maximize() {
+      if (this.state === 'maximized') {
+        this.restore();
+        return;
       }
+
+      const el = this._el();
+      if (!el) return;
+      this.snapshot = this._captureRect(el);
+
+      Object.assign(el.style, {
+        position: 'fixed',
+        left: PAD + 'px',
+        top: PAD + 'px',
+        width: `calc(100vw - ${PAD * 2}px)`,
+        height: `calc(100vh - ${PAD * 2}px)`,
+        right: 'auto',
+        bottom: 'auto',
+        maxWidth: 'none',
+        maxHeight: 'none',
+      });
+
+      this.state = 'maximized';
     },
-    checkAllModalsBounds() {
-      const ids = ['addUserModal', 'contentModal', 'pageModal', 'blockModal', 'iconPickerModal', 'productModal']
-      ids.forEach(id => {
-        const modal = document.querySelector(`[data-modal-id=${id}]`)
-        if (modal && window.getComputedStyle(modal).display !== 'none') {
-          this.constrainModalToViewport(modal)
+    restore() {
+      unregisterMinimized(this.modalId);
+      const el = this._el();
+      if (!el) return;
+
+      if (this.state === 'maximized' && this.snapshot) {
+        const s = this.snapshot;
+        Object.assign(el.style, {
+          position: 'fixed',
+          left: s.left + 'px',
+          top: s.top + 'px',
+          width: s.width + 'px',
+          height: s.height + 'px',
+          right: 'auto',
+          bottom: 'auto',
+          maxWidth: 'none',
+          maxHeight: 'none',
+        });
+
+        this.snapshot = null;
+      }
+
+      this.state = 'normal';
+    },
+    bringToFront() {
+      document.querySelectorAll('.modal[data-modal-id]').forEach(m => { m.style.zIndex = '1000'; });
+      const el = this._el();
+      if (el) el.style.zIndex = '1001';
+    },
+    // ─── Open / Init ─────────────────────────────────────────────────────────
+    _openModal() {
+      this.state = 'normal';
+      const el = this._el();
+      if (!el) return;
+      this.bringToFront();
+
+      if (this.resizable) {
+        const saved = this._load();
+
+        if (saved?.width && saved?.height) {
+          Object.assign(el.style, {
+            width: saved.width,
+            height: saved.height,
+            position: 'fixed',
+            maxWidth: 'none',
+            maxHeight: 'none',
+          });
+
+          if (saved.left != null) { el.style.left = saved.left + 'px'; el.style.right = 'auto'; }
+          if (saved.top != null) { el.style.top = saved.top + 'px'; el.style.bottom = 'auto'; }
+
+          this._constrain(el);
         }
-      })
+      } else {
+        this._setDefault(el);
+      }
     },
-    constrainModalToViewport(modal) {
-      const rect = modal.getBoundingClientRect()
-      const vw = window.innerWidth, vh = window.innerHeight, pad = 20, minW = 400, minH = 200
-      let { left: nl, top: nt, width: nw, height: nh } = rect
+    _setDefault(el) {
+      const w = parseInt(this.defaultWidth, 10)  || MIN_W;
+      const h = parseInt(this.defaultHeight, 10) || MIN_H;
 
-      if (rect.right > vw - pad) {
-        if (rect.left + minW + pad <= vw) nw = vw - pad - rect.left
-        else { nl = vw - pad - minW; nw = minW }
-      }
-      if (rect.bottom > vh - pad) {
-        if (rect.top + minH + pad <= vh) nh = vh - pad - rect.top
-        else { nt = vh - pad - minH; nh = minH }
-      }
-      if (rect.left < pad) {
-        nl = pad
-        if (nl + nw > vw - pad) nw = vw - pad - nl
-      }
-      if (rect.top < pad) {
-        nt = pad
-        if (nt + nh > vh - pad) nh = vh - pad - nt
-      }
+      Object.assign(el.style, {
+        width:     w + 'px',
+        height:    h + 'px',
+        position:  'fixed',
+        maxWidth:  'none',
+        maxHeight: 'none',
+        left:   Math.max(PAD, (window.innerWidth  - w) / 2) + 'px',
+        top:    Math.max(PAD, (window.innerHeight - h) / 2) + 'px',
+        right:  'auto',
+        bottom: 'auto',
+      });
+    },
+    // ─── Drag ────────────────────────────────────────────────────────────────
+    startDrag(event) {
+      if (this.state === 'maximized') return;
+      if (event.target.closest('.modal-controls') || event.target.closest('.modal-resize-handle')) return;
+      event.preventDefault();
+      const el = this._el();
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      this.dragging = true;
+      this.dragStart = { mx: event.clientX, my: event.clientY, el: r.left, et: r.top };
+      this._attach(this._onDragMove.bind(this), this._stopDrag.bind(this));
+      el.classList.add('dragging');
+      this.bringToFront();
+    },
+    _onDragMove(event) {
+      if (!this.dragging) return;
+      const el = this._el();
+      if (!el) return;
+      const dx = event.clientX - this.dragStart.mx;
+      const dy = event.clientY - this.dragStart.my;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const mw = el.offsetWidth, mh = el.offsetHeight;
+      const nl = Math.max(PAD, Math.min(this.dragStart.el + dx, vw - mw - PAD));
+      const nt = Math.max(PAD, Math.min(this.dragStart.et + dy, vh - mh - PAD));
+      Object.assign(el.style, { left: nl + 'px', top: nt + 'px', right: 'auto', bottom: 'auto' });
+    },
+    _stopDrag() {
+      if (!this.dragging) return;
+      this.dragging = false;
+      const el = this._el();
+      if (el) el.classList.remove('dragging');
+      this._save();
+      this._clearListeners();
+    },
+    // ─── Resize ──────────────────────────────────────────────────────────────
+    startResize(event, dir) {
+      if (this.state === 'maximized' || this.dragging) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const el = this._el();
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      this.resizing = true;
+      this.resizeDir = dir;
 
-      if (modal.style.position === 'fixed' || modal.style.left || modal.style.top) {
-        modal.style.position = 'fixed'
-        modal.style.left = Math.max(pad, Math.min(nl, vw - pad - nw)) + 'px'
-        modal.style.top = Math.max(pad, Math.min(nt, vh - pad - nh)) + 'px'
-        modal.style.right = 'auto'
-        modal.style.bottom = 'auto'
-      }
-      modal.style.width = Math.max(minW, Math.min(nw, vw - 2 * pad)) + 'px'
-      modal.style.height = Math.max(minH, Math.min(nh, vh - 2 * pad)) + 'px'
-      modal.style.maxWidth = 'none'
-      modal.style.maxHeight = 'none'
-    },
-    applyModalSize(modalId, params = {}) {
-      this.$nextTick(() => {
-        const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-        if (!modal) return
-        const size = this.modalSizes[modalId]
-        if (size?.width && size?.height) {
-          modal.style.width = size.width
-          modal.style.height = size.height
-          modal.style.maxWidth = 'none'
-          modal.style.maxHeight = 'none'
-          if (size.left !== undefined || size.top !== undefined) {
-            modal.style.position = 'fixed'
-            if (size.left !== undefined) { modal.style.left = size.left + 'px'; modal.style.right = 'auto' }
-            if (size.top !== undefined) { modal.style.top = size.top + 'px'; modal.style.bottom = 'auto' }
-          } else {
-            this.centerModal(modal)
-          }
-        } else {
-          this.setDefaultModalSize(modal, params)
-        }
-        this.constrainModalToViewport(modal)
-      })
-    },
-    setDefaultModalSize(modal, params = {}) {
-      if (!modal) return
-      modal.style.width = params.width || '25vw'
-      modal.style.height = params.height || '60vh'
-      modal.style.position = 'fixed'
-      requestAnimationFrame(() => {
-        const rect = modal.getBoundingClientRect()
-        const left = (window.innerWidth - rect.width) / 2
-        const top = (window.innerHeight - rect.height) / 2
-        modal.style.left = Math.max(20, left) + 'px'
-        modal.style.top = Math.max(20, top) + 'px'
-        modal.style.right = 'auto'
-        modal.style.bottom = 'auto'
-      })
-    },
-    centerModal(modal) {
-      if (!modal) return
-      modal.style.position = 'fixed'
-      requestAnimationFrame(() => {
-        const rect = modal.getBoundingClientRect()
-        let w = rect.width || parseFloat(window.getComputedStyle(modal).width) || 600
-        let h = rect.height || parseFloat(window.getComputedStyle(modal).height) || 400
-        const left = (window.innerWidth - w) / 2
-        const top = (window.innerHeight - h) / 2
-        modal.style.left = Math.max(20, left) + 'px'
-        modal.style.top = Math.max(20, top) + 'px'
-        modal.style.right = 'auto'
-        modal.style.bottom = 'auto'
-      })
-    },
-    startResize(event, modalId, direction) {
-      if (this.draggingModal === modalId) return
-      event.preventDefault()
-      event.stopPropagation()
-      this.resizingModal = modalId
-      this.resizeDirection = direction
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      const rect = modal.getBoundingClientRect()
-      this.resizeStartX = event.clientX
-      this.resizeStartY = event.clientY
-      this.resizeStartWidth = rect.width
-      this.resizeStartHeight = rect.height
-      this.resizeStartLeft = rect.left
-      this.resizeStartTop = rect.top
-      this.boundHandleResize = this.handleResize.bind(this)
-      this.boundStopResize = this.stopResize.bind(this)
-      document.addEventListener('mousemove', this.boundHandleResize)
-      document.addEventListener('mouseup', this.boundStopResize)
-    },
-    handleResize(event) {
-      if (!this.resizingModal || !this.resizeDirection) return
-      const modal = document.querySelector(`[data-modal-id="${this.resizingModal}"]`)
-      if (!modal) return
-      const dx = event.clientX - this.resizeStartX
-      const dy = event.clientY - this.resizeStartY
-      const pad = 20, minW = 400, maxW = window.innerWidth - 2 * pad, minH = 200, maxH = window.innerHeight - 2 * pad
-      const vw = window.innerWidth, vh = window.innerHeight
-      const dir = this.resizeDirection
-      let nw = this.resizeStartWidth, nh = this.resizeStartHeight, nl = this.resizeStartLeft, nt = this.resizeStartTop
+      this.resizeStart = {
+        mx: event.clientX, my: event.clientY,
+        w: r.width, h: r.height, l: r.left, t: r.top,
+      };
 
-      if (dir.includes('e')) {
-        nw = Math.max(minW, Math.min(maxW, this.resizeStartWidth + dx))
-        if (nl + nw > vw - pad) nw = vw - pad - nl
-      }
+      this._attach(this._onResizeMove.bind(this), this._stopResize.bind(this));
+      this.bringToFront();
+    },
+    _onResizeMove(event) {
+      if (!this.resizing) return;
+      const el = this._el();
+      if (!el) return;
+      const { mx, my, w, h, l, t } = this.resizeStart;
+      const dx = event.clientX - mx, dy = event.clientY - my;
+      const dir = this.resizeDir;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const maxW = vw - 2 * PAD, maxH = vh - 2 * PAD;
+      let nw = w, nh = h, nl = l, nt = t;
+
+      if (dir.includes('e')) nw = Math.max(MIN_W, Math.min(maxW, w + dx));
+      if (dir.includes('s')) nh = Math.max(MIN_H, Math.min(maxH, h + dy));
+
       if (dir.includes('w')) {
-        nw = Math.max(minW, Math.min(maxW, this.resizeStartWidth - dx))
-        nl = this.resizeStartLeft + (this.resizeStartWidth - nw)
-        if (nl < pad) { nl = pad; nw = Math.max(minW, Math.min(maxW, this.resizeStartWidth + this.resizeStartLeft - pad)) }
-      }
-      if (dir.includes('s')) {
-        nh = Math.max(minH, Math.min(maxH, this.resizeStartHeight + dy))
-        if (nt + nh > vh - pad) nh = vh - pad - nt
-      }
-      if (dir.includes('n')) {
-        nh = Math.max(minH, Math.min(maxH, this.resizeStartHeight - dy))
-        nt = this.resizeStartTop + (this.resizeStartHeight - nh)
-        if (nt < pad) { nt = pad; nh = Math.max(minH, Math.min(maxH, this.resizeStartHeight + this.resizeStartTop - pad)) }
+        nw = Math.max(MIN_W, Math.min(maxW, w - dx));
+        nl = l + (w - nw);
+        if (nl < PAD) { nl = PAD; nw = Math.max(MIN_W, w + l - PAD); }
       }
 
-      modal.style.width = Math.max(minW, Math.min(nw, vw - 2 * pad)) + 'px'
-      modal.style.height = Math.max(minH, Math.min(nh, vh - 2 * pad)) + 'px'
-      modal.style.position = 'fixed'
-      if (dir.includes('w')) { modal.style.left = Math.max(pad, Math.min(nl, vw - pad - parseFloat(modal.style.width))) + 'px'; modal.style.right = 'auto' }
-      if (dir.includes('n')) { modal.style.top = Math.max(pad, Math.min(nt, vh - pad - parseFloat(modal.style.height))) + 'px'; modal.style.bottom = 'auto' }
-      modal.style.maxWidth = 'none'
-      modal.style.maxHeight = 'none'
-    },
-    stopResize() {
-      if (!this.resizingModal) return
-      const modal = document.querySelector(`[data-modal-id="${this.resizingModal}"]`)
-      if (modal) {
-        const rect = modal.getBoundingClientRect()
-        const cs = window.getComputedStyle(modal)
-        const size = { width: rect.width + 'px', height: rect.height + 'px' }
-        if (cs.left !== 'auto' && cs.left !== '') size.left = rect.left
-        if (cs.top !== 'auto' && cs.top !== '') size.top = rect.top
-        this.modalSizes[this.resizingModal] = size
-        this.saveModalSizes()
+      if (dir.includes('n')) {
+        nh = Math.max(MIN_H, Math.min(maxH, h - dy));
+        nt = t + (h - nh);
+        if (nt < PAD) { nt = PAD; nh = Math.max(MIN_H, h + t - PAD); }
       }
-      this.resizingModal = null
-      this.resizeDirection = null
-      if (this.boundHandleResize) { document.removeEventListener('mousemove', this.boundHandleResize); this.boundHandleResize = null }
-      if (this.boundStopResize) { document.removeEventListener('mouseup', this.boundStopResize); this.boundStopResize = null }
+
+      if (nl + nw > vw - PAD) nw = vw - PAD - nl;
+      if (nt + nh > vh - PAD) nh = vh - PAD - nt;
+
+      Object.assign(el.style, {
+        position: 'fixed',
+        width: nw + 'px',
+        height: nh + 'px',
+        maxWidth: 'none',
+        maxHeight: 'none',
+      });
+
+      if (dir.includes('w')) { el.style.left = Math.max(PAD, nl) + 'px'; el.style.right = 'auto'; }
+      if (dir.includes('n')) { el.style.top = Math.max(PAD, nt) + 'px'; el.style.bottom = 'auto'; }
+      if (dir.includes('e') && !dir.includes('w')) { /* left stays */ }
+      if (dir.includes('s') && !dir.includes('n')) { /* top stays */ }
     },
-    handleResizeDoubleClick(modalId, direction, event) {
-      event.preventDefault()
-      event.stopPropagation()
-      const now = Date.now()
-      if (this.lastResizeClick.modalId === modalId && this.lastResizeClick.direction === direction && (now - this.lastResizeClick.time) < 300) {
-        this.toggleResizeMaximize(modalId, direction)
-        this.lastResizeClick = { modalId: null, direction: null, time: 0 }
-      } else {
-        this.lastResizeClick = { modalId, direction, time: now }
-      }
+    _stopResize() {
+      if (!this.resizing) return;
+      this.resizing = false;
+      this.resizeDir = null;
+      this._save();
+      this._clearListeners();
     },
-    toggleResizeMaximize(modalId, direction) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal || this.maximizedModals[modalId]) return
-      const cs = window.getComputedStyle(modal)
-      const pad = 20, vw = window.innerWidth, vh = window.innerHeight
-      const cw = parseFloat(cs.width), ch = parseFloat(cs.height)
-      const maxW = vw - 2 * pad, maxH = vh - 2 * pad
-      const isH = direction.includes('e') || direction.includes('w')
-      const isV = direction.includes('n') || direction.includes('s')
-      if ((isH && cw >= maxW * 0.95) || (isV && ch >= maxH * 0.95)) {
-        this.restoreResizeSize(modalId, isH, isV)
-      } else {
-        this.maximizeResize(modalId, direction)
-      }
+    // ─── Persistence ─────────────────────────────────────────────────────────
+    _save() {
+      const el = this._el();
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      try {
+        localStorage.setItem(this.storageKey, JSON.stringify({
+          width: r.width + 'px',
+          height: r.height + 'px',
+          left: r.left,
+          top: r.top,
+        }));
+      } catch {}
     },
-    maximizeResize(modalId, direction) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      const cs = window.getComputedStyle(modal)
-      const pad = 20, vw = window.innerWidth, vh = window.innerHeight
-      if (!this.resizeRestoreData[modalId]) {
-        this.resizeRestoreData[modalId] = { width: cs.width, height: cs.height, left: cs.left, top: cs.top }
-      }
-      const isH = direction.includes('e') || direction.includes('w')
-      const isV = direction.includes('n') || direction.includes('s')
-      modal.style.position = 'fixed'
-      if (isH) { modal.style.width = (vw - 2 * pad) + 'px'; modal.style.left = pad + 'px'; modal.style.right = 'auto'; modal.style.maxWidth = 'none' }
-      if (isV) { modal.style.height = (vh - 2 * pad) + 'px'; modal.style.top = pad + 'px'; modal.style.bottom = 'auto'; modal.style.maxHeight = 'none' }
-      this.constrainModalToViewport(modal)
-      const nr = modal.getBoundingClientRect()
-      this.modalSizes[modalId] = { width: nr.width + 'px', height: nr.height + 'px', left: nr.left, top: nr.top }
-      this.saveModalSizes()
+    _load() {
+      try {
+        const raw = localStorage.getItem(this.storageKey);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
     },
-    restoreResizeSize(modalId, isH = null, isV = null) {
-      if (!this.resizeRestoreData[modalId]) return
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      const rd = this.resizeRestoreData[modalId]
-      if (isH && rd.width) {
-        modal.style.width = rd.width
-        if (rd.left && rd.left !== 'auto') modal.style.left = rd.left
-        modal.style.maxWidth = ''
-        delete rd.width; delete rd.left
-      }
-      if (isV && rd.height) {
-        modal.style.height = rd.height
-        if (rd.top && rd.top !== 'auto') modal.style.top = rd.top
-        modal.style.maxHeight = ''
-        delete rd.height; delete rd.top
-      }
-      if (Object.keys(rd).length === 0) delete this.resizeRestoreData[modalId]
-      const nr = modal.getBoundingClientRect()
-      this.modalSizes[modalId] = { width: nr.width + 'px', height: nr.height + 'px', left: nr.left, top: nr.top }
-      this.saveModalSizes()
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+    _el() {
+      return this.$refs.modalEl || null;
     },
-    minimizeModal(modalId) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      const cs = window.getComputedStyle(modal)
-      const rd = { width: cs.width, height: cs.height, left: cs.left, top: cs.top, position: cs.position, right: cs.right, bottom: cs.bottom, maxWidth: cs.maxWidth, maxHeight: cs.maxHeight }
-      if (this.maximizedModals[modalId]) { rd.wasMaximized = true; rd.maximizedRestoreData = this.maximizedModals[modalId] }
-      this.minimizedModals[modalId] = { title: this.getModalTitle(modalId), restoreData: rd }
-      modal.style.display = 'none'
-      if (this.maximizedModals[modalId]) delete this.maximizedModals[modalId]
-      this.$forceUpdate()
+    _captureRect(el) {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
     },
-    restoreModal(modalId) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal || !this.minimizedModals[modalId]) return
-      const rd = this.minimizedModals[modalId].restoreData
-      modal.style.display = ''
-      modal.style.width = (rd.width && rd.width !== 'auto') ? rd.width : '50vw'
-      modal.style.height = (rd.height && rd.height !== 'auto') ? rd.height : '50vh'
-      if (rd.position) modal.style.position = rd.position
-      if (rd.left && rd.left !== 'auto') { modal.style.left = rd.left; modal.style.right = rd.right || 'auto' }
-      if (rd.top && rd.top !== 'auto') { modal.style.top = rd.top; modal.style.bottom = rd.bottom || 'auto' }
-      if (rd.maxWidth) modal.style.maxWidth = rd.maxWidth
-      if (rd.maxHeight) modal.style.maxHeight = rd.maxHeight
-      if (rd.wasMaximized && rd.maximizedRestoreData) {
-        this.$nextTick(() => { this.maximizedModals[modalId] = rd.maximizedRestoreData; this.maximizeModal(modalId) })
-      }
-      delete this.minimizedModals[modalId]
-      this.applyModalSize(modalId)
-      this.$forceUpdate()
+    _constrain(el) {
+      const r = el.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let nl = r.left, nt = r.top, nw = r.width, nh = r.height;
+      if (nl + nw > vw - PAD) nl = Math.max(PAD, vw - PAD - nw);
+      if (nt + nh > vh - PAD) nt = Math.max(PAD, vh - PAD - nh);
+      if (nl < PAD) nl = PAD;
+      if (nt < PAD) nt = PAD;
+      nw = Math.max(MIN_W, Math.min(nw, vw - 2 * PAD));
+      nh = Math.max(MIN_H, Math.min(nh, vh - 2 * PAD));
+
+      Object.assign(el.style, {
+        left: nl + 'px', top: nt + 'px',
+        width: nw + 'px', height: nh + 'px',
+        right: 'auto', bottom: 'auto',
+      });
     },
-    maximizeModal(modalId) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      const cs = window.getComputedStyle(modal)
-      this.maximizedModals[modalId] = { width: cs.width, height: cs.height, left: cs.left, top: cs.top, position: cs.position, right: cs.right, bottom: cs.bottom, maxWidth: cs.maxWidth, maxHeight: cs.maxHeight }
-      Object.assign(modal.style, { position: 'fixed', left: '0', top: '0', right: '0', bottom: '0', width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none' })
-      this.$forceUpdate()
+    _attach(onMove, onUp) {
+      this._onMouseMove = onMove;
+      this._onMouseUp = onUp;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     },
-    restoreFromMaximize(modalId) {
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal || !this.maximizedModals[modalId]) return
-      const rd = this.maximizedModals[modalId]
-      if (rd.width && rd.width !== 'auto') modal.style.width = rd.width
-      if (rd.height && rd.height !== 'auto') modal.style.height = rd.height
-      if (rd.position) modal.style.position = rd.position
-      if (rd.left && rd.left !== 'auto') { modal.style.left = rd.left; modal.style.right = rd.right || 'auto' } else { modal.style.left = ''; modal.style.right = '' }
-      if (rd.top && rd.top !== 'auto') { modal.style.top = rd.top; modal.style.bottom = rd.bottom || 'auto' } else { modal.style.top = ''; modal.style.bottom = '' }
-      if (rd.maxWidth) modal.style.maxWidth = rd.maxWidth
-      if (rd.maxHeight) modal.style.maxHeight = rd.maxHeight
-      delete this.maximizedModals[modalId]
-      this.$nextTick(() => this.applyModalSize(modalId))
-      this.$forceUpdate()
-    },
-    toggleMinimize(modalId) { this.minimizedModals[modalId] ? this.restoreModal(modalId) : this.minimizeModal(modalId) },
-    toggleMaximize(modalId) { this.maximizedModals[modalId] ? this.restoreFromMaximize(modalId) : this.maximizeModal(modalId) },
-    isModalMinimized(modalId) { return !!this.minimizedModals[modalId] },
-    isModalMaximized(modalId) { return !!this.maximizedModals[modalId] },
-    startDragModal(modalId, event) {
-      if (this.maximizedModals[modalId] || this.resizingModal === modalId) return
-      const target = event.target
-      if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('.control-btns') || target.closest('.action-btn') || target.closest('.modal-resize-handle')) return
-      const modal = document.querySelector(`[data-modal-id="${modalId}"]`)
-      if (!modal) return
-      event.preventDefault()
-      event.stopPropagation()
-      this.draggingModal = modalId
-      const rect = modal.getBoundingClientRect()
-      this.dragStartX = event.clientX; this.dragStartY = event.clientY
-      this.dragStartLeft = rect.left; this.dragStartTop = rect.top
-      this.boundHandleDrag = this.handleDragModal.bind(this)
-      this.boundStopDrag = this.stopDragModal.bind(this)
-      document.addEventListener('mousemove', this.boundHandleDrag)
-      document.addEventListener('mouseup', this.boundStopDrag)
-      modal.classList.add('dragging')
-    },
-    handleDragModal(event) {
-      if (!this.draggingModal) return
-      const modal = document.querySelector(`[data-modal-id="${this.draggingModal}"]`)
-      if (!modal) return
-      const dx = event.clientX - this.dragStartX, dy = event.clientY - this.dragStartY
-      const pad = 20, vw = window.innerWidth, vh = window.innerHeight
-      const mw = modal.offsetWidth, mh = modal.offsetHeight
-      const nl = Math.max(pad, Math.min(this.dragStartLeft + dx, vw - mw - pad))
-      const nt = Math.max(pad, Math.min(this.dragStartTop + dy, vh - mh - pad))
-      Object.assign(modal.style, { position: 'fixed', left: nl + 'px', top: nt + 'px', right: 'auto', bottom: 'auto' })
-    },
-    stopDragModal() {
-      if (!this.draggingModal) return
-      const modal = document.querySelector(`[data-modal-id="${this.draggingModal}"]`)
-      if (modal) {
-        modal.classList.remove('dragging')
-        const rect = modal.getBoundingClientRect()
-        if (!this.modalSizes[this.draggingModal]) this.modalSizes[this.draggingModal] = {}
-        this.modalSizes[this.draggingModal].left = rect.left
-        this.modalSizes[this.draggingModal].top = rect.top
-        this.saveModalSizes()
-      }
-      this.draggingModal = null
-      if (this.boundHandleDrag) { document.removeEventListener('mousemove', this.boundHandleDrag); this.boundHandleDrag = null }
-      if (this.boundStopDrag) { document.removeEventListener('mouseup', this.boundStopDrag); this.boundStopDrag = null }
-    },
-    getModalTitle(modalId) {
-      if (modalId === 'pageModal') return this.editingPage ? 'Редактировать страницу' : 'Добавить страницу'
-      if (modalId === 'blockModal') return this.editingBlock ? 'Редактировать блок' : 'Добавить блок'
-      if (modalId === 'productModal') return this.editingProduct ? 'Редактировать товар' : 'Добавить товар'
-      return this.modalTitles[modalId] || 'Окно'
-    },
-    bringModalToFront(modalId) {
-      document.querySelectorAll('.modal[data-modal-id]').forEach(m => m.style.zIndex = '999')
-      const active = document.querySelector(`.modal[data-modal-id="${modalId}"]`)
-      if (active) active.style.zIndex = '1000'
-    },
-    openModal(modalId, options = {}, params = {}) {
-      const { showProperty, mobilePage, onOpen, beforeOpen } = options
-      if (beforeOpen) beforeOpen()
-      if (!this.isMobileDevice()) {
-        if (this.minimizedModals[modalId]) this.restoreModal(modalId)
-        if (showProperty) this[showProperty] = true
-        if (this.closeMobileMenu) this.closeMobileMenu()
-        this.$nextTick(() => { this.applyModalSize(modalId, params); if (onOpen) onOpen() })
-      } else {
-        if (mobilePage && this.changePage) this.changePage(mobilePage)
-      }
-    },
-    _closeModalGeneric(modalId, event, options = {}) {
-      const { showProperty, mobilePage, onClose, beforeClose } = options
-      if (beforeClose) beforeClose()
-      if (this.minimizedModals[modalId]) delete this.minimizedModals[modalId]
-      if (this.maximizedModals[modalId]) delete this.maximizedModals[modalId]
-      if (!this.isMobileDevice()) {
-        const ae = document.activeElement
-        if (ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName) || ae?.contentEditable === 'true') return
-        if (event && event.target !== event.currentTarget) return
-        if (showProperty) this[showProperty] = false
-      } else {
-        if (mobilePage && this.changePage) { this.changePage(mobilePage); window.scrollTo(0, 0) }
-      }
-      if (onClose) onClose()
-    },
-    openAddUserModal() { this.openModal('addUserModal', { showProperty: 'showAddUser', mobilePage: 'user' }) },
-    closeUserModal(event) {
-      this._closeModalGeneric('addUserModal', event, {
-        showProperty: 'showAddUser',
-        mobilePage: 'admin',
-        beforeClose: () => {
-          if (this.registerData) this.registerData = { username: '', password: '', role: 'user' }
-          if (this.registerLoading !== undefined) this.registerLoading = false
-          if (this.registerError !== undefined) this.registerError = ''
-          if (this.registerSuccess !== undefined) this.registerSuccess = ''
-        },
-      })
-    },
-    openAddBlockModal() {
-      const regularBlocks = this.pageBlocks ? this.pageBlocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons') : []
-      if (this.blockForm) this.blockForm = { type: '', title: '', content: '', settings: {}, sort_order: regularBlocks.length, is_active: true }
-      if (this.pages?.length === 0 && this.loadPages) this.loadPages()
-      this.openModal('blockModal', { showProperty: 'showAddBlockModal', mobilePage: 'block' })
-    },
-    closeBlockModal(event) {
-      this._closeModalGeneric('blockModal', event, {
-        showProperty: 'showAddBlockModal',
-        mobilePage: 'admin',
-        beforeClose: () => {
-          if (this.editingBlock !== undefined) this.editingBlock = null
-          if (this.blockError !== undefined) this.blockError = ''
-          if (this.blockSuccess !== undefined) this.blockSuccess = ''
-          if (this.blockForm) this.blockForm = { type: '', title: '', content: '', settings: {}, sort_order: 0, is_active: true }
-        },
-      })
-    },
-    openIconPicker(target, property) {
-      if (this.currentIconTarget !== undefined) this.currentIconTarget = { target, property }
-      if (this.selectedIconClass !== undefined) this.selectedIconClass = target[property] || ''
-      this.openModal('iconPickerModal', {
-        showProperty: 'showIconPicker',
-        onOpen: () => {
-          if (this.iconSearchQuery !== undefined) this.iconSearchQuery = ''
-          if (this.selectedIconCategory !== undefined) this.selectedIconCategory = 'all'
-          if (this.updateFilteredIcons) this.updateFilteredIcons()
-        },
-      })
-    },
-    closeIconPicker(event) {
-      this._closeModalGeneric('iconPickerModal', event, {
-        showProperty: 'showIconPicker',
-        beforeClose: () => {
-          if (this.currentIconTarget !== undefined) this.currentIconTarget = null
-          if (this.selectedIconClass !== undefined) this.selectedIconClass = ''
-          if (this.iconSearchQuery !== undefined) this.iconSearchQuery = ''
-          if (this.selectedIconCategory !== undefined) this.selectedIconCategory = 'all'
-        },
-      })
-    },
-    openAddPageModal() {
-      if (this.pageForm) this.pageForm = { slug: '', title: '', content: '', meta_title: '', meta_description: '', is_published: true, is_main_page: false, navigation_buttons: [] }
-      if (this.pageElements !== undefined) this.pageElements = []
-      if (this.selectedElement !== undefined) this.selectedElement = null
-      if (this.draggingElement !== undefined) this.draggingElement = null
-      if (this.pageError !== undefined) this.pageError = ''
-      if (this.pageSuccess !== undefined) this.pageSuccess = ''
-      if (this.viewMode !== undefined) this.viewMode = 'visual'
-      this.openModal('pageModal', { showProperty: 'showAddPageModal', mobilePage: 'page' }, { width: '60vw', height: '80vh' })
-    },
-    closePageModal(event) {
-      this._closeModalGeneric('pageModal', event, {
-        showProperty: 'showAddPageModal',
-        mobilePage: 'admin',
-        beforeClose: () => {
-          if (this.editingPage !== undefined) this.editingPage = null
-          if (this.pageForm) this.pageForm = { slug: '', title: '', content: '', meta_title: '', meta_description: '', is_published: true, is_main_page: false, navigation_buttons: [] }
-          if (this.pageElements !== undefined) this.pageElements = []
-          if (this.selectedElement !== undefined) this.selectedElement = null
-          if (this.draggingElement !== undefined) this.draggingElement = null
-          if (this.pageError !== undefined) this.pageError = ''
-          if (this.pageSuccess !== undefined) this.pageSuccess = ''
-        },
-      })
-    },
-    closeContentModal(event) {
-      this._closeModalGeneric('contentModal', event, {
-        showProperty: 'showContentModal',
-        beforeClose: () => {
-          if (this.contentError !== undefined) this.contentError = ''
-          if (this.contentSuccess !== undefined) this.contentSuccess = ''
-        },
-      })
+    _clearListeners() {
+      if (this._onMouseMove) { document.removeEventListener('mousemove', this._onMouseMove); this._onMouseMove = null; }
+      if (this._onMouseUp) { document.removeEventListener('mouseup', this._onMouseUp); this._onMouseUp = null; }
     },
   },
-}
+};
 </script>
 
 <template>
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div
+          v-if="isVisible"
+          ref="modalEl"
+          class="modal"
+          :class="{
+          'is-minimized': state === 'minimized',
+          'is-maximized': state === 'maximized',
+          'is-dragging': dragging,
+          'is-resizing': resizing,
+        }"
+          :data-modal-id="modalId"
+          @mousedown="bringToFront"
+      >
+        <!-- Resize handles (8 directions) -->
+        <template v-if="resizable && state === 'normal'">
+          <div
+              v-for="dir in resizeDirections"
+              :key="dir"
+              class="modal-resize-handle"
+              :class="dir"
+              @mousedown.prevent.stop="startResize($event, dir)"
+          />
+        </template>
+        <!-- Header (title + drag area) -->
+        <div class="modal-header" @mousedown="startDrag">
+          <div class="modal-title">
+            <slot name="icon">
+              <span class="modal-title-icon">
+                <i class="fas fa-window-maximize"></i>
+              </span>
+            </slot>
+            <h3>{{ title }}</h3>
+          </div>
+          <!-- Toolbar (controls) -->
+          <div class="modal-toolbar">
+            <div class="control-btns">
+              <button
+                  class="ctrl-btn btn-minimize"
+                  :class="{ active: state === 'minimized' }"
+                  type="button"
+                  title="Свернуть"
+                  @click="minimize"
+              >
+                <i class="fas fa-minus"></i>
+              </button>
+              <button
+                  class="ctrl-btn btn-maximize"
+                  :class="{ active: state === 'maximized' }"
+                  type="button"
+                  :title="state === 'maximized' ? 'Восстановить' : 'Развернуть'"
+                  @click="maximize"
+              >
+                <i :class="state === 'maximized' ? 'fas fa-compress' : 'fas fa-expand'"></i>
+              </button>
+              <button
+                  class="ctrl-btn btn-close"
+                  type="button"
+                  title="Закрыть"
+                  @click="close"
+              >
+                <i class="fas fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
 
+        <!-- Body -->
+        <div v-show="state !== 'minimized'" class="modal-body">
+          <slot />
+        </div>
+
+        <!-- Footer -->
+        <div v-if="$slots.footer && state !== 'minimized'" class="modal-footer">
+          <slot name="footer" />
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
+/* ─── Modal window ────────────────────────────────────────────── */
+.modal {
+  background: var(--background);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  border: 1px solid var(--border-light);
+  width: 100%;
+  max-height: 90vh;
+  position: fixed;
+  min-width: 360px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  user-select: none;
+}
+.modal.is-maximized { border-radius: 0; border: none; }
+.modal.is-minimized {
+  display: none !important;
+}
+.modal.is-dragging  { cursor: grabbing; }
+.modal.is-resizing  { cursor: nwse-resize; }
 
+/* ─── Resize handles ──────────────────────────────────────────── */
+.modal-resize-handle {
+  position: absolute;
+  z-index: 12;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+.modal-resize-handle:hover { background: var(--hover-secondary); }
+
+.modal-resize-handle.nw { top: 0; left: 0; width: 20px; height: 20px; cursor: nwse-resize; border-radius: 15px 0 0 0; }
+.modal-resize-handle.ne { top: 0; right: 0; width: 20px; height: 20px; cursor: nesw-resize; border-radius: 0 15px 0 0; }
+.modal-resize-handle.sw { bottom: 0; left: 0; width: 20px; height: 20px; cursor: nesw-resize; border-radius: 0 0 0 15px; }
+.modal-resize-handle.se { bottom: 0; right: 0; width: 6px; height: 6px; cursor: nwse-resize; border-radius: 0 0 15px 0; z-index: 11; }
+.modal-resize-handle.n  { top: 0; left: 20px; right: 20px; height: 6px; cursor: ns-resize; }
+.modal-resize-handle.s  { bottom: 0; left: 20px; right: 22px; height: 6px; cursor: ns-resize; }
+.modal-resize-handle.e  { right: 0; top: 20px; bottom: 22px; width: 6px; cursor: ew-resize; }
+.modal-resize-handle.w  { left: 0; top: 20px; bottom: 20px; width: 6px; cursor: ew-resize; }
+
+.modal-resize-handle.nw::after,
+.modal-resize-handle.ne::after,
+.modal-resize-handle.sw::after,
+.modal-resize-handle.se::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--border-primary-stronger);
+  border-radius: 2px;
+}
+.modal-resize-handle.nw::after { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+.modal-resize-handle.ne::after { top: 4px; right: 4px; border-left: none; border-bottom: none; }
+.modal-resize-handle.sw::after { bottom: 4px; left: 4px; border-right: none; border-top: none; }
+.modal-resize-handle.se::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+.modal-resize-handle:hover::after { border-color: var(--border-primary-strongest); }
+
+/* ─── Toolbar ─────────────────────────────────────────────────── */
+.modal-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  height: 4.5vh;
+  z-index: 5;
+}
+
+.control-btns {
+  margin-right: 1vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ctrl-btn:hover     { background: var(--hover-secondary); color: var(--text-main); }
+.ctrl-btn.active    { color: var(--primary); background: var(--border-primary-light); }
+.btn-close:hover    { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.btn-minimize:hover { background: rgba(234, 179, 8, 0.15);  color: #eab308; }
+.btn-maximize:hover { background: rgba(34, 197, 94, 0.15);  color: #22c55e; }
+
+/* ─── Header ──────────────────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 8px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  cursor: grab;
+}
+.modal-header:active { cursor: grabbing; }
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  pointer-events: none;
+}
+.modal-title-icon { font-size: 16px; color: var(--primary); flex-shrink: 0; }
+.modal-title h3   { color: var(--primary); margin: 0; font-size: 20px; }
+
+/* ─── Body ────────────────────────────────────────────────────── */
+.modal-body {
+  padding: 30px 38px 12px 30px;
+  overflow-y: auto;
+  overflow-x: auto;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--background-additional) var(--background-secondary);
+}
+.modal-body .form-group { margin-bottom: 20px; }
+.modal-body label { display: block; color: var(--primary); margin-bottom: 8px; font-weight: 500; }
+
+.modal-body input,
+.modal-body select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+.modal-body input:focus,
+.modal-body select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--background-secondary);
+  box-shadow: 0 0 0 2px var(--border-primary-light);
+}
+.modal-body input::placeholder { color: var(--text-secondary); }
+.modal-body select { background-image: none; padding-right: 40px; cursor: pointer; }
+.modal-body select option { background-color: var(--text-dark); color: var(--text-main); padding: 8px 12px; }
+.modal-body select option:checked { background-color: var(--primary); color: var(--text-dark); }
+
+.modal-body .form-group textarea {
+  width: 100%;
+  height: 200px;
+  padding: 12px 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 16px;
+}
+.modal-body textarea::-webkit-resizer         { background-color: var(--info-primary); border-radius: 1px; border: 2px solid white; }
+.modal-body textarea::-webkit-resizer:hover   { background-color: var(--info-secondary); }
+
+.modal-body::-webkit-scrollbar         { width: 8px; height: 8px; }
+.modal-body::-webkit-scrollbar-track   { background: var(--background-additional); border-radius: 4px; margin: 10px 12px 12px 0; }
+.modal-body::-webkit-scrollbar-thumb   { background: var(--background-secondary); border-radius: 4px; border: 1px solid var(--border-primary-strong); }
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--hover-primary); border-color: var(--border-primary-medium); }
+.modal-body::-webkit-scrollbar-corner  { background: var(--background-secondary); border-radius: 0 0 15px 0; }
+
+/* ─── Footer ──────────────────────────────────────────────────── */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+/* ─── Transition ──────────────────────────────────────────────── */
+.modal-fade-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.modal-fade-leave-active { transition: opacity 0.14s ease, transform 0.14s ease; }
+.modal-fade-enter-from   { opacity: 0; transform: scale(0.97) translateY(-6px); }
+.modal-fade-leave-to     { opacity: 0; transform: scale(0.97) translateY(-4px); }
+
+@media (max-width: 768px) {
+  .modal { width: 95%; max-width: none; margin: 20px auto; }
+  .modal-body { padding: 20px; }
+}
 </style>

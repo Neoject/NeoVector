@@ -6428,14 +6428,6 @@ label.checkbox-label {
     user-select: text;
 }
 
-.virtual-page .page-body p:first-child {
-    margin-top: 0;
-}
-
-.virtual-page .page-body p:last-child {
-    margin-bottom: 0;
-}
-
 .virtual-page .page-body h1,
 .virtual-page .page-body h2,
 .virtual-page .page-body h3,

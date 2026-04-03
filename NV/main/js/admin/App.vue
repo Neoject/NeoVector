@@ -9,9 +9,11 @@ import Orders from "./components/Orders.vue";
 import Options from "./components/Options.vue";
 import Profile from "./components/Profile.vue";
 import Main from "./components/Main.vue";
+import Taskbar from "./components/TaskBar.vue";
 
 export default {
   components: {
+    Taskbar,
     Main,
     Profile,
     Options,
@@ -57,7 +59,6 @@ export default {
         return Mail
       }
       const map = {
-        '': Main,
         users: Users,
         orders: Orders,
         analytics: Analytics,
@@ -65,7 +66,8 @@ export default {
         profile: Profile,
         options: Options,
       }
-      return map[p] || ''
+
+      return map[p] || Main
     }
   }
 }
@@ -87,6 +89,7 @@ export default {
           :logo="credits.logo"
       />
       <component :is="currentComponent" v-model:page="page" />
+      <Taskbar />
     </template>
   </template>
 </template>
