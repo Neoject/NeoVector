@@ -1,8 +1,7 @@
-DEEPSEEK_API_KEY=sk-e8b3a410220249da951e23b8e4e7eb6a
-CLEANUP_SECRET_KEY=yVirQhfGfweoVte3eXMjrknoR0odv08e2
-EMAIL=contact@neovector.by
+DEEPSEEK_API_KEY=
+CLEANUP_SECRET_KEY=
+EMAIL=
 DB_HOST=localhost
-DB_USER=neojectby_admin
-DB_PASS=RWjZS!.DiL&XruLt
-DB_NAME=neojectby_vector
-#sk-9ac21525a6c34ce2b692b8d1fe477688
+DB_USER=
+DB_PASS=
+DB_NAME=
