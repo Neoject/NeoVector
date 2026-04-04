@@ -461,6 +461,7 @@ a {
     background-clip: text;
     text-decoration: none;
     padding: 0 20px;
+    height: 64px;
     color: var(--text-primary);
     text-shadow: 0 0 90px var(--shadow-primary);
     user-select: none;
