@@ -246,6 +246,9 @@ class API
                 case 'upload_logo':
                     Params::uploadLogo();
                     break;
+                case 'delete_logo':
+                    Params::deleteLogo();
+                    break;
                 case 'create_order':
                     Order::create($_POST);
                     break;
@@ -317,6 +320,23 @@ class API
                     break;
                 case 'get_params':
                     Service::sendJson(Params::get());
+                    break;
+                case 'get_colors':
+                    Auth::requireAuth();
+                    Service::sendJson(Params::getThemeColors());
+                    break;
+                case 'save_colors':
+                    Params::saveThemeColors(json_decode($_POST['colors'] ?? '[]', true) ?: []);
+                    break;
+                case 'reset_colors':
+                    Params::resetThemeCss();
+                    break;
+                case 'get_theme_css':
+                    Auth::requireAuth();
+                    Service::sendJson(['css' => Params::getThemeCss()]);
+                    break;
+                case 'save_theme_css':
+                    Params::saveThemeCss($_POST['css'] ?? '');
                     break;
                 case 'visibility':
                     Product::changeVisibility();

@@ -483,14 +483,14 @@ export default {
   position: absolute;
   width: 8px;
   height: 8px;
-  border: 2px solid var(--border-primary-stronger);
+  border: 2px solid var(--border-strong);
   border-radius: 2px;
 }
 .modal-resize-handle.nw::after { top: 4px; left: 4px; border-right: none; border-bottom: none; }
 .modal-resize-handle.ne::after { top: 4px; right: 4px; border-left: none; border-bottom: none; }
 .modal-resize-handle.sw::after { bottom: 4px; left: 4px; border-right: none; border-top: none; }
 .modal-resize-handle.se::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
-.modal-resize-handle:hover::after { border-color: var(--border-primary-strongest); }
+.modal-resize-handle:hover::after { border-color: var(--border-strong); }
 
 /* ─── Toolbar ─────────────────────────────────────────────────── */
 .modal-toolbar {
@@ -522,8 +522,8 @@ export default {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.ctrl-btn:hover     { background: var(--hover-secondary); color: var(--text-main); }
-.ctrl-btn.active    { color: var(--primary); background: var(--border-primary-light); }
+.ctrl-btn:hover     { background: var(--hover-secondary); color: var(--text-primary); }
+.ctrl-btn.active    { color: var(--primary); background: var(--border-light); }
 .btn-close:hover    { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .btn-minimize:hover { background: rgba(234, 179, 8, 0.15);  color: #eab308; }
 .btn-maximize:hover { background: rgba(34, 197, 94, 0.15);  color: #22c55e; }
@@ -571,7 +571,7 @@ export default {
   background: var(--background-secondary);
   border: 1px solid var(--border-medium);
   border-radius: 8px;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-size: 16px;
   transition: all 0.3s ease;
 }
@@ -580,11 +580,11 @@ export default {
   outline: none;
   border-color: var(--primary);
   background: var(--background-secondary);
-  box-shadow: 0 0 0 2px var(--border-primary-light);
+  box-shadow: 0 0 0 2px var(--border-light);
 }
 .modal-body input::placeholder { color: var(--text-secondary); }
 .modal-body select { background-image: none; padding-right: 40px; cursor: pointer; }
-.modal-body select option { background-color: var(--text-dark); color: var(--text-main); padding: 8px 12px; }
+.modal-body select option { background-color: var(--text-dark); color: var(--text-primary); padding: 8px 12px; }
 .modal-body select option:checked { background-color: var(--primary); color: var(--text-dark); }
 
 .modal-body .form-group textarea {
@@ -594,7 +594,7 @@ export default {
   background: var(--background-secondary);
   border: 1px solid var(--border-medium);
   border-radius: 4px;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-family: inherit;
   font-size: 16px;
 }
@@ -603,8 +603,8 @@ export default {
 
 .modal-body::-webkit-scrollbar         { width: 8px; height: 8px; }
 .modal-body::-webkit-scrollbar-track   { background: var(--background-additional); border-radius: 4px; margin: 10px 12px 12px 0; }
-.modal-body::-webkit-scrollbar-thumb   { background: var(--background-secondary); border-radius: 4px; border: 1px solid var(--border-primary-strong); }
-.modal-body::-webkit-scrollbar-thumb:hover { background: var(--hover-primary); border-color: var(--border-primary-medium); }
+.modal-body::-webkit-scrollbar-thumb   { background: var(--background-secondary); border-radius: 4px; border: 1px solid var(--border-strong); }
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--hover-primary); border-color: var(--border-medium); }
 .modal-body::-webkit-scrollbar-corner  { background: var(--background-secondary); border-radius: 0 0 15px 0; }
 
 /* ─── Footer ──────────────────────────────────────────────────── */

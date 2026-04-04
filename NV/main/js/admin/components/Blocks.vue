@@ -951,7 +951,7 @@ export default {
 }
 
 .icon-item:hover { background: var(--hover-primary); border-color: var(--border-medium); transform: translateY(-2px); }
-.icon-item.selected { background: var(--background-additional); border-color: var(--border-primary-strong); transform: translateY(-2px); }
+.icon-item.selected { background: var(--background-additional); border-color: var(--border-strong); transform: translateY(-2px); }
 .icon-item i { font-size: 24px; color: var(--primary); }
 .icon-item.selected i { color: var(--primary); transform: scale(1.1); }
 .icon-name { font-size: 12px; color: var(--text-additional-light); line-height: 1.2; word-break: break-word; }

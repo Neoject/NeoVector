@@ -2,6 +2,8 @@
 
 namespace NeoVector;
 
+use Exception;
+
 class Params
 {
     public function __construct()
@@ -179,6 +181,11 @@ class Params
         }
     }
 
+    public static function deleteLogo(): void
+    {
+        self::delete(['logo']);
+    }
+
     /**
      * @return void
      */
@@ -235,5 +242,172 @@ class Params
         }
 
         return $file;
+    }
+
+    /**
+     * Абсолютный путь к пользовательской теме (NV/main/styles/theme.css).
+     */
+    public static function getThemeCssPath(): string
+    {
+        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'styles' . DIRECTORY_SEPARATOR . 'theme.css';
+    }
+
+    /**
+     * Содержимое theme.css (пустая строка, если файла нет).
+     */
+    public static function getThemeCss(): string
+    {
+        $path = self::getThemeCssPath();
+        if (!is_readable($path)) {
+            return '';
+        }
+
+        return (string) file_get_contents($path);
+    }
+
+    /**
+     * Парсит CSS и возвращает карту переменных --name => value.
+     *
+     * @return array<string, string>
+     */
+    public static function getThemeColors(): array
+    {
+        $css = self::getThemeCss();
+        if ($css === '') {
+            return [];
+        }
+
+        preg_match_all('/(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+);/u', $css, $matches, PREG_SET_ORDER);
+        $out = [];
+        foreach ($matches as $m) {
+            $out[$m[1]] = trim($m[2]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Полная замена содержимого theme.css (только для авторизованных).
+     */
+    public static function saveThemeCss(string $css): void
+    {
+        Auth::requireAuth();
+
+        $css = (string) $css;
+        if ($css === '') {
+            Service::sendError(400, 'Пустой CSS');
+        }
+
+        if (strlen($css) > 1024 * 1024) {
+            Service::sendError(400, 'CSS слишком большой');
+        }
+
+        $path = self::getThemeCssPath();
+        $dir = dirname($path);
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            Service::sendError(500, 'Не удалось создать каталог для темы');
+        }
+
+        if (file_put_contents($path, $css) === false) {
+            Service::sendError(500, 'Не удалось записать theme.css');
+        }
+
+        Service::sendJson(['success' => true]);
+    }
+
+    /**
+     * Обновляет значения переменных в theme.css по карте --var => value.
+     *
+     * @param array<string, string> $colors
+     */
+    public static function saveThemeColors(array $colors): void
+    {
+        Auth::requireAuth();
+
+        $path = self::getThemeCssPath();
+        if (!is_readable($path)) {
+            Service::sendError(500, 'Файл theme.css не найден или недоступен для чтения');
+        }
+
+        $css = (string) file_get_contents($path);
+        $toAppend = [];
+
+        foreach ($colors as $name => $value) {
+            if (!is_string($name) || !preg_match('/^--[a-zA-Z0-9_-]+$/', $name)) {
+                continue;
+            }
+            $value = trim((string) $value);
+            if ($value === '') {
+                continue;
+            }
+            if (self::isUnsafeCssValue($value)) {
+                continue;
+            }
+
+            $pattern = '/' . preg_quote($name, '/') . '\s*:\s*[^;]+;/u';
+            $replacement = $name . ': ' . $value . ';';
+            if (preg_match($pattern, $css)) {
+                $css = preg_replace($pattern, $replacement, $css, 1);
+            } else {
+                $toAppend[] = $replacement;
+            }
+        }
+
+        if ($toAppend !== []) {
+            $css = self::appendCssDeclarationsBeforeLastBrace($css, $toAppend);
+        }
+
+        if (file_put_contents($path, $css) === false) {
+            Service::sendError(500, 'Не удалось записать theme.css');
+        }
+
+        Service::sendJson(['success' => true]);
+    }
+
+    /**
+     * Восстанавливает theme.css из theme.default.css (резервная копия по умолчанию).
+     */
+    public static function resetThemeCss(): void
+    {
+        Auth::requireAuth();
+
+        $defaultPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'styles' . DIRECTORY_SEPARATOR . 'theme.default.css';
+        $target = self::getThemeCssPath();
+
+        if (!is_readable($defaultPath)) {
+            Service::sendError(500, 'Файл theme.default.css не найден');
+        }
+
+        $content = (string) file_get_contents($defaultPath);
+        if (file_put_contents($target, $content) === false) {
+            Service::sendError(500, 'Не удалось восстановить theme.css');
+        }
+
+        Service::sendJson(['success' => true]);
+    }
+
+    private static function isUnsafeCssValue(string $value): bool
+    {
+        $lower = strtolower($value);
+        if (strpos($lower, 'expression(') !== false || strpos($lower, 'javascript:') !== false || strpos($value, '<') !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $declarations
+     */
+    private static function appendCssDeclarationsBeforeLastBrace(string $css, array $declarations): string
+    {
+        $last = strrpos($css, '}');
+        if ($last === false) {
+            return $css;
+        }
+
+        $block = "\n    " . implode("\n    ", $declarations);
+
+        return substr($css, 0, $last) . $block . "\n" . substr($css, $last);
     }
 }

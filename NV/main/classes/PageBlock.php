@@ -151,7 +151,10 @@ class PageBlock
 
         if ($row && $row['settings']) {
             $settings = json_decode($row['settings'], true);
-            return $settings['backgroundImage'] ?? '';
+            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'];
+            $baseDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            return $protocol . '://' . $host . $baseDir . '/' . ltrim($settings['backgroundImage'], '/');
         }
 
         return '';

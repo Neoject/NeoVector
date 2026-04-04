@@ -7,6 +7,7 @@ use NeoVector\Auth;
 use NeoVector\Config;
 use NeoVector\Database;
 use NeoVector\Log;
+use NeoVector\Params;
 use NeoVector\Service;
 
 class Product
@@ -142,16 +143,16 @@ class Product
 
     /**
      * @param array $order
-     * @return bool
+     * @return void
      */
-    private static function updateOrder(array $order): bool
+    private static function updateOrder(array $order): void
     {
         $db = Database::db();
         $stmt = $db->prepare('UPDATE products SET sort_order = ?, last_changed_at = CURRENT_TIMESTAMP, last_changed_by = ? WHERE id = ?');
 
         if (!$stmt) {
             Log::error('Update statement failed', '');
-            return false;
+            return;
         }
 
         $userId = (int) $_SESSION['user_id'];
@@ -165,7 +166,6 @@ class Product
 
         $stmt->close();
 
-        return true;
     }
 
     /**
@@ -265,6 +265,44 @@ class Product
         self::createTables();
         $products = self::getAll();
         Service::sendJson($products);
+    }
+
+    //todo
+    public static function getProduct()
+    {
+        if (isset($_GET['id'])) {
+            $product = Config::getProductData($productId = (int) $_GET['id']);
+
+            $TITLE = $product ? ($product['name'] . ' - ' . Params::getTitle()) : 'Товар не найден';
+
+            $mainImageUrl = '';
+            if ($product && !empty($product['image'])) {
+                $mainImageUrl = Config::normalize_media_url($product['image'], ROOT);
+            }
+
+            $allMedia = [];
+
+            if ($mainImageUrl !== '') {
+                $mainMediaType = Config::is_video_file($product['image']) ? 'video' : 'image';
+                $allMedia[] = ['type' => $mainMediaType, 'url' => $mainImageUrl];
+
+                if ($product['image']) {
+                    $vars['og_image'] = $mainImageUrl;
+                }
+            }
+
+            if ($product) {
+                foreach ($product['additional_images'] as $img) {
+                    $u = Config::normalize_media_url((string) $img, ROOT);
+                    if ($u !== '') $allMedia[] = ['type' => 'image', 'url' => $u];
+                }
+
+                foreach ($product['additional_videos'] as $vid) {
+                    $u = Config::normalize_media_url((string) $vid, ROOT);
+                    if ($u !== '') $allMedia[] = ['type' => 'video', 'url' => $u];
+                }
+            }
+        }
     }
 
     /**

@@ -458,11 +458,11 @@ table.pages-table th:last-child,
 table.pages-table td:last-child {
   position: sticky;
   right: 0;
-  background: var(--bg-black-95);
+  background: var(--background-additional);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 10;
-  border-left: 2px solid var(--border-primary-strong);
+  border-left: 2px solid var(--border-strong);
   min-width: 120px;
   width: 120px;
   vertical-align: middle;
@@ -532,7 +532,7 @@ table.pages-table td:last-child {
   overflow-y: auto;
   padding: 16px;
   background: var(--background-secondary);
-  color: var(--text-main);
+  color: var(--text-primary);
   font-size: 16px;
   line-height: 1.6;
   outline: none;
@@ -562,7 +562,7 @@ table.pages-table td:last-child {
   background: var(--background-secondary);
   border: none;
   border-radius: 0;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-family: 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -629,7 +629,7 @@ table.pages-table td:last-child {
   background: var(--background-secondary);
   border: 1px solid var(--border-light);
   border-radius: 6px;
-  color: var(--text-main);
+  color: var(--text-primary);
   cursor: move;
   transition: all 0.2s ease;
   user-select: none;
@@ -637,7 +637,7 @@ table.pages-table td:last-child {
 
 .element-item:hover {
   background: var(--background-secondary);
-  border-color: var(--border-primary-strong);
+  border-color: var(--border-strong);
   transform: translateX(4px);
 }
 
@@ -655,7 +655,7 @@ table.pages-table td:last-child {
 
 .page-preview-area.drag-over {
   background: var(--background-secondary);
-  border: 2px dashed var(--border-secondary-alt);
+  border: 2px dashed var(--border-secondary);
 }
 
 .preview-header {
@@ -698,7 +698,7 @@ table.pages-table td:last-child {
 .page-element.selected {
   border-color: var(--primary);
   background: var(--hover-secondary);
-  box-shadow: 0 0 0 2px var(--border-primary-medium);
+  box-shadow: 0 0 0 2px var(--border-medium);
 }
 
 .page-element.drag-over-top {
@@ -731,7 +731,7 @@ table.pages-table td:last-child {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--border-medium);
   border-radius: 4px;
-  color: var(--text-main);
+  color: var(--text-primary);
   padding: 6px 8px;
   cursor: pointer;
   font-size: 12px;
@@ -745,7 +745,7 @@ table.pages-table td:last-child {
 
 .btn-icon:hover:not(:disabled) {
   background: var(--background-additional);
-  border-color: var(--border-misc);
+  border-color: var(--border-alternative);
 }
 
 .btn-icon:disabled {
@@ -760,7 +760,7 @@ table.pages-table td:last-child {
 
 .element-content {
   padding-right: 80px;
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 .element-content h1, .element-content h2, .element-content h3,
@@ -824,7 +824,7 @@ table.pages-table td:last-child {
   background: var(--background-secondary);
   border: 1px solid var(--border-medium);
   border-radius: 4px;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-size: 14px;
 }
 

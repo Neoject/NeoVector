@@ -200,7 +200,7 @@ export default {
 .message-replies h2 {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-main, #fff);
+  color: var(--text-primary, #fff);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
@@ -220,7 +220,7 @@ export default {
 
 .reply-item {
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 100%);
-  border: 1px solid var(--border-secondary-strong, rgba(255, 215, 0, 0.3));
+  border: 1px solid var(--border-secondary, rgba(255, 215, 0, 0.3));
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s ease;
@@ -241,7 +241,7 @@ export default {
 .reply-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(255, 215, 0, 0.15);
-  border-color: var(--border-secondary-strong, rgba(255, 215, 0, 0.5));
+  border-color: var(--border-secondary, rgba(255, 215, 0, 0.5));
 }
 
 .reply-header {
@@ -286,7 +286,7 @@ export default {
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
-  color: var(--text-main, #fff);
+  color: var(--text-primary, #fff);
   line-height: 1.6;
   font-size: 14px;
   white-space: pre-wrap;
@@ -310,7 +310,7 @@ export default {
 }
 
 .reply-to strong {
-  color: var(--text-main, #fff);
+  color: var(--text-primary, #fff);
   font-weight: 500;
 }
 

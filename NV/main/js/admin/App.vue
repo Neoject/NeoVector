@@ -88,7 +88,7 @@ export default {
           v-model:page="page"
           :logo="credits.logo"
       />
-      <component :is="currentComponent" v-model:page="page" />
+      <component :is="currentComponent" v-model:page="page" :logo="credits.logo" />
       <Taskbar />
     </template>
   </template>
