@@ -645,11 +645,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-size: 24px;
 }
 
-.stat-content h3 { font-size: 32px; margin: 0; color: var(--text-main); }
+.stat-content h3 { font-size: 32px; margin: 0; color: var(--text-primary); }
 .stat-content p { margin: 5px 0 0 0; color: #aaa; font-size: 14px; }
 
 .analytics-charts {
@@ -665,7 +665,7 @@ export default {
   padding: 20px;
 }
 
-.chart-card h3 { margin: 0 0 20px 0; color: var(--text-main); }
+.chart-card h3 { margin: 0 0 20px 0; color: var(--text-primary); }
 .chart-container { height: 300px; position: relative; }
 
 .analytics-tables {
@@ -680,7 +680,7 @@ export default {
   padding: 20px;
 }
 
-.table-card h3 { margin: 0 0 20px 0; color: var(--text-main); }
+.table-card h3 { margin: 0 0 20px 0; color: var(--text-primary); }
 .table-responsive { overflow-x: auto; }
 
 .analytics-table {
@@ -691,7 +691,7 @@ export default {
 
 .analytics-table th {
   background: var(--background-secondary);
-  color: var(--text-main);
+  color: var(--text-primary);
   padding: 12px;
   text-align: left;
   font-weight: 600;
@@ -705,7 +705,7 @@ export default {
 }
 
 .analytics-table th:not(:last-child):hover {
-  border-right-color: var(--border-primary-strong);
+  border-right-color: var(--border-strong);
 }
 
 .analytics-table .column-resize-handle {

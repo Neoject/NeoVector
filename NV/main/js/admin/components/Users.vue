@@ -275,7 +275,7 @@ export default {
 
 .header-actions .btn-secondary {
   background: var(--background-secondary);
-  color: var(--text-main);
+  color: var(--text-primary);
   border: 1px solid var(--border-medium);
 }
 
@@ -345,7 +345,7 @@ export default {
 
 .users-table td {
   padding: 18px 20px;
-  color: var(--text-main);
+  color: var(--text-primary);
   font-size: 14px;
   vertical-align: middle;
 }
@@ -358,7 +358,7 @@ export default {
 }
 
 .users-table td:nth-child(2) { font-weight: 500; }
-.users-table td:nth-child(2) strong { color: var(--text-main); font-size: 15px; }
+.users-table td:nth-child(2) strong { color: var(--text-primary); font-size: 15px; }
 .users-table td:nth-child(3) { width: 180px; }
 .users-table td:nth-child(4) {
   color: var(--text-additional-light);
@@ -378,8 +378,8 @@ export default {
 }
 
 .role-badge.role-admin {
-  background: linear-gradient(135deg, var(--error-red-alt) 0%, var(--error-red-darker) 100%);
-  color: var(--text-main);
+  background: linear-gradient(135deg, var(--error-red-alt) 0%, var(--error-bg) 100%);
+  color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(238, 90, 111, 0.3);
 }
 
@@ -390,7 +390,7 @@ export default {
 
 .role-badge.role-user {
   background: linear-gradient(135deg, var(--background) 0%, var(--background-additional) 100%);
-  color: var(--text-main);
+  color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(68, 160, 141, 0.3);
 }
 

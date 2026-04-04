@@ -1152,7 +1152,7 @@ export default {
 .products-table td {
   padding: 15px;
   text-align: left;
-  border-bottom: 1px solid var(--border-primary-strong);
+  border-bottom: 1px solid var(--border-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1164,7 +1164,7 @@ export default {
 }
 
 .products-table td {
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 .products-table th:last-child,
@@ -1172,11 +1172,11 @@ export default {
   display: table-cell;
   position: sticky;
   right: 0;
-  background: var(--bg-black-95);
+  background: var(--background-additional);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 10;
-  border-left: 2px solid var(--border-primary-strong);
+  border-left: 2px solid var(--border-strong);
   min-width: 120px;
   width: 120px;
   vertical-align: middle;
@@ -1197,7 +1197,7 @@ export default {
 }
 
 .products-table th:not(:last-child):hover {
-  border-right-color: var(--border-primary-strong);
+  border-right-color: var(--border-strong);
 }
 
 .column-resize-handle {
@@ -1290,7 +1290,7 @@ export default {
   display: block;
   margin-bottom: 10px;
   font-weight: 500;
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 .current-image {
@@ -1364,8 +1364,8 @@ export default {
   position: absolute;
   top: -10px;
   right: -10px;
-  background: var(--error-red-dark);
-  color: var(--text-main);
+  background: var(--error-bg);
+  color: var(--text-primary);
   border: none;
   border-radius: 50%;
   width: 30px;
@@ -1381,7 +1381,7 @@ export default {
 }
 
 .remove-image-btn:hover {
-  background: var(--error-red-dark);
+  background: var(--error-bg);
   transform: scale(1.1);
 }
 
@@ -1456,7 +1456,7 @@ export default {
   top: calc(100% + 8px);
   right: 0;
   background: var(--background);
-  border: 1px solid var(--border-primary-medium);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
@@ -1473,7 +1473,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-primary-medium);
+  border-bottom: 1px solid var(--border-medium);
   background: var(--header-main);
 }
 
@@ -1485,7 +1485,7 @@ export default {
 .column-selector-header .close-btn {
   background: none;
   border: none;
-  color: var(--text-main);
+  color: var(--text-primary);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -1523,7 +1523,7 @@ export default {
 
 .column-selector-item span {
   font-size: 14px;
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 /* HTML: <div class="loader"></div> */
@@ -1594,7 +1594,7 @@ export default {
   max-width: 85vw;
   height: 100vh;
   background: var(--background);
-  border-left: 1px solid var(--border-primary-medium);
+  border-left: 1px solid var(--border-medium);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   transform: translateX(100%);
@@ -1611,7 +1611,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-primary-medium);
+  border-bottom: 1px solid var(--border-medium);
   background: var(--header-main);
 }
 
@@ -1625,7 +1625,7 @@ export default {
 .products-actions-sidebar-close {
   background: none;
   border: none;
-  color: var(--text-main);
+  color: var(--text-primary);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -1658,14 +1658,14 @@ export default {
 .products-actions-sidebar-section {
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid var(--border-primary-medium);
+  border-top: 1px solid var(--border-medium);
 }
 
 .products-actions-sidebar-section strong {
   display: block;
   margin-bottom: 12px;
   font-size: 14px;
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 .column-selector-list-sidebar .column-selector-item {
@@ -1691,7 +1691,7 @@ export default {
 
   .products-actions-menu-btn:hover {
     background: var(--background-secondary);
-    border-color: var(--border-primary-strong);
+    border-color: var(--border-strong);
   }
 
   .products-actions-toolbar {
@@ -1775,7 +1775,7 @@ export default {
 
 .context-menu {
   position: fixed;
-  background: var(--text-main);
+  background: var(--text-primary);
   border: 1px solid var(--border-medium);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

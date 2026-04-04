@@ -1,9 +1,3 @@
-@import "admin/admin-main.css";
-@import "admin/admin-loader.css";
-@import "admin/admin-messages.css";
-@import "admin/admin-users.css";
-@import "admin/admin-products.css";
-@import "admin/admin-pages.css";
 @import "main.css";
 @import "style.css";
 @import "theme.css";
@@ -98,7 +92,7 @@
 
 .admin-link {
     background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
-    border: 1px solid var(--border-secondary-strong);
+    border: 1px solid var(--border-secondary);
     color: var(--header-secondary) !important;
     padding: 8px 16px;
     border-radius: 20px;

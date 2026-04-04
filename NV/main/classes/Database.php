@@ -137,7 +137,7 @@ class Database
 
         $stmt = Database::db()->prepare($sql);
 
-        if ($stmt->execute(array_values($where))) {
+        if (!$stmt->error) {
             return true;
         }
 

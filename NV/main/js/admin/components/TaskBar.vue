@@ -106,7 +106,7 @@ export default {
 .taskbar-item-title {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-main);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

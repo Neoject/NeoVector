@@ -2,9 +2,18 @@
 
 namespace NeoVector;
 
+use Exception;
+
 class Router
 {
-    private array $routes = [];
+    private static array $routes = [];
+
+    public static function start(): void
+    {
+        self::setApi();
+        self::getPage();
+        self::handleRequest();
+    }
 
     /**
      * @param $method
@@ -12,13 +21,67 @@ class Router
      * @param $handler
      * @return void
      */
-    public function add($method, $path, $handler): void
+    public static function add($method, $path, $handler): void
     {
-        $this->routes[] = [
+        self::$routes[] = [
             'method' => $method,
             'path' => $path,
             'handler' => $handler
         ];
+    }
+
+    public static function setApi(): void
+    {
+        self::add('GET', '/api/page', function () {
+            try {
+                $controller = new ApiController();
+                return $controller->getPage('home');
+            } catch (Exception $e) {
+                Log::error('API controller error', $e->getMessage());
+                http_response_code(500);
+                return json_encode(['error' => 'Internal Server Error'], JSON_UNESCAPED_UNICODE);
+            }
+        });
+    }
+
+    public static function getPage(): void
+    {
+        self::add('GET', '/api/page/{slug}', function ($slug) {
+            try {
+                $controller = new ApiController();
+                return $controller->getPage($slug);
+            } catch (Exception $e) {
+                Log::error('API controller error', $e->getMessage());
+                http_response_code(500);
+                return json_encode(['error' => 'Internal Server Error'], JSON_UNESCAPED_UNICODE);
+            }
+        });
+    }
+
+    public static function handleRequest(): void
+    {
+        try {
+            $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+            $excludedPaths = ['/admin', '/product', '/assets', '/api.php', '/favicon.ico'];
+
+            foreach ($excludedPaths as $excluded) {
+                if (str_starts_with($uri, $excluded)) {
+                    break;
+                }
+            }
+
+            if (str_starts_with($uri, '/api/')) {
+                $result = self::dispatch($method, $uri);
+                echo $result;
+                exit;
+            }
+        } catch (Exception $e) {
+            Log::error('Request handling error', $e->getMessage());
+            Log::error('Stack trace', $e->getTraceAsString());
+            http_response_code(500);
+            die('Internal Server Error');
+        }
     }
 
     /**
@@ -26,9 +89,9 @@ class Router
      * @param $uri
      * @return mixed|string
      */
-    public function dispatch($method, $uri): mixed
+    public static function dispatch($method, $uri): mixed
     {
-        foreach ($this->routes as $route) {
+        foreach (self::$routes as $route) {
             if ($route['method'] !== $method) continue;
 
             $pattern = preg_replace('/\{([a-zA-Z0-9_]+)}/', '(?P<$1>[^/]+)', $route['path']);
