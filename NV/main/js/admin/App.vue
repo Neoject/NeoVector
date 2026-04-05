@@ -43,6 +43,7 @@ export default {
   },
   mounted() {
     const el = document.getElementById('credits-data');
+
     if (el) {
       try {
         this.credits = JSON.parse(el.textContent);
@@ -58,6 +59,7 @@ export default {
       if (['messages', 'message', 'message-reply'].includes(p)) {
         return Mail
       }
+
       const map = {
         users: Users,
         orders: Orders,

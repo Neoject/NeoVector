@@ -1,10 +1,10 @@
 <script>
-import Modal from './Modal.vue'
 import { isMobileDevice } from './service'
+import Modal from "../../components/Modal.vue";
 
 export default {
   name: 'Blocks',
-  components: { Modal },
+  components: {Modal},
   emits: ['update:page'],
   data() {
     return {

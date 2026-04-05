@@ -1,5 +1,5 @@
 <script>
-import { registerMinimized, unregisterMinimized } from './modalRegistry.js'
+import { registerMinimized, unregisterMinimized } from '../admin/components/modalRegistry'
 
 const RESIZE_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 const PAD = 2;
