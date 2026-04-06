@@ -67,20 +67,35 @@ class Auth
 
     public static function login(string $username, string $password, bool $remember = false): array
     {
+        $username = trim($username);
+
+        if ($username === '' || $password === '') {
+            return ['success' => false, 'error' => 'Username and password are required'];
+        }
+
         $stmt = self::$db->prepare(
             "SELECT id, password_hash, role FROM users WHERE username=? LIMIT 1"
         );
+
+        if ($stmt === false) {
+            return ['success' => false, 'error' => 'Database prepare failed'];
+        }
+        
         $stmt->bind_param('s', $username);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return ['success' => false, 'error' => 'Database execute failed'];
+        }
         $stmt->bind_result($id, $hash, $role);
 
         $isValid = $stmt->fetch() && hash('sha256', $password) === $hash;
         $stmt->close();
 
         if (!$isValid) {
-            return ['success' => false];
+            return ['success' => false, 'error' => 'Invalid username or password'];
         }
 
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $id;
         $_SESSION['username'] = $username;
         $_SESSION['role'] = $role;
@@ -88,6 +103,8 @@ class Auth
         if ($remember) {
             self::createRememberToken($id);
         }
+
+        session_write_close();
 
         return ['success' => true, 'role' => $role];
     }

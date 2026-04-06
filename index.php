@@ -7,233 +7,62 @@ use NeoVector\PageBlock;
 use NeoVector\Params;
 use NeoVector\Router;
 use NeoVector\Service;
+use NeoVector\VisitTracker;
 
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/config.php';
 
 global $_DESCRIPTION;
 
-Service::setTitle(Params::getTitle());
+$title = Params::getTitle();
+Database::getInstance();
+Service::setTitle($title);
+Router::start();
+VisitTracker::track();
 
-try {
-    $router = new Router();
-} catch (Exception $e) {
-    Log::error('Router initialization error', $e->getMessage());
-    http_response_code(500);
-    die('Internal Server Error');
-}
+//todo
+$heroImage = PageBlock::getHeroImage();
+$data = Params::get();
+$ogDesc = $_DESCRIPTION ?? '';
+$ogUrl = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 
-$router->add('GET', '/api/page', function () {
-    try {
-        $controller = new ApiController();
-        return $controller->getPage('home');
-    } catch (Exception $e) {
-        Log::error('API controller error', $e->getMessage());
-        http_response_code(500);
-        return json_encode(['error' => 'Internal Server Error'], JSON_UNESCAPED_UNICODE);
-    }
-});
-
-$router->add('GET', '/api/page/{slug}', function ($slug) {
-    try {
-        $controller = new ApiController();
-        return $controller->getPage($slug);
-    } catch (Exception $e) {
-        Log::error('API controller error', $e->getMessage());
-        http_response_code(500);
-        return json_encode(['error' => 'Internal Server Error'], JSON_UNESCAPED_UNICODE);
-    }
-});
-
-try {
-    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-    $excludedPaths = ['/admin', '/product', '/assets', '/api.php', '/favicon.ico'];
-    $isExcluded = false;
-
-    foreach ($excludedPaths as $excluded) {
-        if (str_starts_with($uri, $excluded)) {
-            $isExcluded = true;
-            break;
-        }
-    }
-
-    if (str_starts_with($uri, '/api/')) {
-        $result = $router->dispatch($method, $uri);
-        echo $result;
-        exit;
-    }
-} catch (Exception $e) {
-    Log::error('Request handling error', $e->getMessage());
-    Log::error('Stack trace', $e->getTraceAsString());
-    http_response_code(500);
-    die('Internal Server Error');
-}
-
-$heroImage = '';
-
-try {
-    $dbConnection = Database::getInstance()->getConnection();
-    $pageBlock = new PageBlock($dbConnection);
-    $heroImage = $pageBlock->getHeroImage();
-
-    if ($heroImage && !preg_match('/^https?:\/\//i', $heroImage)) {
-        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
-        $baseDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-        $heroImage = $protocol . '://' . $host . $baseDir . '/' . ltrim($heroImage, '/');
-    }
-} catch (Exception $e) {
-    Log::error('Hero image retrieval error', $e->getMessage());
+function e(string $s = ''): string
+{
+    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 ?>
-    <div id="app">
-        <?php include ROOT_PATH . '/NV/main/page/navbar.php'; ?>
-        <template v-if="!currentVirtualPage && !virtualPageError">
-            <component
-                    v-for="(block, blockIndex) in pageSections"
-                    :key="block?.id ?? 'block-' + blockIndex"
-                    :is="blockComponents[block.type]"
-                    v-bind="getBlockProps(block)"
-            ></component>
-            <!-- other blocks -->
-            <component
-                    v-for="(block, blockIndex) in footerSections"
-                    :key="block?.id ?? 'footer-' + blockIndex"
-                    :is="blockComponents[block.type]"
-                    v-bind="getBlockProps(block)"
-            ></component>
-        </template>
-        <!-- Order Modal -->
-        <order :class="{ 'active': orderModalOpen }" @close="closeOrderModal"></order>
-        <!-- Cart Selector Modal -->
-        <div class="cart-modal" :class="{ 'active': cartOpen }">
-            <div class="cart-content" @click.stop>
-                <div class="cart-header">
-                    <h3>Ваша корзина</h3>
-                    <button class="close-icon" @click="closeCart">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div v-if="cartItems.length > 0">
-                    <div class="cart-item" v-for="(item, cartIndex) in cartItems"
-                         :key="`${item.id}-${item.optionKey || cartIndex}`">
-                        <img v-if="!isVideo(getCurrentProductImage(item))" :src="item.image" :alt="item.name"
-                             class="cart-item-img" loading="lazy" decoding="async">
-                        <video v-else :src="getCurrentProductImage(item)" class="cart-item-img"
-                               :class="{ 'loading': isImageLoading(item) }" muted loop playsinline autoplay
-                               @loadstart="onVideoLoadStart($event, item)" @loadeddata="onVideoLoadedData($event, item)"
-                               @error="onVideoError($event, item)"></video>
-                        <div class="cart-item-details">
-                            <h4 class="cart-item-title">{{ item.name }}</h4>
-                            <template v-if="item.options && item.options.length">
-                                <p class="cart-item-attr" v-for="option in item.options"
-                                   :key="`${item.id}-${option.slug}`">
-                                    {{ option.name }}: {{ option.value }}
-                                </p>
-                            </template>
-                            <p class="cart-item-price">{{ item.price }} руб.</p>
-                            <div class="cart-item-actions">
-                                <button class="quantity-btn" @click="decreaseQuantity(item)">-</button>
-                                <span class="quantity">{{ item.quantity }}</span>
-                                <button class="quantity-btn" @click="increaseQuantity(item)">+</button>
-                                <button class="remove-item" @click="removeFromCart(item)">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cart-total">
-                        <span>Итого:</span>
-                        <span>{{ cartTotal }} руб.</span>
-                    </div>
-
-                    <button class="checkout-btn" @click="openOrderModal">Оформить заказ</button>
-                </div>
-                <div v-else class="empty-cart">
-                    <i class="fas fa-shopping-cart" style="font-size: 50px; margin-bottom: 20px;"></i>
-                    <p>Ваша корзина пуста</p>
-                    <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
-                        товарам</a>
-                </div>
-            </div>
-        </div>
-        <!-- WishList Selector Modal -->
-        <div class="favorites-modal" :class="{ 'active': favoritesOpen }" @touchstart="handleFavoritesTouchStart"
-             @touchmove="handleFavoritesTouchMove" @touchend="handleFavoritesTouchEnd">
-            <div class="favorites-content-wrapper" @click.stop>
-                <div class="favorites-header">
-                    <div class="favorites-header-left">
-                        <h3>Избранные товары</h3>
-                    </div>
-                    <button class="close-icon" @click="closeFavorites">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="favorites-content">
-                    <div v-if="favoriteProducts.length > 0">
-                        <div class="favorites-item" v-for="product in favoriteProducts" :key="product.id">
-                            <img v-if="!isVideo(getCurrentProductImage(product))" :src="product.image"
-                                 :alt="product.name" class="favorites-item-img" loading="lazy" decoding="async">
-                            <video v-else :src="getCurrentProductImage(product)" class="cart-item-img"
-                                   :class="{ 'loading': isImageLoading(product) }" muted loop playsinline autoplay
-                                   @loadstart="onVideoLoadStart($event, product)"
-                                   @loadeddata="onVideoLoadedData($event, product)"
-                                   @error="onVideoError($event, product)"></video>
-                            <div class="favorites-item-details">
-                                <h4 class="favorites-item-title">{{ product.name }}</h4>
-                                <p class="favorites-item-material">{{ product.material }}</p>
-                                <p class="favorites-item-price">{{ product.price }} руб.</p>
-                                <div class="favorites-item-actions">
-                                    <button class="add-to-cart-btn fav-cart-btn"
-                                            @click="addFromFavoritesToCart(product, $event)">
-                                        <i class="fas fa-shopping-cart"></i>
-                                        В корзину
-                                    </button>
-                                    <button class="remove-from-favorites" @click="toggleWishlist(product.id)">
-                                        <i class="fas fa-heart-broken"></i>
-                                        Удалить
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else class="empty-favorites">
-                        <i class="fas fa-heart" style="font-size: 50px; margin-bottom: 20px; color: #ccc;"></i>
-                        <p>У вас пока нет избранных товаров</p>
-                        <template v-if="cartItems.length">
-                            <p>Но есть товары в корзине</p>
-                        </template>
-                        <button v-if="cartItems.length" class="btn btn-primary"
-                                @click="fromWishlistToCart(product.id)">В корзину</button>
-                        <a href="#" class="btn btn-primary" @click="navClick($event, 'products')">Перейти к
-                            товарам</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Option Selector Modal -->
-        <div v-if="showOptionSelector" class="option-selector-modal" @click.self="cancelProductAddToCart">
-            <div class="option-selector-content">
-                <div class="option-selector-header">
-                    <h3>Выберите {{ currentOptionType ? currentOptionType.name : 'опцию' }}</h3>
-                    <button @click="cancelProductAddToCart" class="close-icon">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="option-selector-body">
-                    <div v-if="currentOptionType && selectingHandProduct" class="option-values">
-                        <button v-for="value in currentOptionType.values" :key="value"
-                                @click="chooseOptionValue(selectingHandProduct, value)" class="option-value-btn">
-                            {{ value }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="overlay"
-             :class="{ 'active': cartOpen || favoritesOpen || orderModalOpen || showOptionSelector }"
-             :style="userMenuOpen ? { background: 'none' } : {}"
-             @click="closeAllModals">
-        </div>
-    </div>
-<?php include ROOT_PATH . '/footer.php'; ?>
+<!doctype html>
+<html lang="ru" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="description" content="<?= e($ogDesc) ?>">
+    <meta property="og:description" content="<?= e($ogDesc) ?>">
+    <meta property="og:title" content="<?= e($title) ?>">
+    <meta property="og:url" content="<?= e($ogUrl) ?>">
+    <meta property="og:type" content="product">
+    <meta property="og:image" content="/images/og-default.jpg">
+    <script type="text/javascript" src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js" integrity="sha512-A7AYk1fGKX6S2SsHywmPkrnzTZHrgiVT7GcQkLGDe2ev0aWb8zejytzS8wjo7PGEXKqJOrjQ4oORtnimIRZBtw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="text/javascript" src="https://js.bepaid.by/widget/be_gateway.js"></script>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" integrity="sha512-1cK78a1o+ht2JcaW6g8OXYwqpev9+6GqOkz9xmBN9iUUhIndKtxwILGWYOSibOKjLsEdjyjZvYDq/cZwNeak0w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="<?=NV?>/main/styles/style.css">
+    <link rel="stylesheet" href="style.css">
+    <title><?=$title?></title>
+</head>
+<body>
+    <script id="data" type="application/json">
+    <?= json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+    </script>
+    <div id="app"></div>
+</body>
+<script src="app.bundle.js"></script>
+</html>
