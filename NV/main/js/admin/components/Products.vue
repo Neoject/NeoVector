@@ -563,8 +563,9 @@ export default {
       const s = JSON.parse(localStorage.getItem('admin_column_widths') || '{}')
       const table = document.querySelector('.products-table table')
       if (!table) return
+
       Object.keys(s).forEach(name => {
-        const col = table.querySelector(`th[data-column="${name}"]`)
+        const col = table.querySelector('th[values-column=[' + name + ']')
         if (!col) return
         const w = s[name] + 'px';
         col.style.width = col.style.minWidth = w

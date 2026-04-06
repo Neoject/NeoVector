@@ -156,6 +156,9 @@ export default {
         pickupAddress: '',
         workHours: '',
         storePhone: '',
+        showCart: true,
+        showWishList: true,
+        adminOnly: false,
         deliveryBel: '',
         deliveryRus: '',
       },
@@ -184,6 +187,9 @@ export default {
             this.data.pickupAddress = data.pickup_address;
             this.data.workHours = data.work_hours;
             this.data.storePhone = data.store_phone;
+            this.data.showCart = data.show_cart > 0;
+            this.data.showWishList = data.show_wish_list > 0;
+            this.data.adminOnly = data.admin_only > 0;
             this.data.deliveryBel = data.delivery_bel;
             this.data.deliveryRus = data.delivery_rus;
           }
@@ -203,6 +209,9 @@ export default {
         formData.append('pickup_address', this.data.pickupAddress || '');
         formData.append('work_hours', this.data.workHours || '');
         formData.append('store_phone', this.data.storePhone || '');
+        formData.append('show_cart', this.data.showCart || false);
+        formData.append('show_wish_list', this.data.showWishList || false);
+        formData.append('admin_only', this.data.adminOnly || false);
         formData.append('delivery_bel', this.data.deliveryBel || 0);
         formData.append('delivery_rus', this.data.deliveryRus || 0);
 
@@ -352,7 +361,6 @@ export default {
 <template>
   <main class="admin-main">
     <div class="container">
-
       <!-- ── General params ─────────────────────────── -->
       <section class="params">
         <form class="main-params" @submit.prevent>
@@ -419,7 +427,21 @@ export default {
             <label>Мета-теги изображений товаров</label>
             <textarea v-model="data.imageMetaTags"></textarea>
           </div>
-
+          <h2>Параметры шапки сайта</h2>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" v-model="data.showCart">
+              Отображать корзину
+            </label>
+            <label>
+              <input type="checkbox" v-model="data.showWishList">
+              Отображать избранное
+            </label>
+            <label>
+              <input type="checkbox" v-model="data.adminOnly">
+              Вход только для администраторов
+            </label>
+          </div>
           <h2>Информация о самовывозе</h2>
           <div class="form-group">
             <label>Адрес магазина</label>
@@ -433,7 +455,6 @@ export default {
             <label>Телефон</label>
             <input type="text" v-model="data.storePhone" placeholder="+375123456789">
           </div>
-
           <h2>Стоимость доставки</h2>
           <div class="form-group">
             <label>Белоруссия</label>
@@ -443,13 +464,11 @@ export default {
             <label>Россия</label>
             <input type="text" v-model="data.deliveryRus">
           </div>
-
           <div style="display: flex; justify-content: flex-end">
             <span class="btn btn-primary" @click="saveParams">Сохранить</span>
           </div>
         </form>
       </section>
-
       <!-- ── Color settings ─────────────────────────── -->
       <section class="params color-settings" v-if="colorsLoaded">
         <div class="color-settings__header">
@@ -662,6 +681,15 @@ export default {
   font-family: monospace;
   font-size: .7rem;
   overflow: hidden;
+}
+
+.form-group > label {
+  display: flex;
+  cursor: pointer;
+}
+
+label input[type=checkbox] {
+  margin-right: 12px;
 }
 
 /* ── Extra button variants ─────────────────────────────── */
