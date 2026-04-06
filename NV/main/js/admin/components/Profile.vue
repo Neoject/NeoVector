@@ -14,55 +14,6 @@ export default {
     }
   },
   methods: {
-    openLogin() {
-      //todo
-    },
-    closeLogin() {
-      //todo
-    },
-    doLogin() {
-      //todo
-    },
-    async register() {
-      this.loginError = '';
-      this.registerError = '';
-      this.registerSuccess = '';
-      try {
-        const u = (this.registerData.username || '').trim();
-        const p = (this.registerData.password || '').trim();
-        if (u === '' || p === '') {
-          throw new Error('Введите логин и пароль');
-        }
-        if (u.length > 50) {
-          throw new Error('Слишком длинное имя пользователя');
-        }
-        this.registerLoading = true;
-        const formData = new FormData();
-
-        formData.append('action', 'register');
-        formData.append('username', u);
-        formData.append('password', p);
-        formData.append('role', this.registerData.role || 'user');
-
-        const response = await fetch('../api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Ошибка регистрации');
-        }
-
-        this.registerData = { username: '', password: '', role: 'user' };
-        this.registerSuccess = 'Пользователь создан успешно';
-
-        setTimeout(() => {
-          this.showAddUser = false;
-          this.registerSuccess = '';
-        }, 800);
-      } catch (error) {
-        this.registerError = error.message || 'Ошибка регистрации';
-      }
-      this.registerLoading = false;
-    },
     openProfileModal() {
       this.showProfileModal = true;
       this.profileError = '';

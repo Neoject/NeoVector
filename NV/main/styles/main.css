@@ -102,16 +102,14 @@ input[type=checkbox]:checked {
 }
 
 input[type=checkbox]:checked::after {
-    content: '';
+    content: '✔';
+    font-size: 24px;
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%) rotate(45deg);
-    width: 5px;
-    height: 10px;
     border: solid var(--background-secondary);
     border-width: 0 2px 2px 0;
     transition: all 0.2s ease;
+    top: -6px;
+    left: 4px;
 }
 
 input[type=checkbox]:checked:hover {
@@ -1641,25 +1639,6 @@ footer {
     justify-content: center;
 }
 
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    -webkit-transition: all 0.3s ease;
-    transition: all 0.3s ease;
-}
-
-.overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
 @media (max-width: 992px) {
     h1 {
         font-size: 36px;
@@ -2807,9 +2786,9 @@ textarea.form-control {
 
 .user-menu-popup {
     position: fixed;
-    top: 87px;
-    right: 495px;
-    left: auto;
+    top: 0;
+    left: 0;
+    right: auto;
     background: var(--background-secondary);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

@@ -1,10 +1,10 @@
 <script>
-import Modal from './Modal.vue'
 import { formatDate, isMobileDevice } from './service'
+import Modal from "../../components/Modal.vue";
 
 export default {
   name: 'Pages',
-  components: { Modal },
+  components: {Modal},
   emits: ['update:page'],
   data() {
     return {

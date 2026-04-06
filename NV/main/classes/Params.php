@@ -106,6 +106,9 @@ class Params
             'pickup_address' => trim((string) ($data['pickup_address'] ?? '')),
             'work_hours' => trim((string) ($data['work_hours'] ?? '')),
             'store_phone' => trim((string) ($data['store_phone'] ?? '')),
+            'show_cart' => $data['show_cart'] === 'true',
+            'show_wish_list' => $data['show_wish_list'] === 'true',
+            'admin_only' => $data['admin_only'] === 'true',
             'delivery_bel' => Service::formatNumber(trim((string) ($data['delivery_bel'] ?? ''))),
             'delivery_rus' => Service::formatNumber(trim((string) ($data['delivery_rus'] ?? ''))),
         ];

@@ -1,10 +1,10 @@
 <script>
 import {formatDate} from "./service";
-import Modal from "./Modal.vue";
+import Modal from "../../components/Modal.vue";
 
 export default {
   name: "Users",
-  components: { Modal },
+  components: {Modal},
   data() {
     return {
       users: [],

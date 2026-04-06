@@ -250,7 +250,7 @@ export default {
       Object.entries(saved).forEach(([columnName, width]) => {
         if (!columnName.startsWith(prefix)) return;
 
-        const column = table.querySelector(`th[data-column="${columnName}"]`);
+        const column = table.querySelector(`th[values-column="${columnName}"]`);
         if (!column) return;
 
         const w = width + 'px';

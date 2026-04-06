@@ -1,5 +1,6 @@
 <script>
-import Modal from "./Modal.vue";
+
+import Modal from "../../components/Modal.vue";
 
 export default {
   name: "Product",
@@ -37,8 +38,6 @@ export default {
       :modal-id="'product-' + id"
       :title="editingProduct ? 'Редактировать товар' : 'Добавить товар'"
   />
-
-
   <form @submit.prevent="saveProduct">
     <div class="form-group">
       <label>Название товара</label>

@@ -1,5 +1,5 @@
 <script>
-import { registerMinimized, unregisterMinimized } from './modalRegistry.js'
+import { registerMinimized, unregisterMinimized } from '../admin/components/modalRegistry'
 
 const RESIZE_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 const PAD = 2;
@@ -34,6 +34,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    showControls: {
+      type: Boolean,
+      default: true
+    }
   },
   emits: ['update:modelValue', 'close'],
   data() {
@@ -140,7 +144,7 @@ export default {
       this.state = 'normal';
     },
     bringToFront() {
-      document.querySelectorAll('.modal[data-modal-id]').forEach(m => { m.style.zIndex = '1000'; });
+      document.querySelectorAll('.modal[values-modal-id]').forEach(m => { m.style.zIndex = '1000'; });
       const el = this._el();
       if (el) el.style.zIndex = '1001';
     },
@@ -378,15 +382,10 @@ export default {
         <!-- Header (title + drag area) -->
         <div class="modal-header" @mousedown="startDrag">
           <div class="modal-title">
-            <slot name="icon">
-              <span class="modal-title-icon">
-                <i class="fas fa-window-maximize"></i>
-              </span>
-            </slot>
             <h3>{{ title }}</h3>
           </div>
           <!-- Toolbar (controls) -->
-          <div class="modal-toolbar">
+          <div v-if="showControls" class="modal-toolbar">
             <div class="control-btns">
               <button
                   class="ctrl-btn btn-minimize"
