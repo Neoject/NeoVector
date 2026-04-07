@@ -18,8 +18,8 @@ class API
         self::setupSession();
 
         Config::load();
-
         Mail::createTable();
+        PageBlock::createTable();
 
         $dir = 'logs';
 
