@@ -1,14 +1,8 @@
 <?php
 
-use NeoVector\API;
-use NeoVector\ApiController;
-use NeoVector\Database;
-use NeoVector\Log;
 use NeoVector\PageBlock;
 use NeoVector\Params;
-use NeoVector\Router;
 use NeoVector\Service;
-use NeoVector\VisitTracker;
 
 require_once __DIR__ . '/config.php';
 
@@ -16,6 +10,7 @@ global $_DESCRIPTION;
 
 $title = Params::getTitle();
 Service::setTitle($title);
+PageBlock::createTable();
 
 //todo
 $heroImage = PageBlock::getHeroImage();

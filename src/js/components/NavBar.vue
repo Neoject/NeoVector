@@ -202,7 +202,7 @@ export default {
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
           <i class="fas fa-bars"></i>
         </button>
-        <a class="logo" href="../">
+        <a class="logo" href="../../../NV/main/js">
           <img :src="values.logo" alt="" style="max-height:64px;max-width:100%" />
         </a>
         <div class="mobile-cart-icon" @click="onToggleCart">
