@@ -34,15 +34,14 @@ const COLOR_GROUPS = [
   {
     label: 'Текст',
     vars: [
-      { key: '--text-primary', label: 'Основной текст' },
-      { key: '--text-secondary', label: 'Вторичный текст' },
-      { key: '--text-additional', label: 'Дополнительный текст' },
+      { key: '--text-primary', label: 'Текст (осн.)' },
+      { key: '--text-secondary', label: 'Текст (втор.)' },
+      { key: '--text-additional', label: 'Текст (доп.)' },
+      { key: '--text-dark', label: 'Текст (темн.)' },
+      { key: '--text-simple', label: 'Текст (упр.)' },
       { key: '--text-additional-light', label: 'Доп. текст (светлый)' },
       { key: '--text-additional-dark', label: 'Доп. текст (тёмный)' },
-      { key: '--text-dark', label: 'Тёмный текст' },
       { key: '--text-btn', label: 'Текст кнопок' },
-      { key: '--text-black', label: 'Чёрный текст' },
-      { key: '--text-simple', label: 'Простой текст' },
       { key: '--text-hover', label: 'Текст при наведении' },
     ]
   },
@@ -84,6 +83,14 @@ const COLOR_GROUPS = [
       { key: '--border-light', label: 'Рамка (легк.))' },
       { key: '--border-medium', label: 'Рамка (сред.)' },
       { key: '--border-strong', label: 'Рамка (сильн.)' },
+    ]
+  },
+  {
+    label: 'Кнопки',
+    vars: [
+      { key: '--btn-bg', label: 'Фон кнопок' },
+      { key: '--btn-bg-secondary', label: 'Фон кнопок (доп.)' },
+      { key: '--btn-bg-alt', label: 'Фон кнопок (альт.)' },
     ]
   },
   {

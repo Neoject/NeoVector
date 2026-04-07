@@ -81,7 +81,7 @@ $credits = [
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" href="<?=NV?>/../favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="<?=NV?>/main/styles/admin.css">
+    <link rel="stylesheet" href="<?=NV?>/main/styles/core.css">
     <link rel="stylesheet" href="<?=NV?>/admin/style.css">
     <title>Админ панель - <?= Params::getTitle() ?></title>
 </head>

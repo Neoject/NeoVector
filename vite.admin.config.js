@@ -16,7 +16,7 @@ module.exports = defineConfig({
         entryFileNames: 'admin.bundle.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'style.css'
+            return 'admin.css'
           }
           return '[name].[ext]'
         },

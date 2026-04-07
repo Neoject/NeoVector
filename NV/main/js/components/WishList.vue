@@ -156,4 +156,71 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.favorites-modal {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: -5px 0 20px var(--shadow-primary);
+  transition: right 0.4s ease;
+  z-index: 2000;
+  overflow-y: auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+}
+.favorites-modal.active {
+  right: 0;
+}
+.favorites-content-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.favorites-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+}
+.favorites-header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.favorites-header h3 {
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 600;
+}
+.favorites-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.favorites-content::-webkit-scrollbar {
+  width: 6px;
+}
+.favorites-content::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 3px;
+}
+.favorites-content::-webkit-scrollbar-thumb {
+  background: var(--background-additional);
+  border-radius: 3px;
+}
+.favorites-content::-webkit-scrollbar-thumb:hover {
+  background: var(--background-secondary);
+}
+.empty-favorites {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-secondary);
+}
+</style>

@@ -25,8 +25,8 @@ NV.ready(() => {
                 storePhone: '',
                 deliveryBel: '',
                 deliveryRus: '',
-                wishlist: [],
-                cartItems: [],
+                // wishlist: [],
+                // cartItems: [],
                 headerNavigation: {
                     main: [],
                     other: []
@@ -563,115 +563,16 @@ NV.ready(() => {
         }
     }
 
-    const Cart = {
-        template: `
-        
-        `,
-        data() {
-            return {
-
-            }
-        },
-        methods: {
-
-        }
-    }
-
     const Login = {
         mixins: [Data, Props],
         components: {
             modal: Modal
         },
         template: `
-          <modal
-              :is-open="showLogin"
-              :window-title="'Вход'"
-              :allow-close="true"
-              :show-header="true"
-          >
-            <div class="form-group">
-              <label>Логин</label>
-              <input v-model.trim="loginData.username" type="text" placeholder="Введите логин">
-            </div>
-            <div class="form-group">
-              <label>Пароль</label>
-              <input v-model="loginData.password" type="password" placeholder="Введите пароль">
-            </div>
-            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-              <input id="remember-me" v-model="loginData.remember" type="checkbox" style="width:auto;">
-              <label for="remember-me" style="margin:0;">Запомнить меня</label>
-            </div>
-            <p v-if="loginError" class="error-message">{{ loginError }}</p>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-              <button class="btn btn-outline" @click="closeLogin">Отмена</button>
-              <button class="btn btn-primary" :disabled="loginLoading" @click="doLogin">
-                {{ loginLoading ? 'Входим...' : 'Войти' }}
-              </button>
-            </div>
-            <p style="margin-top:14px;">
-              Нет аккаунта?
-              <a href="#" @click.prevent="goToRegister">Зарегистрироваться</a>
-            </p>
-          </modal>
+          
         `,
-        data() {
-            return {
-                showLogin: false,
-                loginData: {
-                    username: '',
-                    password: '',
-                    remember: false
-                },
-                loginLoading: false,
-                loginError: '',
-            }
-        },
-        methods: {
-            async doLogin() {
-                this.loginError = '';
-                this.loginLoading = true;
-                try {
-                    const result = await NV.login(
-                        this.loginData.username,
-                        this.loginData.password,
-                        this.loginData.remember
-                    );
 
-                    if (result.success) {
-                        this.auth = await NV.checkUserAuth();
 
-                        if (this.loginData.remember) {
-                            localStorage.setItem('remember_username', this.loginData.username);
-                        } else {
-                            localStorage.removeItem('remember_username');
-                        }
-                        this.closeLogin();
-                    } else {
-                        this.loginError = result.error || 'Ошибка входа';
-                    }
-                } catch (err) {
-                    this.loginError = err.message || 'Ошибка входа';
-                }
-
-                this.loginLoading = false;
-                window.location.reload();
-            },
-            openLogin() {
-                this.loginError = '';
-                this.$root.$refs.authRegister?.closeRegister?.();
-                this.showLogin = true;
-                this.userMenuOpen = false;
-                this.closeMobileMenu();
-            },
-            goToRegister() {
-                this.$root.$refs.authRegister?.openRegister?.();
-            },
-            closeLogin() {
-                this.showLogin = false;
-                this.loginData = { username: '', password: '', remember: false };
-                this.loginError = '';
-            },
-        }
     }
 
     const Register = {
@@ -680,115 +581,15 @@ NV.ready(() => {
             modal: Modal
         },
         template: `
-            <modal
-                :is-open="showRegister"
-                :window-title="'Регистрация'"
-                :allow-close="true"
-                :show-header="true"
-            >
-              <div class="form-group">
-                <label>Логин</label>
-                <input v-model.trim="registerData.username" type="text" placeholder="Придумайте логин">
-              </div>
-              <div class="form-group">
-                <label>Пароль</label>
-                <input v-model="registerData.password" type="password" placeholder="Минимум 6 символов">
-              </div>
-              <div class="form-group">
-                <label>Подтвердите пароль</label>
-                <input v-model="registerData.confirmPassword" type="password" placeholder="Повторите пароль">
-              </div>
-              <p v-if="registerError" class="error-message">{{ registerError }}</p>
-              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                <button class="btn btn-outline" @click="closeRegister">Отмена</button>
-                <button class="btn btn-primary" :disabled="registerLoading" @click="doRegister">
-                  {{ registerLoading ? 'Регистрируем...' : 'Зарегистрироваться' }}
-                </button>
-              </div>
-              <p style="margin-top:14px;">
-                Уже есть аккаунт?
-                <a href="#" @click.prevent="goToLogin">Войти</a>
-              </p>
-            </modal>
+            
         `,
         data() {
             return {
-                showRegister: false,
-                registerData: {
-                    username: '',
-                    password: '',
-                    confirmPassword: ''
-                },
-                registerLoading: false,
-                registerError: '',
+
             }
         },
         methods: {
-            openRegister() {
-                this.registerError = '';
-                this.$root.$refs.authLogin?.closeLogin?.();
-                this.showRegister = true;
-                this.userMenuOpen = false;
-                this.closeMobileMenu();
-            },
-            goToLogin() {
-                this.$root.$refs.authLogin?.openLogin?.();
-            },
-            closeRegister() {
-                this.showRegister = false;
-                this.registerData = { username: '', password: '', confirmPassword: '' };
-                this.registerError = '';
-            },
-            async doRegister() {
-                this.registerError = '';
 
-                const username = (this.registerData.username || '').trim();
-                const password = this.registerData.password || '';
-                const confirmPassword = this.registerData.confirmPassword || '';
-
-                if (!username || !password) {
-                    this.registerError = 'Введите логин и пароль';
-                    return;
-                }
-                if (password.length < 6) {
-                    this.registerError = 'Пароль должен быть не короче 6 символов';
-                    return;
-                }
-                if (password !== confirmPassword) {
-                    this.registerError = 'Пароли не совпадают';
-                    return;
-                }
-
-                this.registerLoading = true;
-                try {
-                    const result = await NV.register(username, password, 'user');
-
-                    if (!result.success) {
-                        this.registerError = result.error || 'Ошибка регистрации';
-                        return;
-                    }
-
-                    const loginResult = await NV.login(username, password, false);
-                    if (loginResult.success) {
-                        this.auth = await NV.checkUserAuth();
-                        this.closeRegister();
-                    } else {
-                        this.closeRegister();
-                        const loginRef = this.$root.$refs.authLogin;
-
-                        if (loginRef) {
-                            loginRef.loginData.username = username;
-                            loginRef.loginError = 'Регистрация успешна. Войдите в аккаунт.';
-                            loginRef.openLogin();
-                        }
-                    }
-                } catch (err) {
-                    this.registerError = err.message || 'Ошибка регистрации';
-                } finally {
-                    this.registerLoading = false;
-                    window.location.reload();
-                }
-            },
         }
     }
 

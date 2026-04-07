@@ -120,7 +120,7 @@ export default {
 </script>
 
 <template>
-  <header class="header scrolled">
+  <header>
     <div class="admin-header container">
       <div class="admin-header-content">
         <div class="admin-header-left">

@@ -31,7 +31,7 @@ NV.ready(() => {
             return {
                 blockComponents: components,
                 isScrolled: false,
-                cartOpen: false,
+                // cartOpen: false,
                 favoritesOpen: false,
                 buyNowPressed: false,
                 addToCartPressed: false,
@@ -1266,16 +1266,16 @@ NV.ready(() => {
                     this.toggleCart();
                 }, 200);
             },
-            getCartItemsCount() {
+            /*getCartItemsCount() {
                 let count = 0;
                 for (let p in this.cartItems) {
                     count += this.cartItems[p].quantity;
                 }
                 return count;
-            },
-            getWishlistCount() {
+            },*/
+            /*getWishlistCount() {
                 return this.wishlist.length;
-            },
+            },*/
             fromWishlistToCart(productId, event) {
                 const product = this.products.find(p => p.id == productId);
                 if (product) {
