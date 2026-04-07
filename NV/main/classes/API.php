@@ -20,6 +20,10 @@ class API
         Config::load();
         Mail::createTable();
         PageBlock::createTable();
+        API::init();
+        Database::getInstance();
+        Router::start();
+        VisitTracker::track();
 
         $dir = 'logs';
 
