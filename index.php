@@ -54,7 +54,6 @@ function e(string $s = ''): string
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" integrity="sha512-1cK78a1o+ht2JcaW6g8OXYwqpev9+6GqOkz9xmBN9iUUhIndKtxwILGWYOSibOKjLsEdjyjZvYDq/cZwNeak0w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <link rel="stylesheet" href="<?=NV?>/main/styles/style.css">
     <link rel="stylesheet" href="style.css">
     <title><?=$title?></title>
 </head>
@@ -63,6 +62,10 @@ function e(string $s = ''): string
     <?= json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>
     <div id="app"></div>
+    <div class="neoject">
+        Сайт разработан
+         <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
+    </div>
 </body>
 <script src="app.bundle.js"></script>
 </html>

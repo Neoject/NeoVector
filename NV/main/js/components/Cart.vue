@@ -156,4 +156,110 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.cart-modal {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: -5px 0 20px var(--shadow-primary);
+  transition: right 0.4s ease;
+  z-index: 2000;
+  padding: 20px;
+  overflow-y: auto;
+}
+.cart-modal.active {
+  right: 0;
+}
+.cart-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+}
+.cart-item {
+  display: flex;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+.cart-item-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 15px;
+  image-rendering: high-quality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+.cart-item-details {
+  flex: 1;
+}
+.cart-item-title {
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+.cart-item-price {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+.cart-item-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+.cart-item-title-content {
+  display: flex;
+  flex-direction: row;
+}
+.cart-item-title-content h5 {
+  width: -webkit-fill-available;
+}
+.cart-item-title-content i {
+  margin-left: auto;
+}
+.cart-item-title-content span {
+  cursor: pointer;
+}
+.checkout-btn {
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  color: var(--text-dark);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+.checkout-btn:hover {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+.empty-cart {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-secondary);
+}
+</style>

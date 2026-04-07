@@ -1,5 +1,6 @@
 <script>
 import NavBar from "./components/NavBar.vue";
+import Hero from "./components/Hero.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {computed} from "vue";
 
@@ -22,10 +23,33 @@ export default {
     await this.refreshAuth();
   },
   data() {
+    const allComponents = {
+      hero: Hero,
+    };
+
+    const blockComponents = Object.fromEntries(
+        Object.entries(allComponents).filter(([, component]) => !!component)
+    );
+
     return {
       active: false,
       values: { },
-      auth: getAuth()
+      auth: getAuth(),
+      blockComponents
+    }
+  },
+  computed: {
+    filteredBlocks() {
+      const blocks = this.values?.sortedPageBlocks ?? this.values?.pageBlocks ?? [];
+
+      if (!Array.isArray(blocks)) {
+        return [];
+      }
+
+      return blocks.filter(Boolean);
+    },
+    pageSections() {
+      return this.filteredBlocks.filter(block => !["info_buttons", "footer"].includes(block.type));
     }
   },
   provide() {
@@ -51,6 +75,11 @@ export default {
     },
     onLogout() {
       this.auth = { authenticated: false, role: null, username: null };
+    },
+    getBlockProps(block) {
+      return {
+        block
+      };
     }
   }
 }
@@ -64,6 +93,13 @@ export default {
       @logout="onLogout"
       @overlay="show"
   />
+  <component
+      v-for="(block, blockIndex) in pageSections"
+      :key="block?.id ?? 'block-' + blockIndex"
+      :is="blockComponents[block.type]"
+      v-bind="getBlockProps(block)"
+  ></component>
+
   <div class="overlay" :class="{ active: active }" @click="close"></div>
 </template>
 
@@ -81,7 +117,6 @@ export default {
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
 }
-
 .overlay.active {
   opacity: 1;
   visibility: visible;

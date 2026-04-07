@@ -2,19 +2,17 @@
 
 namespace NeoVector;
 
-use mysqli;
-
 class PageBlock
 {
-    public function __construct(mysqli $db)
+    public function __construct()
     {
-        $this->createTable();
+        self::createTable();
     }
 
     /**
      * @return void
      */
-    private static function createTable(): void
+    public static function createTable(): void
     {
         $sql = "CREATE TABLE IF NOT EXISTS `page_blocks` (
             `id` int(255) NOT NULL AUTO_INCREMENT,

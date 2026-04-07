@@ -195,7 +195,7 @@ export default {
 </script>
 
 <template>
-  <header ref="navBarHeader" class="scrolled">
+  <header ref="navBarHeader">
     <div class="container nav-container">
       <!-- Левая часть -->
       <div class="nav-left">
@@ -307,5 +307,162 @@ export default {
 </template>
 
 <style scoped>
-
+header .nav-container {
+  flex-direction: row;
+  gap: 20vw;
+}
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: visible;
+  z-index: 2001;
+}
+.user-menu:hover {
+  background: var(--background-secondary);
+  border-color: var(--border-medium);
+}
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--background-additional);
+  border: var(--border-medium);
+  color: var(--header-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.user-name {
+  color: var(--header-secondary);
+  font-weight: 500;
+  font-size: 14px;
+}
+.user-menu i.fa-chevron-down {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+.user-menu i.fa-chevron-down.rotated {
+  transform: rotate(180deg);
+}
+.user-menu-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  background: var(--background-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  min-width: 250px;
+  z-index: 2000;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: auto;
+  filter: none !important;
+  -webkit-filter: none !important;
+  isolation: isolate;
+  transform: none;
+  color: var(--header-secondary);
+}
+.user-menu-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--background-additional);
+  border: var(--border-light);
+  color: var(--header-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.user-details {
+  flex: 1;
+}
+.user-name-large {
+  color: var(--header-secondary);
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.user-role {
+  color: var(--text-additional);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.user-menu-items {
+  padding: 8px 0;
+}
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  place-content: unset !important;
+  gap: 12px;
+  padding: 12px 20px;
+  color: var(--header-secondary);
+  text-decoration: none;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.user-menu-item:hover {
+  background: var(--background-secondary);
+  color: var(--header-secondary);
+}
+.user-menu-item i {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+.user-menu-item.admin-item {
+  color: var(--header-secondary);
+}
+.user-menu-item.admin-item:hover {
+  background: var(--background-secondary);
+  color: var(--header-secondary);
+}
+.user-menu-item.logout-item {
+  color: var(--header-secondary);
+}
+.user-menu-item.logout-item:hover {
+  background: var(--background-secondary);
+  color: var(--header-secondary);
+}
+.user-menu-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 0;
+  color: var(--header-secondary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+}
+.user-menu-mobile:hover {
+  color: var(--header-secondary);
+}
 </style>

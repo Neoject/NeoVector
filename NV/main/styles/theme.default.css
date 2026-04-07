@@ -32,7 +32,6 @@
     --text-additional-dark: #352a53;
     --text-dark: #433a3a;
     --text-btn: #5e4949;
-    --text-black: #000000;
     --text-simple: #322323;
     --text-hover: #151515;
     /* успех/ок */
@@ -59,6 +58,10 @@
     --border-light: rgba(255, 255, 255, 0.2);
     --border-medium: rgb(99, 112, 124, 0.5);
     --border-strong: rgb(61, 82, 94);
+    /* buttons */
+    --btn-bg: #ffffff;
+    --btn-bg-secondary: #ffffff;
+    --btn-bg-alt: #ffffff;
     /* hover */
     --hover-primary: #39454c;
     --hover-secondary: rgba(57, 80, 80, 0.56);
