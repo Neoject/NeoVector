@@ -8,7 +8,6 @@ const MIN_H = 180;
 
 export default {
   name: 'Modal',
-
   props: {
     modelValue: {
       type: Boolean,

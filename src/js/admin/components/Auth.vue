@@ -41,7 +41,7 @@ export default {
         </template>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Войти</button>
-      <a class="btn btn-secondary" href="../.." style="margin-left:10px;">На главную</a>
+      <a class="btn btn-secondary" href="../../../../NV/main/js" style="margin-left:10px;">На главную</a>
     </div>
     </form>
   </div>

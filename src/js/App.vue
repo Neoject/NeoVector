@@ -1,13 +1,13 @@
 <script>
 import NavBar from "./components/NavBar.vue";
-import Hero from "./components/Hero.vue";
+import Hero from "./blocks/Hero.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {computed} from "vue";
 
 export default {
   name: "App",
   components: {NavBar},
-  async mounted() {
+  mounted() {
     const el = document.getElementById('data');
 
     if (el) {
@@ -20,7 +20,11 @@ export default {
       el.remove();
     }
 
-    await this.refreshAuth();
+    this.refreshAuth();
+    this.loadBlocks().then(() => {
+      this.updateBlocks();
+    });
+    this.loadContent();
   },
   data() {
     const allComponents = {
@@ -35,7 +39,14 @@ export default {
       active: false,
       values: { },
       auth: getAuth(),
-      blockComponents
+      blockComponents,
+      pageBlocks: [],
+      pageBlocksSorted: [],
+      content: {
+        features: [],
+        history: []
+      },
+      features: [],
     }
   },
   computed: {
@@ -80,6 +91,73 @@ export default {
       return {
         block
       };
+    },
+    async loadBlocks() {
+      try {
+        const response = await fetch('api.php?action=page_blocks', { credentials: 'same-origin' });
+
+        if (response.ok) {
+          this.pageBlocks = await response.json();
+          this.updateBlocks();
+        } else {
+          this.pageBlocks = [];
+        }
+      } catch (e) {
+        console.error('blocks error', e);
+      }
+    },
+    updateBlocks() {
+      if (!Array.isArray(this.pageBlocks)) {
+        this.pageBlocksSorted = [];
+        return;
+      }
+
+      const active = this.pageBlocks.filter(b => b.is_active);
+      const byOrder = (a, b) => (a.sort_order || 0) - (b.sort_order || 0);
+      const footerBlock = active.filter(b => ['info_buttons', 'footer'].includes(b.type)).sort(byOrder);
+      const rest = active.filter(b => !['info_buttons', 'footer'].includes(b.type)).sort(byOrder);
+
+      this.pageBlocksSorted = [...rest, ...footerBlock];
+    },
+    async loadContent() {
+      try {
+        const response =await fetch('api.php?action=home_content', { credentials: 'same-origin'});
+
+        if (response.ok) {
+          const content = await response.json();
+
+          this.content.features = content
+              .filter(item => item.section === 'features')
+              .map(item => ({
+                icon: '',
+                title: item.title,
+                description: item.content
+              }));
+
+          this.content.history = content
+              .filter(item => item.section === 'history')
+              .map(item => {
+                const parts = item.content.split('\n');
+                return {
+                  year: item.title,
+                  title: parts[0] || '',
+                  description: parts.slice(1).join('\n') || item.content
+                };
+              });
+
+          if (this.content.features.length === 0) {
+            this.content.features = this.features;
+          }
+
+          if (this.content.history.length === 0) {
+            this.content.history = [];
+          }
+
+          this.features = this.content.features;
+        }
+      } catch (e) {
+        console.error('content error ', e);
+      }
     }
   }
 }

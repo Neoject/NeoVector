@@ -11,7 +11,7 @@ module.exports = defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
-      input: './NV/main/js/admin/index.js',
+      input: './src/admin/index.js',
       output: {
         entryFileNames: 'admin.bundle.js',
         assetFileNames: (assetInfo) => {

@@ -141,6 +141,7 @@ class PageBlock
      */
     public static function getHeroImage(): string
     {
+        self::createTable();
         $stmt = Database::db()->prepare("SELECT settings FROM page_blocks WHERE type = 'hero' AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
         $stmt->execute();
         $result = $stmt->get_result();
