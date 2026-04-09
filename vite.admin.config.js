@@ -11,7 +11,7 @@ module.exports = defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
-      input: './src/admin/index.js',
+      input: './client/admin/index.js',
       output: {
         entryFileNames: 'admin.bundle.js',
         assetFileNames: (assetInfo) => {
