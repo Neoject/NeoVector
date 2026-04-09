@@ -11,7 +11,7 @@ module.exports = defineConfig({
         emptyOutDir: true,
         sourcemap: false,
         rollupOptions: {
-            input: './src/index.js',
+            input: './client/index.js',
             output: {
                 entryFileNames: 'app.bundle.js',
                 assetFileNames: (assetInfo) => {
@@ -20,6 +20,20 @@ module.exports = defineConfig({
                     }
                     return '[name].[ext]'
                 },
+            },
+        },
+    },
+    server: {
+        port: 5173,
+        proxy: {
+            '/api': {
+                target: 'http://127.0.0.1:3000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/assets': {
+                target: 'http://127.0.0.1:3000',
+                changeOrigin: true,
             },
         },
     },
