@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import fs from 'fs';
 import path from 'path';
 import { env } from './config/env';
 import { UserModel } from './models/User';
@@ -14,9 +15,32 @@ import { ParamsModel } from './models/Params';
 import router from './routes';
 
 const app = express();
+const ROOT_CANDIDATES = [
+    process.cwd(),
+    path.resolve(__dirname, '..', '..'),
+    path.resolve(__dirname, '..'),
+];
+
+const PROJECT_ROOT = ROOT_CANDIDATES.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'package.json'))
+) ?? process.cwd();
+
+const DIST = path.join(PROJECT_ROOT, 'dist');
+const INDEX_CANDIDATES = [
+    path.join(DIST, 'index.html'),
+    path.join(PROJECT_ROOT, 'index.html'),
+];
+
+const SPA_INDEX_FILE = INDEX_CANDIDATES.find((candidate) => fs.existsSync(candidate));
 
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
+        },
+    },
 }));
 
 /*app.use(cors({
@@ -40,13 +64,22 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
-app.use(express.static(path.join(process.cwd(), '')));
+app.use('/assets', express.static(path.join(PROJECT_ROOT, 'assets')));
+app.use('/client', express.static(path.join(PROJECT_ROOT, 'client')));
+app.use(express.static(DIST));
 app.use(VisitTracker.middleware);
 app.use('/api', router);
 
 app.get('/{*path}', (_req, res) => {
-    res.sendFile(path.join(process.cwd(), '', 'index.html'));
+    if (SPA_INDEX_FILE) {
+        res.sendFile(SPA_INDEX_FILE);
+        return;
+    }
+
+    res.status(503).json({
+        error: 'Frontend bundle is missing',
+        message: 'Build frontend first: npm run build:client',
+    });
 });
 
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -76,4 +109,4 @@ async function start() {
     }
 }
 
-start();
+start().then(() => null);

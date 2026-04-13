@@ -7,3 +7,5 @@
 /robots.txt
 /qodana.yaml
 /NV/main/styles/theme.css
+/dist/
+/node_modules/

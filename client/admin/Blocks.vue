@@ -758,8 +758,8 @@ export default {
 }
 
 .block-type {
-  background: var(--primary);
-  color: var(--text-dark);
+  background: var(--btn-bg);
+  color: var(--text-secondary);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;

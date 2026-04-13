@@ -119,6 +119,53 @@ export default {
 .login-form input::placeholder {
   color: var(--text-secondary);
 }
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  padding: 20px;
+}
+.login-form {
+  background: var(--background-secondary);
+  backdrop-filter: blur(10px);
+  -webkit-border-radius: 15px;
+  border-radius: 15px;
+  padding: 40px;
+  border: 1px solid var(--border-light);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+.login-form h2 {
+  color: var(--primary);
+  margin-bottom: 30px;
+  font-size: 28px;
+}
+.login-form .form-group {
+  margin-bottom: 20px;
+}
+.login-form input {
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 16px;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+.login-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--background-secondary);
+  box-shadow: 0 0 0 2px var(--border-light);
+}
+.login-form input::placeholder {
+  color: var(--text-secondary);
+}
 .error-message {
   color: var(--error-red-alt);
   margin-top: 15px;

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 export const env = {
@@ -23,3 +24,5 @@ export const env = {
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
     cleanupSecretKey: process.env.CLEANUP_SECRET_KEY || '',
 };
+
+console.log(env);

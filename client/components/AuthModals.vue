@@ -190,3 +190,11 @@ export default {
     </p>
   </Modal>
 </template>
+
+<style>
+.error-message {
+  color: var(--error-red-alt);
+  margin-top: 15px;
+  font-size: 14px;
+}
+</style>
