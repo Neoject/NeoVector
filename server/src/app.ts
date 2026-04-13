@@ -39,6 +39,7 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
+            imgSrc: ["'self'", "data:", "blob:"],
         },
     },
 }));
@@ -68,6 +69,9 @@ app.use('/assets', express.static(path.join(PROJECT_ROOT, 'assets')));
 app.use('/client', express.static(path.join(PROJECT_ROOT, 'client')));
 app.use(express.static(DIST));
 app.use(VisitTracker.middleware);
+app.get('/api/health', (_req, res) => {
+    res.json({ ok: true });
+});
 app.use('/api', router);
 
 app.get('/{*path}', (_req, res) => {

@@ -72,15 +72,33 @@ export class SettingsController {
     }
 
     static async deleteLogo(req: Request, res: Response): Promise<void> {
-        const logoPath = await ParamsModel.get('logo');
-        if (logoPath) {
-            const fullPath = path.join(process.cwd(), logoPath);
-            if (fs.existsSync(fullPath)) {
-                fs.unlinkSync(fullPath);
+        try {
+            const logoPath = await ParamsModel.get('logo');
+
+            if (logoPath) {
+                const fullPath = path.join(process.cwd(), logoPath);
+                const _path = path.normalize(fullPath);
+
+                if (!_path.startsWith(process.cwd())) {
+                    console.error('Security: attempted path traversal');
+                    res.status(400).json({ success: false, error: 'Invalid path' });
+                    return;
+                }
+
+                await fs.promises.unlink(fullPath).catch((err) => {
+                    if (err.code !== 'ENOENT') {
+                        console.error('Error deleting file:', err);
+                    }
+                });
+
+                await ParamsModel.delete('logo');
             }
-            await ParamsModel.delete('logo');
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Error in deleteLogo:', error);
+            res.status(500).json({ success: false, error: 'Internal server error' });
         }
-        res.json({ success: true });
     }
 
     static async uploadBackground(req: Request, res: Response): Promise<void> {

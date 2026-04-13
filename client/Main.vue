@@ -2,16 +2,13 @@
 import NavBar from "./components/NavBar.vue";
 import Hero from "./blocks/Hero.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
-import {api} from "../server/api";
 import {setPageTitle} from "../server/src/utils";
 
 export default {
   name: "App",
-  components: {NavBar},
+  components: {Hero, NavBar},
   inject: ['params'],
   async mounted() {
-    setPageTitle(this.params.title, 'конструктор сайтов');
-
     await this.refreshAuth();
 
     this.loadBlocks().then(() => {
@@ -19,14 +16,7 @@ export default {
     });
 
     await this.loadContent();
-
-    try {
-      const response = await api.getParams();
-      if (!response.ok) return;
-      this.params = await response.json();
-    } catch (e) {
-      console.error('Failed to load settings params:', e);
-    }
+    setPageTitle(this.params.title, 'конструктор сайтов');
   },
   data() {
     const allComponents = {
@@ -49,6 +39,7 @@ export default {
         history: []
       },
       features: [],
+      elementStates: {},
     }
   },
   computed: {
@@ -64,12 +55,6 @@ export default {
     pageSections() {
       return this.filteredBlocks.filter(block => !["info_buttons", "footer"].includes(block.type));
     }*/
-  },
-  provide() {
-    return {
-      params: this.params
-      // values: computed(() => this.values)
-    }
   },
   methods: {
     close() {
@@ -161,7 +146,24 @@ export default {
       } catch (e) {
         console.error('content error ', e);
       }
-    }
+    },
+    scroll_to(targetId) {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    },
+    navClick(event, targetId) {
+      event.preventDefault();
+      this.close();
+      this.scroll_to(targetId);
+    },
+    isInView(id) {
+      return this.elementStates[id] === 'animated';
+    },
   }
 }
 </script>
@@ -174,13 +176,15 @@ export default {
       @logout="onLogout"
       @overlay="show"
   />
-<!--  <component
-      v-for="(block, blockIndex) in pageSections"
+  <div class="test">
+    {{pageBlocksSorted}}
+  </div>
+  <component
+      v-for="(block, blockIndex) in pageBlocksSorted"
       :key="block?.id ?? 'block-' + blockIndex"
       :is="blockComponents[block.type]"
       v-bind="getBlockProps(block)"
-  ></component>-->
-
+  ></component>
   <div class="overlay" :class="{ active: active }" @click="close"></div>
 </template>
 
@@ -201,5 +205,12 @@ export default {
 .overlay.active {
   opacity: 1;
   visibility: visible;
+}
+.test {
+  position: fixed;
+  z-index: 10000;
+  top: 40%;
+  left: 25%;
+  max-width: 50%;
 }
 </style>

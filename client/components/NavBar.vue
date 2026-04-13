@@ -36,6 +36,9 @@ export default {
     },
     wishlistCount() {
       return this.wishlist.length;
+    },
+    logo() {
+      return this.params.logo;
     }
   },
   mounted() {
@@ -203,7 +206,7 @@ export default {
           <i class="fas fa-bars"></i>
         </button>
         <a class="logo" href="#">
-          <img :src="params?.logo" alt="" style="max-height:64px;max-width:100%" />
+          <img :src="logo" alt="" style="max-height:64px;max-width:100%" />
         </a>
         <div class="mobile-cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>

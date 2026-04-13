@@ -70,7 +70,6 @@ export default {
   mounted() {
     this.loadAllData();
     this.loadColumnSettings();
-
     document.addEventListener('click', this.onDocClick);
   },
   beforeUnmount() {

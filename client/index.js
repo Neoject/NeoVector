@@ -4,7 +4,29 @@ import router from './router/index.js';
 
 document.body.style.overflow = 'hidden';
 
-document.addEventListener('DOMContentLoaded', () => {
+const ready = async (code) => {
+    code
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await ready(async () => {
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+            try {
+                const response = await fetch('/api/health', {cache: 'no-store', credentials: 'include'});
+
+                if (response.ok) {
+                    return true;
+                }
+            } catch (_error) {
+                console.log('not ready');
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        return false;
+    });
+
     const app = createApp(App);
     app.use(router);
     app.mount('#app');

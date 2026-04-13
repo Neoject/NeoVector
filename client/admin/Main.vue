@@ -8,8 +8,8 @@ export default {
   name: 'Main',
   components: { Products, Blocks, Pages },
   inject: ['params'],
-  mounted() {
-    setPageTitle(this.params?.title, 'управление товарами');
+  async mounted() {
+    setPageTitle(this.params?.title, 'администрирование');
   },
   props: {
     page: { type: String, default: '' },
