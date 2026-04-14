@@ -145,18 +145,17 @@ export class PageController {
             return;
         }
 
-        const data: any = {};
-
-        if (req.body.type !== undefined) data.type = req.body.type;
-        if (req.body.title !== undefined) data.title = req.body.title;
-        if (req.body.content !== undefined) data.content = req.body.content;
-        if (req.body.settings !== undefined) {
-            data.settings = typeof req.body.settings === 'string' ? req.body.settings : JSON.stringify(req.body.settings);
-        }
-        if (req.body.sort_order !== undefined) data.sort_order = parseInt(req.body.sort_order);
-        if (req.body.is_active !== undefined) data.is_active = parseInt(req.body.is_active);
+        const data: any = {
+            type: req.body.type,
+            title: req.body.title,
+            content: req.body.content,
+            settings: req.body.settings,
+            sort_order: req.body.sort_order,
+            is_active: req.body.is_active
+        };
 
         const updated = await PageBlockModel.update(id, data);
+
         if (updated) {
             res.json({ success: true });
         } else {
