@@ -8,6 +8,7 @@ export default {
   mixins: [Props, Options],
   emits: [
     'update:cart-items',
+    'update-cart',
     'update:wishlist',
     'open-cart',
     'open-favorites',
@@ -18,6 +19,7 @@ export default {
   data() {
     return {
       products: [],
+      currentProduct: null,
       activeFilter: 'all',
       imageInfo: { },
       imageLoadingStates: { },
@@ -70,6 +72,9 @@ export default {
     getCurrentProductImage: Function,
   },
   computed: {
+    isMobileDevice() {
+      return this.isMobile;
+    },
     filteredProducts() {
       if (this.activeFilter === 'all') {
         return this.products;
@@ -136,8 +141,6 @@ export default {
       try {
         let response;
         response = await api.getProducts();
-        console.log(response);
-        // response = await fetch('api.php?action=products', { credentials: 'same-origin' });
 
         if (response.ok) {
           const incoming = await response.json();
@@ -694,6 +697,7 @@ export default {
     saveCart() {
       const items = Array.isArray(this.localCartItems) ? this.localCartItems : this.getStoredCart();
       localStorage.setItem('cart', JSON.stringify(items));
+      this.$emit('update-cart', [...items]);
       this.$emit('update:cart-items', [...items]);
     },
     saveWishlist() {
@@ -724,7 +728,7 @@ export default {
 
       this.localCartItems = currentCart;
       this.saveCart();
-      this.hideOverlay();
+      // this.hideOverlay();
     },
     toCart() {
       this.$emit('close-favorites');

@@ -5,18 +5,28 @@ export default {
     cartOpen:  { type: Boolean, default: false },
     cartItems: { type: Array,   default: () => [] }
   },
-  emits: ['close', 'update:cartItems', 'open-order', 'nav-click'],
+  emits: ['close', 'update:cartItems', 'update:cart-items', 'open-order', 'nav-click'],
   data() {
     return {
-      imageLoadingStates: {}
+      imageLoadingStates: {},
+      localItems: []
+    }
+  },
+  watch: {
+    cartItems: {
+      immediate: true,
+      deep: true,
+      handler(value) {
+        this.localItems = Array.isArray(value) ? value.map(item => ({ ...item })) : [];
+      }
     }
   },
   computed: {
     cartTotal() {
-      return this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return this.localItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     },
     cartItemsCount() {
-      return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      return this.localItems.reduce((sum, item) => sum + item.quantity, 0);
     }
   },
   methods: {
@@ -30,6 +40,22 @@ export default {
     navClick(event, target) {
       this.$emit('nav-click', event, target);
     },
+    getItemKey(item) {
+      if (!item) return '';
+      if (item.optionKey) return item.optionKey;
+
+      if (Array.isArray(item.options) && item.options.length) {
+        return item.options
+            .map(option => (option && (option.slug || option.name || option.value)) || '')
+            .filter(Boolean)
+            .join('|');
+      }
+      
+      return 'default';
+    },
+    isSameCartItem(a, b) {
+      return a && b && a.id === b.id && this.getItemKey(a) === this.getItemKey(b);
+    },
     /* ── управление количеством ── */
     increaseQuantity(item) {
       this._updateItem(item, item.quantity + 1);
@@ -42,22 +68,24 @@ export default {
       }
     },
     removeFromCart(item) {
-      const updated = this.cartItems.filter(
-          i => !(i.id === item.id && i.optionKey === item.optionKey)
+      const updated = this.localItems.filter(
+          i => !this.isSameCartItem(i, item)
       );
       this._persist(updated);
     },
     _updateItem(item, quantity) {
-      const updated = this.cartItems.map(i =>
-          i.id === item.id && i.optionKey === item.optionKey
+      const updated = this.localItems.map(i =>
+          this.isSameCartItem(i, item)
               ? { ...i, quantity }
               : i
       );
       this._persist(updated);
     },
     _persist(items) {
+      this.localItems = Array.isArray(items) ? items.map(item => ({ ...item })) : [];
       localStorage.setItem('cart', JSON.stringify(items));
       this.$emit('update:cartItems', items);
+      this.$emit('update:cart-items', items);
     },
     /* ── медиа-утилиты ── */
     isVideo(url) {
@@ -93,10 +121,10 @@ export default {
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div v-if="cartItems.length > 0">
+      <div v-if="localItems.length > 0">
         <div
             class="cart-item"
-            v-for="(item, cartIndex) in cartItems"
+            v-for="(item, cartIndex) in localItems"
             :key="`${item.id}-${item.optionKey || cartIndex}`"
         >
           <img
@@ -261,5 +289,47 @@ export default {
   text-align: center;
   padding: 40px 0;
   color: var(--text-secondary);
+}
+.quantity-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-medium);
+  border-radius: 50%;
+  color: var(--text-primary);
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.quantity {
+  margin: 0 10px;
+}
+.remove-item {
+  margin-left: auto;
+  background: none;
+  border: none;
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-total {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: 600;
 }
 </style>

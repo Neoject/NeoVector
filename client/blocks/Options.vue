@@ -82,18 +82,18 @@ export default {
     },
     async loadProductOptions() {
       try {
-        let response;
         const selectedProduct = this.selectingHandProduct();
         const typeId = selectedProduct ? selectedProduct.product_type_id : null;
-        const query = api.getProductOptions(typeId);
-
-        if (typeof fetch !== 'undefined') {
-          response = await fetch(query, { credentials: 'same-origin' });
-        } else {
-          response = await this.fetchWithXHR(query);
-        }
+        const response = await api.getProductOptions(typeId);
 
         if (response && response.ok) {
+          const contentType = response.headers.get('content-type') || '';
+
+          if (!contentType.includes('application/json')) {
+            const raw = await response.text();
+            throw new Error('Unexpected response type for product options: ' + raw.slice(0, 120));
+          }
+
           const data = await response.json();
           const options = Array.isArray(data.options) ? data.options : [];
           this.productOptions = this.normalizeOptionTypes(options);
@@ -117,9 +117,11 @@ export default {
     },
     chooseOptionValue(product, value) {
       const optionType = this.currentOptionType();
+
       if (!optionType) {
         return;
       }
+
       this.selectedProductOptions.push({
         name: optionType.name || 'Опция ' + this.optionSelectionIndex + 1,
         value
@@ -134,6 +136,7 @@ export default {
     finishOptionSelection(product) {
       const optionsSnapshot = this.selectedProductOptions.map(option => ({ ...option }));
       const optionKey = this.buildOptionKey(optionsSnapshot);
+
       if (this.selectingHandAction === 'buy') {
         this.$emit('open-order', {
           ...product,
@@ -163,8 +166,10 @@ export default {
     },
     finishProductOptionSelection() {
       if (!this.product) return;
+
       const optionsSnapshot = this.selectedProductOptions.map(option => ({ ...option }));
       const optionKey = this.buildOptionKey(optionsSnapshot);
+
       if (this.selectingHandAction === 'buy') {
         this.currentOrderProduct = {
           ...this.product,
@@ -173,6 +178,7 @@ export default {
           optionKey,
           quantity: this.productQuantity
         };
+
         this.openOrderModal();
       } else if (this.selectingHandAction === 'cart') {
         this.addProductToCartInternal(optionsSnapshot);
@@ -206,11 +212,3 @@ export default {
   }
 }
 </script>
-
-<template>
-
-</template>
-
-<style scoped>
-
-</style>

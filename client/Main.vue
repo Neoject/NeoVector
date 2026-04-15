@@ -1,4 +1,5 @@
 <script>
+import { markRaw } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import Hero from "./blocks/Hero.vue";
 import Products from "./blocks/Products.vue";
@@ -33,29 +34,38 @@ export default {
   },
   data() {
     const allComponents = {
-      hero: Hero,
-      products: Products,
-      projects: Projects,
-      features: Features,
-      buttons: Buttons,
-      history: History,
-      text: Text,
-      stats: Stats,
-      contact: Contact,
-      actual: Actual,
-      info_buttons: InfoButtons,
-      footer: Footer
+      hero: markRaw(Hero),
+      products: markRaw(Products),
+      projects: markRaw(Projects),
+      features: markRaw(Features),
+      buttons: markRaw(Buttons),
+      history: markRaw(History),
+      text: markRaw(Text),
+      stats: markRaw(Stats),
+      contact: markRaw(Contact),
+      actual: markRaw(Actual),
+      info_buttons: markRaw(InfoButtons),
+      footer: markRaw(Footer)
     };
 
-    const blockComponents = Object.fromEntries(
+    const blockComponents = markRaw(Object.fromEntries(
         Object.entries(allComponents).filter(([, component]) => !!component)
-    );
+    ));
 
     return {
       active: false,
       values: { },
       auth: getAuth(),
       blockComponents,
+      products: [],
+      categories: [],
+      cartItems: [],
+      wishlist: [],
+      imageMetaTags: '',
+      isMobile: false,
+      cartOpen: false,
+      favoritesOpen: false,
+      currentOrderProduct: null,
       pageBlocks: [],
       pageBlocksSorted: [],
       content: {
@@ -81,6 +91,21 @@ export default {
     }*/
   },
   methods: {
+    handleCartUpdated(items) {
+      let nextItems = items;
+
+      if (!Array.isArray(nextItems)) {
+        try {
+          const raw = localStorage.getItem('cart');
+          nextItems = raw ? JSON.parse(raw) : [];
+        } catch (_error) {
+          nextItems = [];
+        }
+      }
+
+      this.cartItems = Array.isArray(nextItems) ? nextItems : [];
+      this.$refs.navBar?.loadCart?.();
+    },
     close() {
       this.$refs.navBar?.closePanels?.();
       this.active = false;
@@ -124,7 +149,8 @@ export default {
             isVideo: this.isVideo,
             getCurrentProductImage: this.getCurrentProductImage,
 
-            'onUpdate:cartItems': e => this.cartItems = e,
+            'onUpdate:cartItems': e => this.handleCartUpdated(e),
+            onUpdateCart: e => this.handleCartUpdated(e),
             'onUpdate:wishlist': e => this.wishlist = e,
 
             onOpenCart: () => {
@@ -226,6 +252,22 @@ export default {
       this.close();
       this.scroll_to(targetId);
     },
+    closeFavorites() {
+      this.favoritesOpen = false;
+    },
+    closeCart() {
+      this.cartOpen = false;
+    },
+    openOrderModal() {
+      
+    },
+    isVideo() {
+      return false;
+    },
+    getCurrentProductImage(product) {
+      if (!product) return '';
+      return product.image || '';
+    },
     isInView(id) {
       return this.elementStates[id] === 'animated';
     },
@@ -239,6 +281,7 @@ export default {
       :auth="auth"
       @auth-changed="refreshAuth"
       @logout="onLogout"
+      @update:cartItems="handleCartUpdated"
       @overlay="show"
   />
   <component

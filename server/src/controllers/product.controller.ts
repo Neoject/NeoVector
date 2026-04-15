@@ -194,7 +194,7 @@ export class ProductController {
             return;
         }
 
-        const url = `/assets/${req.file.filename}`;
+        const url = `assets/${req.file.filename}`;
         const isVideo = req.file.mimetype.startsWith('video/');
         res.json({ success: true, url, isVideo });
     }

@@ -9,6 +9,10 @@ const router = createRouter({
             component: () => import('../Main.vue'),
         },
         {
+            path: '/product',
+            component: () => import('../Product.vue')
+        },
+        {
             path: '/admin',
             component: () => import('../AdminLayout.vue'),
             meta: { requiresAdmin: true },

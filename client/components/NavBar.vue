@@ -9,8 +9,8 @@ export default {
   components: { Auth, Cart, WishList },
   inject: ['params'],
   props: {
-    cartItems: { type: Array, default: () => [] },
-    wishlist: { type: Array, default: () => [] },
+    // cartItems: { type: Array, default: () => [] },
+    // wishlist: { type: Array, default: () => [] },
     auth: { type: Object, default: () => ({ authenticated: false, role: null, username: null }) },
     isMainPage: { type: Boolean, default: true },
     navigationButtons: { type: Array, default: () => [] },
@@ -24,6 +24,8 @@ export default {
   ],
   data() {
     return {
+      cartItems: [],
+      wishlist: [],
       mobileMenuOpen: false,
       userMenuOpen: false,
       cartOpen: false,
@@ -45,6 +47,8 @@ export default {
     window.addEventListener('scroll', this.onScroll);
     window.addEventListener('resize', this.onResize);
     document.addEventListener('click', this.onDocumentClick);
+    this.loadCart();
+    this.loadWishlist();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
@@ -58,10 +62,19 @@ export default {
       this.favoritesOpen = false;
       this.$emit('overlay', false);
     },
+    normalizeMediaUrl(url) {
+      if (!url) return '';
+
+      if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+        return url;
+      }
+
+      const basePath = this.getBasePath ? this.getBasePath() : '/';
+      return basePath + url;
+    },
     /* ── мобильное меню ── */
     toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
     closeMobileMenu() { this.mobileMenuOpen = false; },
-
     /* ── корзина / избранное ── */
     overlay() {
       this.$emit('overlay', this.cartOpen || this.favoritesOpen);
@@ -106,7 +119,52 @@ export default {
         this.$emit('toggle-favorites');
       }
     },
+    normalizeCartItem(item) {
+      const normalized = { ...item };
 
+      normalized.optionKey = normalized.optionKey || this.buildOptionKey(normalized.options);
+
+      if (normalized.image && typeof normalized.image === 'string') {
+        normalized.image = this.normalizeMediaUrl(normalized.image);
+      }
+
+      return normalized;
+    },
+    loadCart() {
+      const savedCart = localStorage.getItem('cart');
+
+      if (!savedCart) {
+        this.cartItems = [];
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(savedCart);
+        this.cartItems = Array.isArray(parsed) ? parsed.map(item => this.normalizeCartItem(item)) : [];
+      } catch (error) {
+        console.error('Failed to parse cart from storage:', error);
+        this.cartItems = [];
+      }
+    },
+    onCartUpdated(items) {
+      const normalized = Array.isArray(items) ? items.map(item => this.normalizeCartItem(item)) : [];
+      this.cartItems = normalized;
+      this.$emit('update:cartItems', normalized);
+    },
+    loadWishlist() {
+      const savedWishlist = localStorage.getItem('wishlist');
+      this.wishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+    },
+    buildOptionKey(options) {
+      if (!options || !Array.isArray(options) || options.length === 0) {
+        return '';
+      }
+
+      return options
+          .map(opt => `${opt.slug || opt.name}:${opt.value}`)
+          .sort()
+          .join('|');
+    },
     /* ── навигация ── */
     navClick(event, target) {
       event.preventDefault();
@@ -119,7 +177,6 @@ export default {
       this.userMenuOpen = false;
       this.$emit('go-home', { updateHistory: true, scrollToTop: true });
     },
-
     /* ── меню пользователя ── */
     toggleUserMenu() {
       this.userMenuOpen = !this.userMenuOpen;
@@ -217,7 +274,6 @@ export default {
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
       </div>
-
       <!-- Навигация -->
       <nav class="nav-links" :key="'nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
         <template v-if="isMainPage">
@@ -291,7 +347,7 @@ export default {
       :cart-open="cartOpen"
       :cart-items="cartItems"
       @close="cartOpen = false; $emit('overlay', false)"
-      @update:cart-items="$emit('update:cartItems', $event)"
+      @update:cart-items="onCartUpdated"
       @open-order="$emit('open-order')"
       @nav-click="$emit('nav-click', $event)"
   />
