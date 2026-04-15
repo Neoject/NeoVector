@@ -1,17 +1,28 @@
 <script>
+import { markRaw } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import Hero from "./blocks/Hero.vue";
+import Products from "./blocks/Products.vue";
+import Projects from "./blocks/Projects.vue";
+import Features from "./blocks/Features.vue";
+import Buttons from "./blocks/Buttons.vue";
+import History from "./blocks/History.vue";
+import Text from "./blocks/Text.vue";
+import Stats from "./blocks/Stats.vue";
+import Contact from "./blocks/Contact.vue";
+import Actual from "./blocks/Actual.vue";
+import InfoButtons from "./blocks/InfoButtons.vue";
+import Footer from "./blocks/Footer.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
-import {api} from "../server/api";
 import {setPageTitle} from "../server/src/utils";
 
 export default {
   name: "App",
-  components: {NavBar},
+  components: {
+    NavBar, Hero, Products, Projects, Features, Buttons, History, Text, Stats, Contact, Actual, InfoButtons, Footer
+  },
   inject: ['params'],
   async mounted() {
-    setPageTitle(this.params.title, 'конструктор сайтов');
-
     await this.refreshAuth();
 
     this.loadBlocks().then(() => {
@@ -19,29 +30,42 @@ export default {
     });
 
     await this.loadContent();
-
-    try {
-      const response = await api.getParams();
-      if (!response.ok) return;
-      this.params = await response.json();
-    } catch (e) {
-      console.error('Failed to load settings params:', e);
-    }
+    setPageTitle(this.params.title, 'конструктор сайтов');
   },
   data() {
     const allComponents = {
-      hero: Hero,
+      hero: markRaw(Hero),
+      products: markRaw(Products),
+      projects: markRaw(Projects),
+      features: markRaw(Features),
+      buttons: markRaw(Buttons),
+      history: markRaw(History),
+      text: markRaw(Text),
+      stats: markRaw(Stats),
+      contact: markRaw(Contact),
+      actual: markRaw(Actual),
+      info_buttons: markRaw(InfoButtons),
+      footer: markRaw(Footer)
     };
 
-    const blockComponents = Object.fromEntries(
+    const blockComponents = markRaw(Object.fromEntries(
         Object.entries(allComponents).filter(([, component]) => !!component)
-    );
+    ));
 
     return {
       active: false,
       values: { },
       auth: getAuth(),
       blockComponents,
+      products: [],
+      categories: [],
+      cartItems: [],
+      wishlist: [],
+      imageMetaTags: '',
+      isMobile: false,
+      cartOpen: false,
+      favoritesOpen: false,
+      currentOrderProduct: null,
       pageBlocks: [],
       pageBlocksSorted: [],
       content: {
@@ -49,6 +73,7 @@ export default {
         history: []
       },
       features: [],
+      elementStates: {},
     }
   },
   computed: {
@@ -65,13 +90,22 @@ export default {
       return this.filteredBlocks.filter(block => !["info_buttons", "footer"].includes(block.type));
     }*/
   },
-  provide() {
-    return {
-      params: this.params
-      // values: computed(() => this.values)
-    }
-  },
   methods: {
+    handleCartUpdated(items) {
+      let nextItems = items;
+
+      if (!Array.isArray(nextItems)) {
+        try {
+          const raw = localStorage.getItem('cart');
+          nextItems = raw ? JSON.parse(raw) : [];
+        } catch (_error) {
+          nextItems = [];
+        }
+      }
+
+      this.cartItems = Array.isArray(nextItems) ? nextItems : [];
+      this.$refs.navBar?.loadCart?.();
+    },
     close() {
       this.$refs.navBar?.closePanels?.();
       this.active = false;
@@ -91,9 +125,56 @@ export default {
       this.auth = { authenticated: false, role: null, username: null };
     },
     getBlockProps(block) {
-      return {
-        block
+      const base = {
+        block,
+        isInView: this.isInView
       };
+
+      switch (block.type) {
+        case 'hero':
+          return {
+            ...base,
+            navClick: this.navClick
+          };
+        case 'products':
+          return {
+            ...base,
+            products: this.products,
+            categories: this.categories,
+            elementStates: this.elementStates,
+            cartItems: this.cartItems,
+            wishlist: this.wishlist,
+            imageMetaTags: this.imageMetaTags,
+            isMobile: this.isMobile,
+            isVideo: this.isVideo,
+            getCurrentProductImage: this.getCurrentProductImage,
+
+            'onUpdate:cartItems': e => this.handleCartUpdated(e),
+            onUpdateCart: e => this.handleCartUpdated(e),
+            'onUpdate:wishlist': e => this.wishlist = e,
+
+            onOpenCart: () => {
+              this.closeFavorites();
+              this.cartOpen = true;
+            },
+            onOpenFavorites: () => {
+              this.closeCart();
+              this.favoritesOpen = true;
+            },
+            onCloseFavorites: () => {
+              this.favoritesOpen = false;
+            },
+            onOpenOrder: (orderProduct) => {
+              if (orderProduct && typeof orderProduct === 'object' && orderProduct.id != null) {
+                this.currentOrderProduct = orderProduct;
+              }
+
+              this.openOrderModal();
+            },
+          };
+        default:
+          return base;
+      }
     },
     async loadBlocks() {
       try {
@@ -148,20 +229,48 @@ export default {
                 };
               });
 
-          if (this.content.features.length === 0) {
-            this.content.features = this.features;
-          }
-
-          if (this.content.history.length === 0) {
-            this.content.history = [];
-          }
+          if (this.content.features.length === 0) this.content.features = this.features;
+          if (this.content.history.length === 0) this.content.history = [];
 
           this.features = this.content.features;
         }
       } catch (e) {
         console.error('content error ', e);
       }
-    }
+    },
+    scroll_to(targetId) {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    },
+    navClick(event, targetId) {
+      event.preventDefault();
+      this.close();
+      this.scroll_to(targetId);
+    },
+    closeFavorites() {
+      this.favoritesOpen = false;
+    },
+    closeCart() {
+      this.cartOpen = false;
+    },
+    openOrderModal() {
+      
+    },
+    isVideo() {
+      return false;
+    },
+    getCurrentProductImage(product) {
+      if (!product) return '';
+      return product.image || '';
+    },
+    isInView(id) {
+      return this.elementStates[id] === 'animated';
+    },
   }
 }
 </script>
@@ -172,15 +281,15 @@ export default {
       :auth="auth"
       @auth-changed="refreshAuth"
       @logout="onLogout"
+      @update:cartItems="handleCartUpdated"
       @overlay="show"
   />
-<!--  <component
-      v-for="(block, blockIndex) in pageSections"
-      :key="block?.id ?? 'block-' + blockIndex"
+  <component
+      v-for="(block, blockIndex) in pageBlocksSorted"
+      :key="(block && block.id) ? block.id : 'block-' + blockIndex"
       :is="blockComponents[block.type]"
       v-bind="getBlockProps(block)"
-  ></component>-->
-
+  ></component>
   <div class="overlay" :class="{ active: active }" @click="close"></div>
 </template>
 
@@ -201,5 +310,20 @@ export default {
 .overlay.active {
   opacity: 1;
   visibility: visible;
+}
+section {
+  padding: 100px 0;
+}
+h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+h1 span {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>

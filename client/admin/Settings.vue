@@ -233,7 +233,7 @@ export default {
 
         if (res.url) {
           alert('Логотип успешно загружен');
-          this.previewUrl = res.url;
+          this.params.logo = res.url;
         }
       }
     },
@@ -339,6 +339,7 @@ export default {
     clearFile() {
       if (confirm('Вы действительно хотите удалить лого?')) {
         this.previewUrl = null;
+        this.params.logo = '';
         api.deleteLogo();
       }
     },

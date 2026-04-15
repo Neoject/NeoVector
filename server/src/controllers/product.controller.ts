@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { ProductModel } from '../models/Product';
-import { CategoryModel } from '../models/Category';
 import { AiService } from '../services/ai.service';
 
 export class ProductController {
@@ -195,7 +194,7 @@ export class ProductController {
             return;
         }
 
-        const url = `/assets/${req.file.filename}`;
+        const url = `assets/${req.file.filename}`;
         const isVideo = req.file.mimetype.startsWith('video/');
         res.json({ success: true, url, isVideo });
     }

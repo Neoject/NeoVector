@@ -6,17 +6,7 @@ export default {
   name: "App",
   data() {
     return {
-      params: {
-        admin: false,
-        admin_user: null,
-        logo: '',
-        auth: {
-          action: '',
-          username: '',
-          remember: false,
-          error: ''
-        }
-      }
+      params: {}
     }
   },
   provide() {
@@ -58,6 +48,10 @@ export default {
 
 <template>
   <RouterView />
+<!--  <div class="neoject">
+    Сайт разработан
+    <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
+  </div>-->
 </template>
 
 <style>
@@ -239,7 +233,6 @@ header .header-bottom {
   }
 }
 @keyframes liquidRipple {
-
   0%,
   100% {
     transform: translate(-50%, -50%) scale(1);
@@ -272,7 +265,6 @@ img {
   margin: 0 auto;
   padding: 0 20px;
 }
-
 .mobile-menu-btn-header {
   font-size: 24px;
 }
@@ -295,7 +287,6 @@ img {
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
 }
-/*region input*/
 input[type=checkbox] {
   appearance: none;
   -webkit-appearance: none;
@@ -340,8 +331,24 @@ input[type=checkbox]:disabled {
   cursor: not-allowed;
   pointer-events: none;
 }
-/*endregion*/
-/*region buttons*/
+.section-title {
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 24px;
+  position: relative;
+}
+.section-title::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 4px;
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
 .btn {
   display: inline-block;
   padding: 8px 16px;
@@ -421,7 +428,7 @@ input[type=checkbox]:disabled {
   border: 1px solid var(--warning-dark);
 }
 .btn-delete:hover {
-  background: var(--bg-red-30);
+  background: var(--error-bg);
 }
 .btn-link {
   margin: 0;
@@ -432,8 +439,6 @@ input[type=checkbox]:disabled {
 .btn-link:hover {
   background: var(--background-additional);
 }
-/*endregion*/
-/*region formgroup*/
 .form-group {
   margin-bottom: 15px;
 }
@@ -491,7 +496,6 @@ input[type=checkbox]:disabled {
   align-items: center;
   gap: 12px;
 }
-/*endregion*/
 .close-icon {
   background: none;
   border: none;
@@ -509,7 +513,6 @@ input[type=checkbox]:disabled {
   background: var(--background-secondary);
   transform: rotate(90deg);
 }
-
 .logo {
   font-family: 'Main', serif;
   font-size: 64px;

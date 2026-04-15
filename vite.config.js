@@ -10,18 +10,6 @@ module.exports = defineConfig({
         outDir: path.resolve(__dirname, 'dist'),
         emptyOutDir: true,
         sourcemap: false,
-        rollupOptions: {
-            input: './client/index.js',
-            output: {
-                entryFileNames: 'app.bundle.js',
-                assetFileNames: (assetInfo) => {
-                    if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-                        return 'style.css'
-                    }
-                    return '[name].[ext]'
-                },
-            },
-        },
     },
     server: {
         port: 5173,

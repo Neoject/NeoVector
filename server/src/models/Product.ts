@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import {writeLog} from "../config/log";
 
 export interface Product {
     id: number;

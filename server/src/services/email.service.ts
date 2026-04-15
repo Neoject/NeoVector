@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env';
 
 const transporter = nodemailer.createTransport({
@@ -9,7 +10,7 @@ const transporter = nodemailer.createTransport({
         user: env.email.user,
         pass: env.email.pass,
     },
-});
+} as SMTPTransport.Options);
 
 export class EmailService {
     static async sendOrderConfirmation(order: any): Promise<boolean> {

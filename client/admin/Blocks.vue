@@ -359,6 +359,7 @@ export default {
         settings: block.settings, sort_order: block.sort_order,
         is_active: !block.is_active,
       });
+
       if (r.ok) block.is_active = !block.is_active;
     },
     startDrag(block, e) { this.draggingBlockId = block.id; e.dataTransfer.effectAllowed = 'move' },
@@ -758,8 +759,8 @@ export default {
 }
 
 .block-type {
-  background: var(--primary);
-  color: var(--text-dark);
+  background: var(--btn-bg);
+  color: var(--text-secondary);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;

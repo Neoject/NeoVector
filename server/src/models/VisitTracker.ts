@@ -94,7 +94,6 @@ export class VisitTracker {
     static async getTopPages(startDate: string): Promise<{
         all: { url: string; count: number; is_virtual: boolean }[];
         virtual: { url: string; count: number; is_virtual: boolean }[];
-        php: { url: string; count: number; is_virtual: boolean }[];
     }> {
         const rows = await db.query<{ page_url: string; count: number }[]>(
             'SELECT page_url, COUNT(*) as count FROM visits WHERE visit_date >= ? GROUP BY page_url ORDER BY count DESC LIMIT 20',
@@ -106,7 +105,6 @@ export class VisitTracker {
 
         const all: { url: string; count: number; is_virtual: boolean }[] = [];
         const virtual: { url: string; count: number; is_virtual: boolean }[] = [];
-        const php: { url: string; count: number; is_virtual: boolean }[] = [];
 
         for (const row of rows) {
             const isVirtual = virtualSlugs.includes(row.page_url) ||
@@ -117,12 +115,10 @@ export class VisitTracker {
 
             if (isVirtual) {
                 virtual.push(item);
-            } else {
-                php.push(item);
             }
         }
 
-        return { all, virtual, php };
+        return { all, virtual };
     }
 
     static async getHourlyVisits(startDate: string): Promise<{ hour: number; count: number }[]> {

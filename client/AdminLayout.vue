@@ -1,6 +1,7 @@
 <script>
 import NavBar from "./admin/NavBar.vue";
 import Taskbar from "./admin/TaskBar.vue";
+import {setPageTitle} from "../server/src/utils";
 
 const ROUTE_TO_PAGE = {
     'admin-dashboard': '',
@@ -32,11 +33,17 @@ const PAGE_TO_PATH = {
 };
 
 export default {
+  name: 'Admin',
   components: {
     Taskbar,
     NavBar,
   },
   inject: ['params'],
+  async mounted() {
+   setTimeout(() => {
+     setPageTitle(this.params?.title, 'администрирование')
+   }, 100)
+  },
   computed: {
     page() {
       const name = this.$route.name;
@@ -66,6 +73,9 @@ export default {
 </template>
 
 <style>
+section {
+  padding: 12vh 0;
+}
 .admin-loading-container {
   position: absolute;
   display: flex;

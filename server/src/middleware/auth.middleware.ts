@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env';
 
 declare global {
@@ -19,7 +19,14 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 
     try {
-        const decoded = jwt.verify(token, env.jwtSecret) as { userId: number; role: string };
+        const decodedToken = jwt.verify(token, env.jwtSecret);
+        if (typeof decodedToken === 'string') {
+            return res.status(401).json({ error: 'Invalid token payload' });
+        }
+        const decoded = decodedToken as JwtPayload & { userId?: number; role?: string };
+        if (!decoded.userId || !decoded.role) {
+            return res.status(401).json({ error: 'Invalid token payload' });
+        }
         req.userId = decoded.userId;
         req.userRole = decoded.role;
         next();
@@ -40,9 +47,14 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
 
     if (token) {
         try {
-            const decoded = jwt.verify(token, env.jwtSecret) as { userId: number; role: string };
-            req.userId = decoded.userId;
-            req.userRole = decoded.role;
+            const decodedToken = jwt.verify(token, env.jwtSecret);
+            if (typeof decodedToken !== 'string') {
+                const decoded = decodedToken as JwtPayload & { userId?: number; role?: string };
+                if (decoded.userId && decoded.role) {
+                    req.userId = decoded.userId;
+                    req.userRole = decoded.role;
+                }
+            }
         } catch {
             // Ignore invalid token
         }

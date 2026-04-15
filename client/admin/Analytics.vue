@@ -95,13 +95,6 @@ export default {
         return url.includes(searchFilter);
       });
     },
-    filteredTopPhpPages() {
-      if (!this.analyticsData?.top_php_pages) return [];
-
-      return this.analyticsData.top_php_pages.filter(
-          page => !page.url?.startsWith('/?')
-      );
-    },
     hasActiveFilters() {
       const f = this.analyticsFilters;
       return !!(f.ip || f.url || f.referer || f.date);
@@ -141,7 +134,6 @@ export default {
         setTimeout(() => {
           const tables = [
             { ref: 'topPagesTable',     prefix: 'analytics_top' },
-            { ref: 'topPhpPagesTable',  prefix: 'analytics_php' },
             { ref: 'recentVisitsTable', prefix: 'analytics_visit' },
           ];
 
@@ -533,33 +525,6 @@ export default {
                 <td colspan="2" style="text-align: center; color: #888;">
                   {{ analyticsFilters.topPagesSearch ? 'Ничего не найдено' : 'Нет данных' }}
                 </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- PHP pages -->
-        <div class="table-card">
-          <h3 style="margin: 0 0 15px 0;">
-            <i class="fa-solid fa-bag-shopping" style="color: #3498db; margin-right: 8px;"></i>
-            Страницы сайта
-          </h3>
-          <div class="table-responsive">
-            <table class="analytics-table" ref="topPhpPagesTable">
-              <thead>
-              <tr>
-                <th data-column="analytics_php_page_url">Страница<div class="column-resize-handle"></div></th>
-                <th data-column="analytics_php_page_count">Посещений<div class="column-resize-handle"></div></th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="page in filteredTopPhpPages" :key="page.url">
-                <td>{{ getProductName(page.url) }}</td>
-                <td><strong>{{ page.count }}</strong></td>
-              </tr>
-              <tr v-if="filteredTopPhpPages.length === 0">
-                <td colspan="2" style="text-align: center; color: #888;">Нет данных</td>
               </tr>
               </tbody>
             </table>

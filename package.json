@@ -8,9 +8,9 @@
     "dev:client": "vite",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build:client": "vite build",
-    "build:server": "tsc --project tsconfig.json --outDir dist-server",
+    "build:server": "tsc --project tsconfig.json --outDir dist",
     "build": "npm run build:client && npm run build:server",
-    "start": "node dist-server/app.js"
+    "start": "node dist/app.js"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
   },
   "homepage": "https://github.com/Neoject/NeoVector#readme",
   "dependencies": {
-    "@rolldown/binding-win32-x64-msvc": "^1.0.0-rc.15",
     "@vitejs/plugin-vue": "^6.0.5",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
@@ -42,7 +41,8 @@
     "uuid": "^13.0.0",
     "vite": "^8.0.7",
     "vue": "^3.5.32",
-    "vue-router": "^5.0.4"
+    "vue-router": "^5.0.4",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

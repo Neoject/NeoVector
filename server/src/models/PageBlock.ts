@@ -7,7 +7,7 @@ export interface PageBlock {
     content: string;
     settings: string | null | Record<string, any>;
     sort_order: number;
-    is_active: number; // 0 or 1
+    is_active: number;
     created_at: Date;
     updated_at: Date;
 }
@@ -16,8 +16,8 @@ export class PageBlockModel {
     static async createTable(): Promise<void> {
         await db.query(`
             CREATE TABLE IF NOT EXISTS page_blocks (
-                                                       id INT AUTO_INCREMENT PRIMARY KEY,
-                                                       type VARCHAR(50) NOT NULL,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type VARCHAR(50) NOT NULL,
                 title VARCHAR(255) NOT NULL,
                 content TEXT NOT NULL,
                 settings TEXT,
@@ -33,12 +33,15 @@ export class PageBlockModel {
 
     static async getAll(activeOnly: boolean = false): Promise<PageBlock[]> {
         let query = 'SELECT * FROM page_blocks';
+
         if (activeOnly) {
             query += ' WHERE is_active = 1';
         }
+
         query += ' ORDER BY sort_order ASC';
 
         const blocks = await db.query<any[]>(query);
+
         return blocks.map(block => ({
             id: block.id,
             type: block.type,
@@ -46,7 +49,7 @@ export class PageBlockModel {
             content: block.content,
             settings: block.settings ? JSON.parse(block.settings) : null,
             sort_order: block.sort_order,
-            is_active: block.is_active, // Keep as number
+            is_active: block.is_active,
             created_at: block.created_at,
             updated_at: block.updated_at,
         }));
@@ -57,8 +60,10 @@ export class PageBlockModel {
             'SELECT * FROM page_blocks WHERE id = ?',
             [id]
         );
+
         if (rows.length === 0) return null;
         const block = rows[0];
+
         return {
             id: block.id,
             type: block.type,
@@ -76,10 +81,12 @@ export class PageBlockModel {
         const rows = await db.query<{ settings: string }[]>(
             "SELECT settings FROM page_blocks WHERE type = 'hero' AND is_active = 1 ORDER BY sort_order ASC LIMIT 1"
         );
+
         if (rows.length && rows[0].settings) {
             const settings = JSON.parse(rows[0].settings);
             return settings.backgroundImage || '';
         }
+
         return '';
     }
 
@@ -106,6 +113,7 @@ export class PageBlockModel {
                 data.is_active !== undefined ? data.is_active : 1,
             ]
         );
+
         return (result as any).insertId;
     }
 

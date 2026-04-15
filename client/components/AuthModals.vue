@@ -118,7 +118,6 @@ export default {
 </script>
 
 <template>
-  <!-- Вход -->
   <Modal
       v-model="showLogin"
       modal-id="auth-login"
@@ -153,8 +152,6 @@ export default {
       Нет аккаунта? <a href="#" @click.prevent="goToRegister">Зарегистрироваться</a>
     </p>
   </Modal>
-
-  <!-- Регистрация -->
   <Modal
       v-model="showRegister"
       modal-id="auth-register"
@@ -190,3 +187,11 @@ export default {
     </p>
   </Modal>
 </template>
+
+<style>
+.error-message {
+  color: var(--error-red-alt);
+  margin-top: 15px;
+  font-size: 14px;
+}
+</style>
