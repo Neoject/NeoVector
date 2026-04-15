@@ -1,12 +1,25 @@
 <script>
 import NavBar from "./components/NavBar.vue";
 import Hero from "./blocks/Hero.vue";
+import Products from "./blocks/Products.vue";
+import Projects from "./blocks/Projects.vue";
+import Features from "./blocks/Features.vue";
+import Buttons from "./blocks/Buttons.vue";
+import History from "./blocks/History.vue";
+import Text from "./blocks/Text.vue";
+import Stats from "./blocks/Stats.vue";
+import Contact from "./blocks/Contact.vue";
+import Actual from "./blocks/Actual.vue";
+import InfoButtons from "./blocks/InfoButtons.vue";
+import Footer from "./blocks/Footer.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../server/src/utils";
 
 export default {
   name: "App",
-  components: {Hero, NavBar},
+  components: {
+    NavBar, Hero, Products, Projects, Features, Buttons, History, Text, Stats, Contact, Actual, InfoButtons, Footer
+  },
   inject: ['params'],
   async mounted() {
     await this.refreshAuth();
@@ -21,6 +34,17 @@ export default {
   data() {
     const allComponents = {
       hero: Hero,
+      products: Products,
+      projects: Projects,
+      features: Features,
+      buttons: Buttons,
+      history: History,
+      text: Text,
+      stats: Stats,
+      contact: Contact,
+      actual: Actual,
+      info_buttons: InfoButtons,
+      footer: Footer
     };
 
     const blockComponents = Object.fromEntries(
@@ -76,9 +100,55 @@ export default {
       this.auth = { authenticated: false, role: null, username: null };
     },
     getBlockProps(block) {
-      return {
-        block
+      const base = {
+        block,
+        isInView: this.isInView
       };
+
+      switch (block.type) {
+        case 'hero':
+          return {
+            ...base,
+            navClick: this.navClick
+          };
+        case 'products':
+          return {
+            ...base,
+            products: this.products,
+            categories: this.categories,
+            elementStates: this.elementStates,
+            cartItems: this.cartItems,
+            wishlist: this.wishlist,
+            imageMetaTags: this.imageMetaTags,
+            isMobile: this.isMobile,
+            isVideo: this.isVideo,
+            getCurrentProductImage: this.getCurrentProductImage,
+
+            'onUpdate:cartItems': e => this.cartItems = e,
+            'onUpdate:wishlist': e => this.wishlist = e,
+
+            onOpenCart: () => {
+              this.closeFavorites();
+              this.cartOpen = true;
+            },
+            onOpenFavorites: () => {
+              this.closeCart();
+              this.favoritesOpen = true;
+            },
+            onCloseFavorites: () => {
+              this.favoritesOpen = false;
+            },
+            onOpenOrder: (orderProduct) => {
+              if (orderProduct && typeof orderProduct === 'object' && orderProduct.id != null) {
+                this.currentOrderProduct = orderProduct;
+              }
+
+              this.openOrderModal();
+            },
+          };
+        default:
+          return base;
+      }
     },
     async loadBlocks() {
       try {
@@ -133,13 +203,8 @@ export default {
                 };
               });
 
-          if (this.content.features.length === 0) {
-            this.content.features = this.features;
-          }
-
-          if (this.content.history.length === 0) {
-            this.content.history = [];
-          }
+          if (this.content.features.length === 0) this.content.features = this.features;
+          if (this.content.history.length === 0) this.content.history = [];
 
           this.features = this.content.features;
         }
@@ -176,12 +241,9 @@ export default {
       @logout="onLogout"
       @overlay="show"
   />
-  <div class="test">
-    {{pageBlocksSorted}}
-  </div>
   <component
       v-for="(block, blockIndex) in pageBlocksSorted"
-      :key="block?.id ?? 'block-' + blockIndex"
+      :key="(block && block.id) ? block.id : 'block-' + blockIndex"
       :is="blockComponents[block.type]"
       v-bind="getBlockProps(block)"
   ></component>
@@ -206,11 +268,19 @@ export default {
   opacity: 1;
   visibility: visible;
 }
-.test {
-  position: fixed;
-  z-index: 10000;
-  top: 40%;
-  left: 25%;
-  max-width: 50%;
+section {
+  padding: 100px 0;
+}
+h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+h1 span {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>

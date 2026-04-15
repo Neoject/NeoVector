@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { ProductModel } from '../models/Product';
-import { CategoryModel } from '../models/Category';
 import { AiService } from '../services/ai.service';
 
 export class ProductController {

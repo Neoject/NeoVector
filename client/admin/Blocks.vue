@@ -359,6 +359,7 @@ export default {
         settings: block.settings, sort_order: block.sort_order,
         is_active: !block.is_active,
       });
+
       if (r.ok) block.is_active = !block.is_active;
     },
     startDrag(block, e) { this.draggingBlockId = block.id; e.dataTransfer.effectAllowed = 'move' },

@@ -32,7 +32,6 @@ export class AnalyticsController {
             daily_visits: dailyVisits,
             top_pages: topPages.all,
             top_virtual_pages: topPages.virtual,
-            top_php_pages: topPages.php,
             hourly_visits: hourlyVisits,
             recent_visits: recentVisits,
             period_days: periodDays,

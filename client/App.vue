@@ -331,9 +331,6 @@ input[type=checkbox]:disabled {
   cursor: not-allowed;
   pointer-events: none;
 }
-section {
-  padding: 12vh 0;
-}
 .section-title {
   text-align: center;
   font-size: 36px;

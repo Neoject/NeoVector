@@ -719,8 +719,10 @@ export default {
     },
     async removeAdditionalVideo(idx) {
       if (!confirm('Удалить видео?')) return
-      const path = this.productForm.additionalVideos[idx]
+
+      /*const path = this.productForm.additionalVideos[idx]
       const r1 = await fetch(`../api.php?action=get_image_id&product_id=${this.editingProduct.id}&image_path=${encodeURIComponent(path)}`, { credentials: 'same-origin' })
+
       if (r1.ok) {
         const d1 = await r1.json()
         if (d1.image_id) {
@@ -730,7 +732,7 @@ export default {
           const r2 = await fetch('../api.php', { method: 'POST', body: fd, credentials: 'same-origin' })
           if (r2.ok) this.productForm.additionalVideos.splice(idx, 1)
         }
-      }
+      }*/
     },
     async generateDescription() {
       if (this.aiGeneratingDescription || !this.productForm.name?.trim()) return;

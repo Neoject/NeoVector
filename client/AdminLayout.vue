@@ -73,6 +73,9 @@ export default {
 </template>
 
 <style>
+section {
+  padding: 12vh 0;
+}
 .admin-loading-container {
   position: absolute;
   display: flex;

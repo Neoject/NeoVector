@@ -1,3 +1,5 @@
+import {api} from "../../server/api";
+
 export async function uploadImage(e, file_name, { maxSizeMb = 8, fieldName = 'image' } = {}) {
     const file =
         (e && typeof e === 'object' && 'size' in e && 'name' in e)
@@ -19,11 +21,7 @@ export async function uploadImage(e, file_name, { maxSizeMb = 8, fieldName = 'im
     formData.append('action', 'upload_' + file_name);
 
     try {
-        const response = await fetch('../api.php', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
-        });
+        const response = await api.uploadMedia(formData);
 
         if (response.ok) {
             return await response.json();
@@ -83,7 +81,7 @@ export const Values = {
     methods: {
         async getMessages() {
             try {
-                const response = await fetch('../api.php?action=messages', { credentials: 'same-origin' });
+                const response = api.getMessages();
                 if (!response.ok) return;
 
                 const res = await response.json();
