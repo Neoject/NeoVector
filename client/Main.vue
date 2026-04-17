@@ -1,5 +1,6 @@
 <script>
 import { markRaw } from 'vue';
+import Props from "./blocks/Props.vue";
 import NavBar from "./components/NavBar.vue";
 import Hero from "./blocks/Hero.vue";
 import Products from "./blocks/Products.vue";
@@ -19,6 +20,7 @@ import {api} from "../server/api";
 
 const readStorageArray = (key) => {
   if (typeof window === 'undefined') return [];
+
   try {
     const raw = localStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -30,6 +32,7 @@ const readStorageArray = (key) => {
 
 export default {
   name: "App",
+  mixins: [Props],
   components: {
     NavBar, Hero, Products, Projects, Features, Buttons, History, Text, Stats, Contact, Actual, InfoButtons, Footer
   },
@@ -318,19 +321,10 @@ export default {
         console.error('content error ', e);
       }
     },
-    scroll_to(targetId) {
-      const targetElement = document.getElementById(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    },
     navClick(event, targetId) {
       event.preventDefault();
       this.close();
-      this.scroll_to(targetId);
+      this.scrollTo(targetId);
     },
     closeFavorites() {
       this.favoritesOpen = false;
