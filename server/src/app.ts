@@ -9,6 +9,8 @@ import { UserModel } from './models/User';
 import { ProductModel } from './models/Product';
 import { OrderModel } from './models/Order';
 import { PageModel } from './models/Page';
+import { HomeContentModel } from './models/HomeContent';
+import { PageBlockModel } from './models/PageBlock';
 import { CategoryModel } from './models/Category';
 import { VisitTracker } from './models/VisitTracker';
 import { ParamsModel } from './models/Params';
@@ -43,17 +45,6 @@ app.use(helmet({
         },
     },
 }));
-
-/*app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || origin.includes(env.dbHost)) {
-            callback(null, true);
-        } else {
-            callback(null, true);
-        }
-    },
-    credentials: true,
-}));*/
 
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
@@ -97,6 +88,8 @@ async function start() {
         await ProductModel.createTables();
         await OrderModel.createTable();
         await PageModel.createTable();
+        await HomeContentModel.createTable();
+        await PageBlockModel.createTable();
         await CategoryModel.createTable();
         await ParamsModel.createTable();
         await VisitTracker.createTable();
