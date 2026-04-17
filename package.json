@@ -26,6 +26,7 @@
   "homepage": "https://github.com/Neoject/NeoVector#readme",
   "dependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
+    "aos": "^2.3.4",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

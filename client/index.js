@@ -1,6 +1,8 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router/index.js';
+import AOS from 'aos'
+import 'aos/dist/aos.css'
 
 document.body.style.overflow = 'hidden';
 
@@ -27,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const app = createApp(App);
     app.use(router);
     app.mount('#app');
+    AOS.init();
 
     setTimeout(() => {
         const loader = document.querySelector('#load_box');
