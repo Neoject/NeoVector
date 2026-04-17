@@ -13,11 +13,12 @@ export default{
         }
       } else if (button.linkType === 'section') {
         event.preventDefault();
-        this.scroll_to(target);
+        this.scrollTo(target);
       }
     },
-    scroll_to(targetId) {
+    scrollTo(targetId) {
       const targetElement = document.getElementById(targetId);
+
       if (targetElement) {
         targetElement.scrollIntoView({
           behavior: 'smooth',
@@ -94,11 +95,3 @@ export default{
   }
 }
 </script>
-
-<template>
-
-</template>
-
-<style scoped>
-
-</style>
