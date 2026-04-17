@@ -297,7 +297,6 @@ input[type=checkbox] {
   min-height: 20px;
   border: 2px solid var(--border-secondary);
   border-radius: 4px;
-  background: var(--background-secondary);
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
@@ -372,21 +371,11 @@ input[type=checkbox]:disabled {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px var(--shadow-primary);
 }
-.btn-outline {
-  background: transparent;
-  border: 2px solid var(--primary);
-  color: var(--primary);
-  margin-left: 15px;
-}
-.btn-outline:hover {
-  background: var(--primary);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
-  color: var(--text-dark);
-}
 .btn-primary {
   background: var(--btn-bg);
   color: var(--text-additional-light);
   border: 2px solid var(--primary);
+  transition: all 0.2s ease-in-out;
 }
 .btn-primary:hover {
   background: transparent;
@@ -407,6 +396,17 @@ input[type=checkbox]:disabled {
 }
 .btn-secondary:hover {
   background: var(--background-additional);
+}
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  margin-left: 15px;
+}
+.btn-outline:hover {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  color: var(--text-dark);
 }
 .btn-sm {
   padding: 6px 12px;
@@ -457,7 +457,6 @@ input[type=checkbox]:disabled {
 .form-group select {
   width: 100%;
   padding: 12px;
-  background: var(--background);
   border: 1px solid var(--border-alternative);
   border-radius: 8px;
   color: var(--primary);

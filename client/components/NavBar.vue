@@ -10,9 +10,9 @@ export default {
   inject: ['params'],
   props: {
     // cartItems: { type: Array, default: () => [] },
-    // wishlist: { type: Array, default: () => [] },
     auth: { type: Object, default: () => ({ authenticated: false, role: null, username: null }) },
     products: { type: Array, default: [] },
+    wishlist: { type: Array, default: () => [] },
     isMainPage: { type: Boolean, default: true },
     navigationButtons: { type: Array, default: () => [] },
     currentVirtualPage: { type: Object, default: null }
@@ -26,7 +26,6 @@ export default {
   data() {
     return {
       cartItems: [],
-      wishlist: [],
       mobileMenuOpen: false,
       userMenuOpen: false,
       cartOpen: false,
@@ -49,7 +48,6 @@ export default {
     window.addEventListener('resize', this.onResize);
     document.addEventListener('click', this.onDocumentClick);
     this.loadCart();
-    this.loadWishlist();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
@@ -152,9 +150,9 @@ export default {
       this.cartItems = normalized;
       this.$emit('update:cartItems', normalized);
     },
-    loadWishlist() {
-      const savedWishlist = localStorage.getItem('wishlist');
-      this.wishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+    onWishlistUpdated(items) {
+      const normalized = Array.isArray(items) ? [...items] : [];
+      this.$emit('update:wishlist', normalized);
     },
     buildOptionKey(options) {
       if (!options || !Array.isArray(options) || options.length === 0) {
@@ -342,7 +340,6 @@ export default {
         </div>
       </nav>
     </div>
-    <div class="header-bottom"></div>
   </header>
   <Cart
       :cart-open="cartOpen"
@@ -358,7 +355,7 @@ export default {
       :products="products"
       :cart-items="cartItems"
       @close="favoritesOpen = false; $emit('overlay', false)"
-      @update:wishlist="$emit('update:wishlist', $event)"
+      @update:wishlist="onWishlistUpdated"
       @add-to-cart="$emit('add-to-cart', $event)"
       @nav-click="$emit('nav-click', $event)"
   />
@@ -366,6 +363,9 @@ export default {
 </template>
 
 <style scoped>
+header {
+  box-shadow: 0 0 8px 1px var(--shadow-header);
+}
 header .nav-container {
   flex-direction: row;
   gap: 20vw;

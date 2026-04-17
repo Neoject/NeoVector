@@ -18,11 +18,18 @@ export default {
     }
   },
   computed: {
+    wishlistSet() {
+      const set = new Set();
+      (Array.isArray(this.wishlist) ? this.wishlist : []).forEach((id) => {
+        set.add(String(id));
+      });
+      return set;
+    },
     favoriteProducts() {
-      return this.products.filter(p => this.wishlist.includes(p.id));
+      return this.products.filter(p => this.wishlistSet.has(String(p.id)));
     },
     wishlistCount() {
-      return this.wishlist.length;
+      return this.wishlistSet.size;
     }
   },
   methods: {
@@ -34,24 +41,17 @@ export default {
       this.$emit('nav-click', event, target);
     },
     /* ── wishlist ── */
-    toggleWishlist(productId) {
-      const updated = this.wishlist.includes(productId)
-          ? this.wishlist.filter(id => id !== productId)
-          : [...this.wishlist, productId];
+    toggle(productId) {
+      const targetId = String(productId);
+      const current = Array.isArray(this.wishlist) ? [...this.wishlist] : [];
+      const updated = current.some(id => String(id) === targetId)
+          ? current.filter(id => String(id) !== targetId)
+          : [...current, productId];
       localStorage.setItem('wishlist', JSON.stringify(updated));
       this.$emit('update:wishlist', updated);
     },
     addFromFavoritesToCart(product, event) {
       this.$emit('add-to-cart', product, event);
-    },
-    toggle(productId) {
-      if (this.wishlist.includes(productId)) {
-        this.wishlist = this.wishlist.filter(id => id !== productId);
-      } else {
-        this.wishlist.push(productId);
-      }
-
-      this.saveWishlist();
     },
     /* ── свайп ── */
     handleFavoritesTouchStart(e) {

@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router/index.js';
+import VueDraggableResizable from 'vue-draggable-resizable'
 
 document.body.style.overflow = 'hidden';
 
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const app = createApp(App);
     app.use(router);
+    app.component("vue-draggable-resizable", VueDraggableResizable);
     app.mount('#app');
 
     setTimeout(() => {

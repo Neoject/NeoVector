@@ -27,7 +27,6 @@ export default {
       productImageTouchStart: { },
       productImageMouseStart: { },
       localCartItems: [],
-      localWishlist: [],
       hand: null,
       productQuantity: 1,
       buyNowPressed: false,
@@ -64,12 +63,12 @@ export default {
       default: { }
     },
     cartItems: {
-      type: Object,
-      default: { }
+      type: Array,
+      default: () => []
     },
     wishlist: {
-      type: Object,
-      default: { }
+      type: Array,
+      default: () => []
     },
     isInView: Function,
     getCurrentProductImage: Function,
@@ -77,6 +76,12 @@ export default {
   computed: {
     isMobileDevice() {
       return this.isMobile;
+    },
+    wishlistSet() {
+      const set = new Set();
+      const source = Array.isArray(this.wishlist) ? this.wishlist : [];
+      source.forEach((id) => set.add(this.normalizeWishlistId(id)));
+      return set;
     },
     filteredProducts() {
       if (this.activeFilter === 'all') {
@@ -87,7 +92,7 @@ export default {
     },
     isCurrentProductInWishlist() {
       if (!this.currentProduct) return false;
-      return this.wishlist.includes(this.currentProduct.id);
+      return this.isInWishlist(this.currentProduct.id);
     },
     isCurrentProductInCart() {
       if (!this.currentProduct) return false;
@@ -120,18 +125,9 @@ export default {
       },
       deep: true
     },
-    wishlist: {
-      handler(value) {
-        if (Array.isArray(value)) {
-          this.localWishlist = [...value];
-        }
-      },
-      deep: true
-    },
   },
   async mounted() {
     this.localCartItems = Array.isArray(this.cartItems) ? [...this.cartItems] : this.getStoredCart();
-    this.localWishlist = Array.isArray(this.wishlist) ? [...this.wishlist] : this.getStoredWishlist();
     this.initProductLinkHandlers();
 
     this.$nextTick(() => {
@@ -141,12 +137,7 @@ export default {
   methods: {
     toggleCurrentProductWishlist() {
       if (!this.currentProduct) return;
-      if (this.isCurrentProductInWishlist) {
-        this.wishlist = this.wishlist.filter(id => id !== this.currentProduct.id);
-      } else {
-        this.wishlist.push(this.currentProduct.id);
-      }
-      this.saveWishlist();
+      this.toggleWishlist(this.currentProduct.id);
     },
     getImage(product) {
       try {
@@ -327,29 +318,28 @@ export default {
     closeFavorites() {
       this.$emit('close-favorites');
     },
+    normalizeWishlistId(id) {
+      return String(id);
+    },
     isInWishlist(productId) {
-      const list = Array.isArray(this.localWishlist) && this.localWishlist.length
-          ? this.localWishlist
-          : this.getStoredWishlist();
-      return list.includes(productId);
+      return this.wishlistSet.has(this.normalizeWishlistId(productId));
     },
     toggleWishlist(productId, event) {
       if (this.isMobile && event) {
         event.stopPropagation();
       }
 
-      const currentWishlist = Array.isArray(this.localWishlist)
-          ? [...this.localWishlist]
-          : this.getStoredWishlist();
+      const sourceWishlist = Array.isArray(this.wishlist) ? [...this.wishlist] : [];
+      const current = sourceWishlist.length ? sourceWishlist : this.getStoredWishlist();
+      const targetId = this.normalizeWishlistId(productId);
 
-      if (currentWishlist.includes(productId)) {
-        this.localWishlist = currentWishlist.filter(id => id !== productId);
+      let updated;
+      if (current.some((id) => this.normalizeWishlistId(id) === targetId)) {
+        updated = current.filter((id) => this.normalizeWishlistId(id) !== targetId);
       } else {
-        currentWishlist.push(productId);
-        this.localWishlist = currentWishlist;
+        updated = [...current, productId];
       }
-
-      this.saveWishlist();
+      this.saveWishlist(updated);
     },
     showAllProductCards() {
       document.querySelectorAll('.product-card').forEach(el => {
@@ -659,8 +649,7 @@ export default {
       this.$emit('update-cart', [...items]);
       this.$emit('update:cart-items', [...items]);
     },
-    saveWishlist() {
-      const list = Array.isArray(this.localWishlist) ? this.localWishlist : this.getStoredWishlist();
+    saveWishlist(list = this.getStoredWishlist()) {
       localStorage.setItem('wishlist', JSON.stringify(list));
       this.$emit('update:wishlist', [...list]);
     },
