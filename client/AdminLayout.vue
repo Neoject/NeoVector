@@ -41,8 +41,11 @@ export default {
   inject: ['params'],
   async mounted() {
    setTimeout(() => {
-     setPageTitle(this.params?.title, 'администрирование')
-   }, 100)
+     setPageTitle(this.params?.title, 'администрирование');
+   }, 50);
+    setTimeout(() => {
+      this.$refs["load_box"].remove();
+    }, 900);
   },
   computed: {
     page() {
@@ -67,15 +70,16 @@ export default {
         :page="page"
         :logo="params?.logo"
         @update:page="onUpdatePage"
+        @hide-loader=""
     />
   </router-view>
+  <div class="admin-loading-container" ref="load_box">
+    <div class="admin-loader"></div>
+  </div>
   <Taskbar />
 </template>
 
 <style>
-section {
-  padding: 12vh 0;
-}
 .admin-loading-container {
   position: absolute;
   display: flex;

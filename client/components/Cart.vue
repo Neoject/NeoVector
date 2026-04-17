@@ -64,13 +64,14 @@ export default {
       if (item.quantity > 1) {
         this._updateItem(item, item.quantity - 1);
       } else {
-        this.removeFromCart(item);
+        if (confirm('Вы действительно хотите удалить ' + item.name + ' из корзины?')) this.removeFromCart(item);
       }
     },
     removeFromCart(item) {
       const updated = this.localItems.filter(
           i => !this.isSameCartItem(i, item)
       );
+
       this._persist(updated);
     },
     _updateItem(item, quantity) {

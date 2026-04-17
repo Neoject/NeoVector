@@ -8,6 +8,7 @@ const MIN_H = 180;
 
 export default {
   name: 'Modal',
+  inheritAttrs: false,
   props: {
     modelValue: {
       type: Boolean,
@@ -43,16 +44,12 @@ export default {
     return {
       state: 'normal', // 'normal' | 'minimized' | 'maximized'
       resizeDirections: RESIZE_DIRECTIONS,
-      // Resize
       resizing: false,
       resizeDir: null,
       resizeStart: {},
-      // Drag
       dragging: false,
       dragStart: {},
-      // Pre-maximize snapshot
       snapshot: null,
-      // Bound listeners
       _onMouseMove: null,
       _onMouseUp: null,
     };
@@ -77,9 +74,9 @@ export default {
     this._clearListeners()
   },
   methods: {
-    // ─── Public API ──────────────────────────────────────────────────────────
+    //region ── Public API ──
     close() {
-      this._save();
+      this.save();
       unregisterMinimized(this.modalId);
       this.state = 'normal';
       this.$emit('update:modelValue', false);
@@ -90,7 +87,7 @@ export default {
         this.restore();
         return;
       }
-      this._save();
+      this.save();
       this.state = 'minimized';
       registerMinimized(this.modalId, this.title, () => this.restore(), () => this.close());
     },
@@ -147,7 +144,8 @@ export default {
       const el = this._el();
       if (el) el.style.zIndex = '1001';
     },
-    // ─── Open / Init ─────────────────────────────────────────────────────────
+    //endregion
+    //region ── Open / Init ──
     _openModal() {
       this.state = 'normal';
       const el = this._el();
@@ -155,7 +153,7 @@ export default {
       this.bringToFront();
 
       if (this.resizable) {
-        const saved = this._load();
+        const saved = this.load();
 
         if (saved?.width && saved?.height) {
           Object.assign(el.style, {
@@ -191,7 +189,8 @@ export default {
         bottom: 'auto',
       });
     },
-    // ─── Drag ────────────────────────────────────────────────────────────────
+    //endregion
+    //region ── Drag ──
     startDrag(event) {
       if (this.state === 'maximized') return;
       if (event.target.closest('.modal-controls') || event.target.closest('.modal-resize-handle')) return;
@@ -222,10 +221,11 @@ export default {
       this.dragging = false;
       const el = this._el();
       if (el) el.classList.remove('dragging');
-      this._save();
+      this.save();
       this._clearListeners();
     },
-    // ─── Resize ──────────────────────────────────────────────────────────────
+    //endregion
+    //region ── Resize ──
     startResize(event, dir) {
       if (this.state === 'maximized' || this.dragging) return;
       event.preventDefault();
@@ -290,11 +290,12 @@ export default {
       if (!this.resizing) return;
       this.resizing = false;
       this.resizeDir = null;
-      this._save();
+      this.save();
       this._clearListeners();
     },
-    // ─── Persistence ─────────────────────────────────────────────────────────
-    _save() {
+    //endregion
+    //region ── Persistence ──
+    save() {
       const el = this._el();
       if (!el) return;
       const r = el.getBoundingClientRect();
@@ -307,13 +308,14 @@ export default {
         }));
       } catch {}
     },
-    _load() {
+    load() {
       try {
         const raw = localStorage.getItem(this.storageKey);
         return raw ? JSON.parse(raw) : null;
       } catch { return null; }
     },
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+    //endregion
+    //region ── Helpers ──
     _el() {
       return this.$refs.modalEl || null;
     },
@@ -348,6 +350,7 @@ export default {
       if (this._onMouseMove) { document.removeEventListener('mousemove', this._onMouseMove); this._onMouseMove = null; }
       if (this._onMouseUp) { document.removeEventListener('mouseup', this._onMouseUp); this._onMouseUp = null; }
     },
+    //endregion
   },
 };
 </script>
@@ -359,12 +362,13 @@ export default {
           v-if="isVisible"
           ref="modalEl"
           class="modal"
+          v-bind="$attrs"
           :class="{
-          'is-minimized': state === 'minimized',
-          'is-maximized': state === 'maximized',
-          'is-dragging': dragging,
-          'is-resizing': resizing,
-        }"
+            'is-minimized': state === 'minimized',
+            'is-maximized': state === 'maximized',
+            'is-dragging': dragging,
+            'is-resizing': resizing,
+          }"
           :data-modal-id="modalId"
           @mousedown="bringToFront"
       >
@@ -415,12 +419,10 @@ export default {
             </div>
           </div>
         </div>
-
         <!-- Body -->
         <div v-show="state !== 'minimized'" class="modal-body">
           <slot />
         </div>
-
         <!-- Footer -->
         <div v-if="$slots.footer && state !== 'minimized'" class="modal-footer">
           <slot name="footer" />
@@ -448,13 +450,19 @@ export default {
   z-index: 1000;
   user-select: none;
 }
-.modal.is-maximized { border-radius: 0; border: none; }
+.modal.is-maximized {
+  border-radius: 0;
+  border: none;
+}
 .modal.is-minimized {
   display: none !important;
 }
-.modal.is-dragging  { cursor: grabbing; }
-.modal.is-resizing  { cursor: nwse-resize; }
-
+.modal.is-dragging {
+  cursor: grabbing;
+}
+.modal.is-resizing {
+  cursor: nwse-resize;
+}
 /* ─── Resize handles ──────────────────────────────────────────── */
 .modal-resize-handle {
   position: absolute;
@@ -462,17 +470,70 @@ export default {
   background: transparent;
   transition: background 0.2s ease;
 }
-.modal-resize-handle:hover { background: var(--hover-secondary); }
-
-.modal-resize-handle.nw { top: 0; left: 0; width: 20px; height: 20px; cursor: nwse-resize; border-radius: 15px 0 0 0; }
-.modal-resize-handle.ne { top: 0; right: 0; width: 20px; height: 20px; cursor: nesw-resize; border-radius: 0 15px 0 0; }
-.modal-resize-handle.sw { bottom: 0; left: 0; width: 20px; height: 20px; cursor: nesw-resize; border-radius: 0 0 0 15px; }
-.modal-resize-handle.se { bottom: 0; right: 0; width: 6px; height: 6px; cursor: nwse-resize; border-radius: 0 0 15px 0; z-index: 11; }
-.modal-resize-handle.n  { top: 0; left: 20px; right: 20px; height: 6px; cursor: ns-resize; }
-.modal-resize-handle.s  { bottom: 0; left: 20px; right: 22px; height: 6px; cursor: ns-resize; }
-.modal-resize-handle.e  { right: 0; top: 20px; bottom: 22px; width: 6px; cursor: ew-resize; }
-.modal-resize-handle.w  { left: 0; top: 20px; bottom: 20px; width: 6px; cursor: ew-resize; }
-
+.modal-resize-handle:hover {
+  background: var(--hover-secondary);
+}
+.modal-resize-handle.nw {
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  border-radius: 15px 0 0 0;
+}
+.modal-resize-handle.ne {
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nesw-resize;
+  border-radius: 0 15px 0 0;
+}
+.modal-resize-handle.sw {
+  bottom: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nesw-resize;
+  border-radius: 0 0 0 15px;
+}
+.modal-resize-handle.se {
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  cursor: nwse-resize;
+  border-radius: 0 0 15px 0;
+  z-index: 11;
+}
+.modal-resize-handle.n  {
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 6px;
+  cursor: ns-resize;
+}
+.modal-resize-handle.s  {
+  bottom: 0;
+  left: 20px;
+  right: 22px;
+  height: 6px;
+  cursor: ns-resize;
+}
+.modal-resize-handle.e  {
+  right: 0;
+  top: 20px;
+  bottom: 22px;
+  width: 6px;
+  cursor: ew-resize;
+}
+.modal-resize-handle.w  {
+  left: 0;
+  top: 20px;
+  bottom: 20px;
+  width: 6px;
+  cursor: ew-resize;
+}
 .modal-resize-handle.nw::after,
 .modal-resize-handle.ne::after,
 .modal-resize-handle.sw::after,
@@ -484,12 +545,33 @@ export default {
   border: 2px solid var(--border-strong);
   border-radius: 2px;
 }
-.modal-resize-handle.nw::after { top: 4px; left: 4px; border-right: none; border-bottom: none; }
-.modal-resize-handle.ne::after { top: 4px; right: 4px; border-left: none; border-bottom: none; }
-.modal-resize-handle.sw::after { bottom: 4px; left: 4px; border-right: none; border-top: none; }
-.modal-resize-handle.se::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
-.modal-resize-handle:hover::after { border-color: var(--border-strong); }
-
+.modal-resize-handle.nw::after {
+  top: 4px;
+  left: 4px;
+  border-right: none;
+  border-bottom: none;
+}
+.modal-resize-handle.ne::after {
+  top: 4px;
+  right: 4px;
+  border-left: none;
+  border-bottom: none;
+}
+.modal-resize-handle.sw::after {
+  bottom: 4px;
+  left: 4px;
+  border-right: none;
+  border-top: none;
+}
+.modal-resize-handle.se::after {
+  bottom: 4px;
+  right: 4px;
+  border-left: none;
+  border-top: none;
+}
+.modal-resize-handle:hover::after {
+  border-color: var(--border-strong);
+}
 /* ─── Toolbar ─────────────────────────────────────────────────── */
 .modal-toolbar {
   display: flex;
@@ -520,12 +602,26 @@ export default {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.ctrl-btn:hover     { background: var(--hover-secondary); color: var(--text-primary); }
-.ctrl-btn.active    { color: var(--primary); background: var(--border-light); }
-.btn-close:hover    { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-.btn-minimize:hover { background: rgba(234, 179, 8, 0.15);  color: #eab308; }
-.btn-maximize:hover { background: rgba(34, 197, 94, 0.15);  color: #22c55e; }
-
+.ctrl-btn:hover {
+  background: var(--hover-secondary);
+  color: var(--text-primary);
+}
+.ctrl-btn.active {
+  color: var(--primary);
+  background: var(--border-light);
+}
+.btn-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.btn-minimize:hover {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+}
+.btn-maximize:hover {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
 /* ─── Header ──────────────────────────────────────────────────── */
 .modal-header {
   display: flex;
@@ -537,8 +633,9 @@ export default {
   flex-shrink: 0;
   cursor: grab;
 }
-.modal-header:active { cursor: grabbing; }
-
+.modal-header:active {
+  cursor: grabbing;
+}
 .modal-title {
   display: flex;
   align-items: center;
@@ -546,9 +643,16 @@ export default {
   min-width: 0;
   pointer-events: none;
 }
-.modal-title-icon { font-size: 16px; color: var(--primary); flex-shrink: 0; }
-.modal-title h3   { color: var(--primary); margin: 0; font-size: 20px; }
-
+.modal-title-icon {
+  font-size: 16px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.modal-title h3 {
+  color: var(--primary);
+  margin: 0;
+  font-size: 20px;
+}
 /* ─── Body ────────────────────────────────────────────────────── */
 .modal-body {
   padding: 30px 38px 12px 30px;
@@ -559,9 +663,15 @@ export default {
   scrollbar-width: thin;
   scrollbar-color: var(--background-additional) var(--background-secondary);
 }
-.modal-body .form-group { margin-bottom: 20px; }
-.modal-body label { display: block; color: var(--primary); margin-bottom: 8px; font-weight: 500; }
-
+.modal-body .form-group {
+  margin-bottom: 20px;
+}
+.modal-body label {
+  display: block;
+  color: var(--primary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
 .modal-body input,
 .modal-body select {
   width: 100%;
@@ -580,11 +690,23 @@ export default {
   background: var(--background-secondary);
   box-shadow: 0 0 0 2px var(--border-light);
 }
-.modal-body input::placeholder { color: var(--text-secondary); }
-.modal-body select { background-image: none; padding-right: 40px; cursor: pointer; }
-.modal-body select option { background-color: var(--text-dark); color: var(--text-primary); padding: 8px 12px; }
-.modal-body select option:checked { background-color: var(--primary); color: var(--text-dark); }
-
+.modal-body input::placeholder {
+  color: var(--text-secondary);
+}
+.modal-body select {
+  background-image: none;
+  padding-right: 40px;
+  cursor: pointer;
+}
+.modal-body select option {
+  background-color: var(--text-dark);
+  color: var(--text-primary);
+  padding: 8px 12px;
+}
+.modal-body select option:checked {
+  background-color: var(--primary);
+  color: var(--text-dark);
+}
 .modal-body .form-group textarea {
   width: 100%;
   height: 200px;
@@ -596,15 +718,36 @@ export default {
   font-family: inherit;
   font-size: 16px;
 }
-.modal-body textarea::-webkit-resizer         { background-color: var(--info-primary); border-radius: 1px; border: 2px solid white; }
-.modal-body textarea::-webkit-resizer:hover   { background-color: var(--info-secondary); }
-
-.modal-body::-webkit-scrollbar         { width: 8px; height: 8px; }
-.modal-body::-webkit-scrollbar-track   { background: var(--background-additional); border-radius: 4px; margin: 10px 12px 12px 0; }
-.modal-body::-webkit-scrollbar-thumb   { background: var(--background-secondary); border-radius: 4px; border: 1px solid var(--border-strong); }
-.modal-body::-webkit-scrollbar-thumb:hover { background: var(--hover-primary); border-color: var(--border-medium); }
-.modal-body::-webkit-scrollbar-corner  { background: var(--background-secondary); border-radius: 0 0 15px 0; }
-
+.modal-body textarea::-webkit-resizer {
+  background-color: var(--info-primary);
+  border-radius: 1px;
+  border: 2px solid white;
+}
+.modal-body textarea::-webkit-resizer:hover {
+  background-color: var(--info-secondary);
+}
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+  background: var(--background-additional);
+  border-radius: 4px;
+  margin: 10px 12px 12px 0;
+}
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--background-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--hover-primary);
+  border-color: var(--border-medium);
+}
+.modal-body::-webkit-scrollbar-corner {
+  background: var(--background-secondary);
+  border-radius: 0 0 15px 0;
+}
 /* ─── Footer ──────────────────────────────────────────────────── */
 .modal-footer {
   display: flex;
@@ -615,13 +758,21 @@ export default {
   border-top: 1px solid var(--border-light);
   flex-shrink: 0;
 }
-
 /* ─── Transition ──────────────────────────────────────────────── */
-.modal-fade-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
-.modal-fade-leave-active { transition: opacity 0.14s ease, transform 0.14s ease; }
-.modal-fade-enter-from   { opacity: 0; transform: scale(0.97) translateY(-6px); }
-.modal-fade-leave-to     { opacity: 0; transform: scale(0.97) translateY(-4px); }
-
+.modal-fade-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.modal-fade-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.modal-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.97) translateY(-6px);
+}
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.97) translateY(-4px);
+}
 @media (max-width: 768px) {
   .modal { width: 95%; max-width: none; margin: 20px auto; }
   .modal-body { padding: 20px; }

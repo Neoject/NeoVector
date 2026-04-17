@@ -5,6 +5,7 @@ import {setPageTitle} from "../../server/src/utils";
 export default {
   name: "NavBar",
   inject: ['params'],
+  emits: ['hide-loader'],
   props: {
     logo: {
       type: String,

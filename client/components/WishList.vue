@@ -3,9 +3,9 @@ export default {
   name: "WishList",
   props: {
     favoritesOpen: { type: Boolean, default: false },
-    wishlist:      { type: Array,   default: () => [] },
-    products:      { type: Array,   default: () => [] },
-    cartItems:     { type: Array,   default: () => [] }
+    wishlist: { type: Array, default: () => [] },
+    products: { type: Array, default: () => [] },
+    cartItems: { type: Array, default: () => [] }
   },
   emits: ['close', 'update:wishlist', 'add-to-cart', 'nav-click'],
   data() {
@@ -43,6 +43,15 @@ export default {
     },
     addFromFavoritesToCart(product, event) {
       this.$emit('add-to-cart', product, event);
+    },
+    toggle(productId) {
+      if (this.wishlist.includes(productId)) {
+        this.wishlist = this.wishlist.filter(id => id !== productId);
+      } else {
+        this.wishlist.push(productId);
+      }
+
+      this.saveWishlist();
     },
     /* ── свайп ── */
     handleFavoritesTouchStart(e) {
@@ -102,7 +111,7 @@ export default {
         </button>
       </div>
       <div class="favorites-content">
-        <div v-if="favoriteProducts.length > 0">
+        <div v-if="wishlist.length > 0">
           <div
               class="favorites-item"
               v-for="product in favoriteProducts"
@@ -137,7 +146,7 @@ export default {
                 >
                   <i class="fas fa-shopping-cart"></i> В корзину
                 </button>
-                <button class="remove-from-favorites" @click="toggleWishlist(product.id)">
+                <button class="remove-from-favorites" @click="toggle(product.id)">
                   <i class="fas fa-heart-broken"></i> Удалить
                 </button>
               </div>
@@ -218,9 +227,161 @@ export default {
 .favorites-content::-webkit-scrollbar-thumb:hover {
   background: var(--background-secondary);
 }
+.add-to-cart-btn {
+  flex: 1;
+  min-height: 3rem;
+  min-width: 14vw;
+  max-width: 24vw;
+  padding: 6px 18px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  background: linear-gradient(135deg, var(--text-simple) 0%, var(--warning-dark) 100%);
+  color: var(--text-dark);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.add-to-cart-btn:hover {
+  -webkit-transform: translateY(-2px);
+  -moz-transform: translateY(-2px);
+  -ms-transform: translateY(-2px);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+}
+.add-to-cart-btn-option {
+  background: linear-gradient(135deg, var(--text-simple) 0%, var(--warning-dark) 100%);
+  color: var(--text-dark);
+  padding: 6px 18px;
+  border: none;
+  border-radius: 50px;
+  margin: 0;
+}
+.add-to-cart-btn-option:hover {}
+.add-to-cart-btn.fav-cart-btn {
+  min-width: 2vw;
+}
 .empty-favorites {
   text-align: center;
   padding: 40px 0;
   color: var(--text-secondary);
+}
+.favorites-item {
+  display: flex;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+.favorites-item-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 15px;
+  image-rendering: high-quality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+.favorites-item-details {
+  flex: 1;
+}
+.favorites-item-title {
+  font-size: 16px;
+  margin-bottom: 5px;
+  color: var(--primary);
+}
+.favorites-item-material {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.favorites-item-price {
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.favorites-item-price .price-sale {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 18px;
+}
+.favorites-item-price .price-old {
+  font-size: 14px;
+  color: var(--text-additional);
+  text-decoration: line-through;
+}
+.favorites-item-price:not(:has(.price-sale)) {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+.favorites-item-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.add-to-cart-btn {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  color: var(--text-dark);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+.add-to-cart-btn:hover {
+  -webkit-transform: translateY(-2px);
+  -moz-transform: translateY(-2px);
+  -ms-transform: translateY(-2px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-primary);
+}
+.add-to-cart-btn-option {
+  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-alt) 100%);
+  color: var(--text-dark);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.add-to-cart-btn-option:hover {}
+.remove-from-favorites {
+  background: none;
+  border: 1px solid var(--border-medium);
+  color: var(--primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+.remove-from-favorites:hover {
+  background: var(--background-additional);
+  border-color: var(--border-strong);
 }
 </style>

@@ -451,7 +451,7 @@ export default {
           </div>
           <h2>Стоимость доставки</h2>
           <div class="form-group">
-            <label>Белоруссия</label>
+            <label>Беларусь</label>
             <input type="text" v-model="data.deliveryBel">
           </div>
           <div class="form-group">

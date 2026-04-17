@@ -18,7 +18,6 @@ export default {
   ],
   data() {
     return {
-      products: [],
       currentProduct: null,
       activeFilter: 'all',
       imageInfo: { },
@@ -43,6 +42,10 @@ export default {
         type: '',
         settings: ''
       }
+    },
+    products: {
+      type: Array,
+      default: () => []
     },
     categories: {
       type: Array,
@@ -127,7 +130,6 @@ export default {
     },
   },
   async mounted() {
-    await this.loadProducts();
     this.localCartItems = Array.isArray(this.cartItems) ? [...this.cartItems] : this.getStoredCart();
     this.localWishlist = Array.isArray(this.wishlist) ? [...this.wishlist] : this.getStoredWishlist();
     this.initProductLinkHandlers();
@@ -137,49 +139,6 @@ export default {
     });
   },
   methods: {
-    async loadProducts() {
-      try {
-        let response;
-        response = await api.getProducts();
-
-        if (response.ok) {
-          const incoming = await response.json();
-          const list = Array.isArray(incoming) ? incoming : [];
-
-          this.products = list
-              .filter(Boolean)
-              .map((product) => {
-                const p = { ...product };
-
-                p.additional_images = Array.isArray(p.additional_images)
-                    ? p.additional_images.map((img) => img).filter(Boolean)
-                    : [];
-
-                p.additional_videos = Array.isArray(p.additional_videos)
-                    ? p.additional_videos.map((vid) => vid).filter(Boolean)
-                    : [];
-
-                return p;
-              });
-
-          this.products.forEach((product) => {
-            if (product && product.id) {
-              this.imageLoadingStates[product.id] = true;
-            }
-          });
-
-          this.$nextTick(() => {
-            this.initProductLinkHandlers();
-          });
-        } else {
-          this.products = [];
-        }
-
-      } catch (error) {
-        console.error('Error loading products:', error);
-        this.products = [];
-      }
-    },
     toggleCurrentProductWishlist() {
       if (!this.currentProduct) return;
       if (this.isCurrentProductInWishlist) {

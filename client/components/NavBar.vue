@@ -12,6 +12,7 @@ export default {
     // cartItems: { type: Array, default: () => [] },
     // wishlist: { type: Array, default: () => [] },
     auth: { type: Object, default: () => ({ authenticated: false, role: null, username: null }) },
+    products: { type: Array, default: [] },
     isMainPage: { type: Boolean, default: true },
     navigationButtons: { type: Array, default: () => [] },
     currentVirtualPage: { type: Object, default: null }
@@ -354,7 +355,7 @@ export default {
   <WishList
       :favorites-open="favoritesOpen"
       :wishlist="wishlist"
-      :products="[]"
+      :products="products"
       :cart-items="cartItems"
       @close="favoritesOpen = false; $emit('overlay', false)"
       @update:wishlist="$emit('update:wishlist', $event)"
