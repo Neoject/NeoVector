@@ -43,10 +43,8 @@ export class HomeContentModel {
     }
 
     static async saveAll(items: HomeContentItem[]): Promise<void> {
-        // Clear existing content
         await db.query('DELETE FROM home_content');
 
-        // Insert new content
         for (const item of items) {
             await db.query(
                 'INSERT INTO home_content (section, title, content, sort_order) VALUES (?, ?, ?, ?)',
