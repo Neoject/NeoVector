@@ -15,6 +15,7 @@ import InfoButtons from "./blocks/InfoButtons.vue";
 import Footer from "./blocks/Footer.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../server/src/utils";
+import {api} from "../server/api";
 
 export default {
   name: "App",
@@ -22,16 +23,6 @@ export default {
     NavBar, Hero, Products, Projects, Features, Buttons, History, Text, Stats, Contact, Actual, InfoButtons, Footer
   },
   inject: ['params'],
-  async mounted() {
-    await this.refreshAuth();
-
-    this.loadBlocks().then(() => {
-      this.updateBlocks();
-    });
-
-    await this.loadContent();
-    setPageTitle(this.params.title, 'конструктор сайтов');
-  },
   data() {
     const allComponents = {
       hero: markRaw(Hero),
@@ -62,6 +53,7 @@ export default {
       cartItems: [],
       wishlist: [],
       imageMetaTags: '',
+      imageLoadingStates: {},
       isMobile: false,
       cartOpen: false,
       favoritesOpen: false,
@@ -75,6 +67,20 @@ export default {
       features: [],
       elementStates: {},
     }
+  },
+  async mounted() {
+    await this.refreshAuth();
+
+    this.loadBlocks().then(() => {
+      this.updateBlocks();
+    });
+
+    await this.loadContent();
+    setPageTitle(this.params.title, 'конструктор сайтов');
+
+    await this.$nextTick(() => {
+      this.loadProducts();
+    });
   },
   computed: {
     /*filteredBlocks() {
@@ -123,6 +129,65 @@ export default {
     },
     onLogout() {
       this.auth = { authenticated: false, role: null, username: null };
+    },
+    async loadProducts() {
+      try {
+        let response;
+        response = await api.getProducts();
+
+        if (response.ok) {
+          const incoming = await response.json();
+          const list = Array.isArray(incoming) ? incoming : [];
+
+          this.products = list
+              .filter(Boolean)
+              .map((product) => {
+                const p = { ...product };
+
+                p.additional_images = Array.isArray(p.additional_images)
+                    ? p.additional_images.map((img) => img).filter(Boolean)
+                    : [];
+
+                p.additional_videos = Array.isArray(p.additional_videos)
+                    ? p.additional_videos.map((vid) => vid).filter(Boolean)
+                    : [];
+
+                return p;
+              });
+
+          this.products.forEach((product) => {
+            if (product && product.id) {
+              this.imageLoadingStates[product.id] = true;
+            }
+          });
+
+          await this.$nextTick(() => {
+            this.initProductLinkHandlers();
+          });
+        } else {
+          this.products = [];
+        }
+
+      } catch (error) {
+        console.error('Error loading products:', error);
+        this.products = [];
+      }
+    },
+    initProductLinkHandlers() {
+      this.$nextTick(() => {
+        const productLinks = document.querySelectorAll('.product-link, .product-title');
+
+        productLinks.forEach(link => {
+          const href = link.getAttribute('href');
+
+          if (href && (href.includes('/product/') || href.includes('product/?id='))) {
+            link.addEventListener('click', (event) => {
+              const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+              sessionStorage.setItem('mainPageScrollPosition', scrollPosition.toString());
+            });
+          }
+        });
+      });
     },
     getBlockProps(block) {
       const base = {
@@ -279,6 +344,7 @@ export default {
   <NavBar
       ref="navBar"
       :auth="auth"
+      :products="products"
       @auth-changed="refreshAuth"
       @logout="onLogout"
       @update:cartItems="handleCartUpdated"

@@ -115,7 +115,7 @@ export const Values = {
                 } else if (page === 'orders') {
                     await this.$refs.ordersList?.loadOrders?.();
                 } else if (page === 'users') {
-                    await this.$refs['users-list']?.loadUsers?.();
+                    await this.$refs['users-list']?.getUsers?.();
                 } else if (page === 'messages') {
                     this.selectedMessage = null;
                     const url = new URL(window.location.href);
