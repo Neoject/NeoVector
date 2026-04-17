@@ -494,7 +494,7 @@ export default {
       </div>
     </div>
     <div style="margin-top:15px">
-      <button class="btn btn-success" @click="saveBlocksOrder" :disabled="!hasUnsavedChanges">
+      <button class="btn btn-primary" @click="saveBlocksOrder" :disabled="!hasUnsavedChanges">
         <i class="fas fa-save"></i> Сохранить порядок
       </button>
     </div>
@@ -532,7 +532,6 @@ export default {
       </div>
       <div class="form-group"><label>Название блока</label><input type="text" v-model="blockForm.title" placeholder="Для идентификации в админке"></div>
       <div v-if="blockForm.settings && 'sectionTitle' in blockForm.settings" class="form-group"><label>Заголовок секции</label><input type="text" v-model="blockForm.settings.sectionTitle"></div>
-
       <!-- hero -->
       <template v-if="blockForm.type==='hero'">
         <div class="form-group"><label>Основной заголовок</label><input type="text" v-model="blockForm.settings.mainTitle"></div>
@@ -553,7 +552,6 @@ export default {
         </div>
         <div class="form-group"><label>Позиция фона</label><select v-model="blockForm.settings.backgroundPosition"><option value="center">По центру</option><option value="top">Сверху</option><option value="bottom">Снизу</option></select></div>
       </template>
-
       <!-- features -->
       <template v-if="blockForm.type==='features'">
         <div class="form-group">
@@ -574,7 +572,6 @@ export default {
           <button type="button" @click="addFeature" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
         </div>
       </template>
-
       <!-- history -->
       <template v-if="blockForm.type==='history'">
         <div class="form-group">
@@ -588,7 +585,6 @@ export default {
           <button type="button" @click="addHistoryEvent" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
         </div>
       </template>
-
       <!-- stats -->
       <template v-if="blockForm.type==='stats'">
         <div class="form-group">
@@ -601,17 +597,14 @@ export default {
           <button type="button" @click="addStat" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
         </div>
       </template>
-
       <!-- text / footer -->
       <template v-if="blockForm.type==='text' || blockForm.type==='footer'">
         <div class="form-group"><label>Содержимое</label><textarea v-model="blockForm.content" rows="6"></textarea></div>
       </template>
-
       <!-- products -->
       <template v-if="blockForm.type==='products'">
         <div class="form-group"><label>Описание</label><textarea v-model="blockForm.content" rows="3"></textarea></div>
       </template>
-
       <!-- buttons / info_buttons -->
       <template v-if="blockForm.type==='buttons' || blockForm.type==='info_buttons'">
         <div class="form-group">
@@ -628,7 +621,6 @@ export default {
           <button type="button" @click="addButton" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить кнопку</button>
         </div>
       </template>
-
       <!-- contact -->
       <template v-if="blockForm.type==='contact'">
         <div class="form-group"><label>Email</label><input type="email" v-model="blockForm.settings.email"></div>
@@ -641,7 +633,6 @@ export default {
           <div class="form-group"><label>Telegram</label><input type="url" v-model="blockForm.settings.socialLinks.telegram"></div>
         </div>
       </template>
-
       <!-- actual -->
       <template v-if="blockForm.type==='actual'">
         <div class="form-group">
@@ -673,7 +664,7 @@ export default {
           <button type="button" @click="addPromotion" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить акцию</button>
         </div>
       </template>
-
+      <!-- footer -->
       <div v-if="blockForm.type !== 'footer' && blockForm.type !== 'info_buttons'" class="form-group">
         <label><input type="checkbox" v-model="blockForm.is_active"> Активен</label>
       </div>

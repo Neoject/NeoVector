@@ -47,8 +47,8 @@ export default {
         {{ block.settings.description }}
       </p>
       <div class="hero-buttons" :id="'hero-buttons-' + block.id">
-        <span @click="navClick($event, 'products')" class="btn">{{ block.settings.buttonA }}</span>
-        <span @click="navClick($event, 'features')" class="btn btn-outline">{{ block.settings.buttonB }}</span>
+        <span @click="navClick($event, 'products')" class="btn btn-primary">{{ block.settings.buttonA }}</span>
+        <span @click="navClick($event, 'features')" class="btn btn-secondary">{{ block.settings.buttonB }}</span>
       </div>
     </div>
   </section>

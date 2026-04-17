@@ -17,6 +17,17 @@ import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../server/src/utils";
 import {api} from "../server/api";
 
+const readStorageArray = (key) => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
 export default {
   name: "App",
   components: {
@@ -51,7 +62,7 @@ export default {
       products: [],
       categories: [],
       cartItems: [],
-      wishlist: [],
+      wishlist: readStorageArray('wishlist'),
       imageMetaTags: '',
       imageLoadingStates: {},
       isMobile: false,
@@ -111,6 +122,10 @@ export default {
 
       this.cartItems = Array.isArray(nextItems) ? nextItems : [];
       this.$refs.navBar?.loadCart?.();
+    },
+    handleWishlistUpdated(items) {
+      this.wishlist = Array.isArray(items) ? [...items] : [];
+      localStorage.setItem('wishlist', JSON.stringify(this.wishlist));
     },
     close() {
       this.$refs.navBar?.closePanels?.();
@@ -215,8 +230,8 @@ export default {
             getCurrentProductImage: this.getCurrentProductImage,
 
             'onUpdate:cartItems': e => this.handleCartUpdated(e),
-            onUpdateCart: e => this.handleCartUpdated(e),
-            'onUpdate:wishlist': e => this.wishlist = e,
+            'onUpdateCart': e => this.handleCartUpdated(e),
+            'onUpdate:wishlist': e => this.handleWishlistUpdated(e),
 
             onOpenCart: () => {
               this.closeFavorites();
@@ -345,9 +360,11 @@ export default {
       ref="navBar"
       :auth="auth"
       :products="products"
+      :wishlist="wishlist"
       @auth-changed="refreshAuth"
       @logout="onLogout"
       @update:cartItems="handleCartUpdated"
+      @update:wishlist="handleWishlistUpdated"
       @overlay="show"
   />
   <component

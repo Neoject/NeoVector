@@ -58,31 +58,33 @@ export default {
     },
     /* ── управление количеством ── */
     increaseQuantity(item) {
-      this._updateItem(item, item.quantity + 1);
+      this.updateItem(item, item.quantity + 1);
     },
     decreaseQuantity(item) {
       if (item.quantity > 1) {
-        this._updateItem(item, item.quantity - 1);
+        this.updateItem(item, item.quantity - 1);
       } else {
         if (confirm('Вы действительно хотите удалить ' + item.name + ' из корзины?')) this.removeFromCart(item);
       }
     },
     removeFromCart(item) {
+      if (!confirm('Вы действительно хотите удалить ' + item.name + ' из корзины?')) return;
+
       const updated = this.localItems.filter(
           i => !this.isSameCartItem(i, item)
       );
 
-      this._persist(updated);
+      this.persist(updated);
     },
-    _updateItem(item, quantity) {
+    updateItem(item, quantity) {
       const updated = this.localItems.map(i =>
           this.isSameCartItem(i, item)
               ? { ...i, quantity }
               : i
       );
-      this._persist(updated);
+      this.persist(updated);
     },
-    _persist(items) {
+    persist(items) {
       this.localItems = Array.isArray(items) ? items.map(item => ({ ...item })) : [];
       localStorage.setItem('cart', JSON.stringify(items));
       this.$emit('update:cartItems', items);
