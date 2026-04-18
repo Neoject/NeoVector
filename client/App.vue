@@ -143,7 +143,7 @@ body {
   flex-direction: column;
   min-height: 100%;
   background: var(--background);
-  color: var(--primary);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 header {

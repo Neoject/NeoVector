@@ -12,6 +12,24 @@ function cssToHex(val) {
   return '#000000';
 }
 
+function extractAlpha(val) {
+  if (!val) return 100;
+  const m = val.match(/rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\s*\)/);
+  if (m) return Math.round(parseFloat(m[1]) * 100);
+  if (/^#[0-9a-fA-F]{8}$/.test(val.trim())) {
+    return Math.round((parseInt(val.slice(7, 9), 16) / 255) * 100);
+  }
+  return 100;
+}
+
+function hexToRgba(hex, opacity) {
+  if (opacity >= 100) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${(opacity / 100).toFixed(2)})`;
+}
+
 function isGradient(val) {
   return typeof val === 'string' && val.trim().includes('gradient');
 }
@@ -20,29 +38,27 @@ let _nextStopId = 1;
 
 export default {
   name: 'ColorPicker',
-
   props: {
     modelValue: { type: String, default: '#000000' },
   },
   emits: ['update:modelValue'],
-
   data() {
     return {
       isOpen: false,
-      mode: 'solid',            // 'solid' | 'gradient'
+      mode: 'solid',
       solidColor: '#4678d8',
-      gradientType: 'linear',   // 'linear' | 'radial'
+      solidOpacity: 100,
+      gradientType: 'linear',
       gradientAngle: 135,
       stops: [
-        { id: _nextStopId++, color: '#4678d8', position: 0 },
-        { id: _nextStopId++, color: '#8e4aff', position: 100 },
+        { id: _nextStopId++, color: '#4678d8', position: 0,   opacity: 100 },
+        { id: _nextStopId++, color: '#8e4aff', position: 100, opacity: 100 },
       ],
       activeStopId: 1,
       dragging: null,
       _skipWatcher: false,
     };
   },
-
   computed: {
     activeStop() {
       return this.stops.find(s => s.id === this.activeStopId) || this.stops[0];
@@ -51,15 +67,22 @@ export default {
       return [...this.stops].sort((a, b) => a.position - b.position);
     },
     gradientCss() {
-      const str = this.sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
+      const str = this.sortedStops
+          .map(s => `${hexToRgba(s.color, s.opacity ?? 100)} ${s.position}%`)
+          .join(', ');
       if (this.gradientType === 'radial') return `radial-gradient(circle, ${str})`;
       return `linear-gradient(${this.gradientAngle}deg, ${str})`;
     },
     currentValue() {
-      return this.mode === 'solid' ? this.solidColor : this.gradientCss;
+      if (this.mode === 'solid') return hexToRgba(this.solidColor, this.solidOpacity);
+      return this.gradientCss;
+    },
+    swatchBg() {
+      return this.mode === 'solid'
+          ? hexToRgba(this.solidColor, this.solidOpacity)
+          : this.gradientCss;
     },
   },
-
   watch: {
     modelValue: {
       immediate: true,
@@ -69,19 +92,18 @@ export default {
       },
     },
   },
-
   mounted() {
     this._onOutside = (e) => {
       if (this.isOpen && this.$el && !this.$el.contains(e.target)) {
         this.isOpen = false;
       }
     };
+
     document.addEventListener('mousedown', this._onOutside);
   },
   beforeUnmount() {
     document.removeEventListener('mousedown', this._onOutside);
   },
-
   methods: {
     parseIncoming(val) {
       if (!val) return;
@@ -90,16 +112,15 @@ export default {
         this.parseGradient(val);
       } else {
         this.mode = 'solid';
-        this.solidColor = cssToHex(val);
+        this.solidColor   = cssToHex(val);
+        this.solidOpacity = extractAlpha(val);
       }
     },
-
     parseGradient(val) {
       this.gradientType = val.trim().startsWith('radial') ? 'radial' : 'linear';
       const angleM = val.match(/(\d+)deg/);
       if (angleM) this.gradientAngle = parseInt(angleM[1]);
 
-      // Extract inner content
       const inner = val.replace(/^(?:linear|radial)-gradient\(\s*/, '').replace(/\s*\)$/, '');
       const tokens = inner.split(',').map(s => s.trim()).filter(Boolean);
       const parsed = [];
@@ -107,50 +128,57 @@ export default {
 
       for (const tok of tokens) {
         if (/^\d+deg$/.test(tok) || tok === 'circle' || tok === 'ellipse' || /^to\s/.test(tok)) continue;
-        const colorM = tok.match(/(#[0-9a-fA-F]{3,8})/);
+        const colorM = tok.match(/(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/);
         const posM   = tok.match(/(\d+(?:\.\d+)?)%/);
         if (colorM) {
+          const alpha = extractAlpha(colorM[1]);
           parsed.push({
             id: sid++,
-            color: cssToHex(colorM[1]),
+            color:    cssToHex(colorM[1]),
+            opacity:  alpha,
             position: posM ? parseFloat(posM[1]) : parsed.length === 0 ? 0 : 100,
           });
         }
       }
+
       if (parsed.length >= 2) {
         this.stops = parsed;
         _nextStopId = sid;
         this.activeStopId = parsed[0].id;
       }
     },
-
-    toggle() { this.isOpen = !this.isOpen; },
-
+    toggle() {
+      this.isOpen = !this.isOpen;
+      },
     emit() {
       this._skipWatcher = true;
       this.$emit('update:modelValue', this.currentValue);
       this.$nextTick(() => { this._skipWatcher = false; });
     },
-
     setMode(m) {
       this.mode = m;
       this.$nextTick(() => this.emit());
     },
-
-    // ── Solid ───────────────────────────────────────────────────
     onSolidInput(e) {
       this.solidColor = e.target.value;
       this.emit();
     },
     onSolidHexInput(e) {
       const v = e.target.value.trim();
+
       if (/^#[0-9a-fA-F]{6}$/.test(v)) {
         this.solidColor = v;
         this.emit();
       }
     },
-
-    // ── Gradient ────────────────────────────────────────────────
+    onOpacityInput(e) {
+      this.solidOpacity = parseInt(e.target.value);
+      this.emit();
+    },
+    onOpacityText(e) {
+      const v = parseInt(e.target.value);
+      if (!isNaN(v)) { this.solidOpacity = Math.min(100, Math.max(0, v)); this.emit(); }
+    },
     onAngleInput(e) {
       this.gradientAngle = parseInt(e.target.value);
       this.emit();
@@ -159,7 +187,6 @@ export default {
       const v = parseInt(e.target.value);
       if (!isNaN(v)) { this.gradientAngle = Math.min(360, Math.max(0, v)); this.emit(); }
     },
-
     onStopColorInput(e) {
       if (this.activeStop) { this.activeStop.color = e.target.value; this.emit(); }
     },
@@ -170,23 +197,35 @@ export default {
         this.emit();
       }
     },
-
+    onStopOpacityInput(e) {
+      if (this.activeStop) {
+        this.activeStop.opacity = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+        this.emit();
+      }
+    },
+    onStopOpacityText(e) {
+      if (this.activeStop) {
+        const v = parseInt(e.target.value);
+        if (!isNaN(v)) { this.activeStop.opacity = Math.min(100, Math.max(0, v)); this.emit(); }
+      }
+    },
     addStop() {
-      // Place between the two most distant neighbours
       const sorted = this.sortedStops;
       let bestPos = 50;
       let maxGap = -1;
+
       for (let i = 0; i < sorted.length - 1; i++) {
         const gap = sorted[i + 1].position - sorted[i].position;
         if (gap > maxGap) { maxGap = gap; bestPos = Math.round((sorted[i].position + sorted[i + 1].position) / 2); }
       }
+
       const nearest = [...this.stops].sort((a, b) => Math.abs(a.position - bestPos) - Math.abs(b.position - bestPos))[0];
-      const ns = { id: _nextStopId++, color: nearest.color, position: bestPos };
+      const ns = { id: _nextStopId++, color: nearest.color, position: bestPos, opacity: nearest.opacity ?? 100 };
+
       this.stops.push(ns);
       this.activeStopId = ns.id;
       this.emit();
     },
-
     removeActiveStop() {
       if (this.stops.length <= 2) return;
       const idx = this.stops.findIndex(s => s.id === this.activeStopId);
@@ -194,26 +233,26 @@ export default {
       this.activeStopId = this.stops[Math.max(0, idx - 1)].id;
       this.emit();
     },
-
     onBarClick(e) {
       if (this.dragging) return;
       const bar = this.$refs.gradientBar;
       if (!bar) return;
+
       const rect = bar.getBoundingClientRect();
       const pos = Math.round(((e.clientX - rect.left) / rect.width) * 100);
       const nearest = [...this.stops].sort((a, b) => Math.abs(a.position - pos) - Math.abs(b.position - pos))[0];
-      const ns = { id: _nextStopId++, color: nearest.color, position: pos };
+      const ns = { id: _nextStopId++, color: nearest.color, position: pos, opacity: nearest.opacity ?? 100 };
       this.stops.push(ns);
       this.activeStopId = ns.id;
       this.emit();
     },
-
     startDrag(e, stop) {
       e.preventDefault();
       e.stopPropagation();
       this.activeStopId = stop.id;
       const bar = this.$refs.gradientBar;
       if (!bar) return;
+
       const rect = bar.getBoundingClientRect();
       const startX = e.clientX;
       const startPos = stop.position;
@@ -225,11 +264,13 @@ export default {
         const s = this.stops.find(s => s.id === stop.id);
         if (s) { s.position = Math.min(100, Math.max(0, Math.round(startPos + dPct))); this.emit(); }
       };
+
       const onUp = () => {
         this.dragging = null;
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
       };
+
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
     },
@@ -239,19 +280,12 @@ export default {
 
 <template>
   <div class="cpw">
-    <!-- Swatch trigger -->
-    <div
-        class="cpw-swatch"
-        :style="{ background: modelValue || '#000000' }"
-        @click="toggle"
-        title="Выбрать цвет / градиент"
-    />
-
-    <!-- Popover -->
+    <div class="cpw-swatch-wrap" @click="toggle" title="Выбрать цвет / градиент">
+      <div class="cpw-swatch-checker" />
+      <div class="cpw-swatch" :style="{ background: swatchBg }" />
+    </div>
     <Transition name="cpw-fade">
       <div v-if="isOpen" class="cpw-popover">
-
-        <!-- Tabs -->
         <div class="cpw-tabs">
           <button :class="['cpw-tab', { active: mode === 'solid' }]" @click="setMode('solid')">
             <span class="cpw-tab-icon">⬤</span> Цвет
@@ -260,8 +294,6 @@ export default {
             <span class="cpw-tab-icon">▦</span> Градиент
           </button>
         </div>
-
-        <!-- ── SOLID ─────────────────────────────── -->
         <div v-if="mode === 'solid'" class="cpw-body">
           <input type="color" class="cpw-native-color" :value="solidColor" @input="onSolidInput" />
           <div class="cpw-hex-row">
@@ -271,47 +303,44 @@ export default {
                 class="cpw-hex-input"
                 :value="solidColor.slice(1)"
                 @change="onSolidHexInput({ target: { value: '#' + $event.target.value } })"
-                maxlength="6"
+                maxlength="8"
                 spellcheck="false"
             />
           </div>
-        </div>
-
-        <!-- ── GRADIENT ──────────────────────────── -->
-        <div v-else class="cpw-body">
-
-          <!-- Type selector -->
-          <div class="cpw-segmented">
-            <button
-                :class="{ active: gradientType === 'linear' }"
-                @click="gradientType = 'linear'; emit()"
-            >Линейный</button>
-            <button
-                :class="{ active: gradientType === 'radial' }"
-                @click="gradientType = 'radial'; emit()"
-            >Радиальный</button>
-          </div>
-
-          <!-- Angle (linear only) -->
-          <div v-if="gradientType === 'linear'" class="cpw-angle-row">
-            <div class="cpw-angle-dial" :style="{ '--a': gradientAngle + 'deg' }" @click="onBarClick">
-              <div class="cpw-angle-needle" />
+          <div class="cpw-opacity-row">
+            <span class="cpw-opacity-label">Прозрачность</span>
+            <div
+                class="cpw-opacity-track"
+                :style="{ '--hc': solidColor }"
+            >
+              <input
+                  type="range" min="0" max="100"
+                  :value="solidOpacity"
+                  @input="onOpacityInput"
+                  class="cpw-opacity-range"
+              />
             </div>
             <input
-                type="range" min="0" max="360"
-                :value="gradientAngle"
-                @input="onAngleInput"
-                class="cpw-range"
+                type="number" min="0" max="100"
+                :value="solidOpacity"
+                @change="onOpacityText"
+                class="cpw-opacity-num"
             />
-            <input
-                type="number" min="0" max="360"
-                :value="gradientAngle"
-                @change="onAngleText"
-                class="cpw-angle-num"
-            />
+            <span class="cpw-pos-unit">%</span>
           </div>
-
-          <!-- Gradient bar + handles -->
+        </div>
+        <div v-else class="cpw-body">
+          <div class="cpw-segmented">
+            <button :class="{ active: gradientType === 'linear' }" @click="gradientType = 'linear'; emit()">Линейный</button>
+            <button :class="{ active: gradientType === 'radial' }" @click="gradientType = 'radial'; emit()">Радиальный</button>
+          </div>
+          <div v-if="gradientType === 'linear'" class="cpw-angle-row">
+            <div class="cpw-angle-dial" :style="{ '--a': gradientAngle + 'deg' }">
+              <div class="cpw-angle-needle" />
+            </div>
+            <input type="range" min="0" max="360" :value="gradientAngle" @input="onAngleInput" class="cpw-range" />
+            <input type="number" min="0" max="360" :value="gradientAngle" @change="onAngleText" class="cpw-angle-num" />
+          </div>
           <div class="cpw-gradient-area">
             <div
                 ref="gradientBar"
@@ -320,29 +349,21 @@ export default {
                 @click="onBarClick"
                 title="Клик — добавить точку"
             />
-            <!-- Stop handles -->
             <div class="cpw-handles-track">
               <div
                   v-for="stop in stops"
                   :key="stop.id"
                   class="cpw-handle"
                   :class="{ active: stop.id === activeStopId }"
-                  :style="{ left: stop.position + '%', background: stop.color }"
+                  :style="{ left: stop.position + '%', background: hexToRgba ? hexToRgba(stop.color, stop.opacity ?? 100) : stop.color }"
                   @mousedown="startDrag($event, stop)"
                   @click.stop="activeStopId = stop.id"
                   :title="stop.position + '%'"
               />
             </div>
           </div>
-
-          <!-- Active stop controls -->
           <div v-if="activeStop" class="cpw-stop-row">
-            <input
-                type="color"
-                class="cpw-stop-color"
-                :value="activeStop.color"
-                @input="onStopColorInput"
-            />
+            <input type="color" class="cpw-stop-color" :value="activeStop.color" @input="onStopColorInput" />
             <div class="cpw-stop-pos">
               <input
                   type="number" min="0" max="100"
@@ -360,8 +381,24 @@ export default {
                 title="Удалить точку"
             >×</button>
           </div>
-
-          <!-- Stops list pills -->
+          <div v-if="activeStop" class="cpw-opacity-row">
+            <span class="cpw-opacity-label">Прозрачность</span>
+            <div class="cpw-opacity-track" :style="{ '--hc': activeStop.color }">
+              <input
+                  type="range" min="0" max="100"
+                  :value="activeStop.opacity ?? 100"
+                  @input="onStopOpacityInput"
+                  class="cpw-opacity-range"
+              />
+            </div>
+            <input
+                type="number" min="0" max="100"
+                :value="activeStop.opacity ?? 100"
+                @change="onStopOpacityText"
+                class="cpw-opacity-num"
+            />
+            <span class="cpw-pos-unit">%</span>
+          </div>
           <div class="cpw-stops-list">
             <div
                 v-for="stop in sortedStops"
@@ -373,10 +410,10 @@ export default {
             >
               <span class="cpw-pill-swatch" />
               <span class="cpw-pill-pos">{{ stop.position }}%</span>
+              <span v-if="(stop.opacity ?? 100) < 100" class="cpw-pill-alpha">{{ stop.opacity }}%</span>
             </div>
           </div>
         </div>
-
       </div>
     </Transition>
   </div>
@@ -387,49 +424,62 @@ export default {
   position: relative;
   display: inline-block;
 }
-
-/* ── Swatch ─────────────────────────────────────────────── */
-.cpw-swatch {
+.cpw-swatch-wrap {
+  position: relative;
   width: 38px;
   height: 32px;
   border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, .18);
+  border: 1px solid rgba(0,0,0,.18);
   cursor: pointer;
+  overflow: hidden;
   transition: box-shadow .15s, transform .1s;
   flex-shrink: 0;
 }
-.cpw-swatch:hover {
-  box-shadow: 0 0 0 3px rgba(109, 123, 186, .3);
+.cpw-swatch-wrap:hover {
+  box-shadow: 0 0 0 3px rgba(109,123,186,.3);
   transform: scale(1.05);
 }
-
-/* ── Popover ────────────────────────────────────────────── */
+.cpw-swatch-checker,
+.cpw-swatch {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+}
+.cpw-swatch-checker {
+  background-image:
+      linear-gradient(45deg, #ccc 25%, transparent 25%),
+      linear-gradient(-45deg, #ccc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ccc 75%),
+      linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-color: #fff;
+}
 .cpw-popover {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   z-index: 9999;
-  width: 240px;
+  width: 252px;
   background: var(--surface-color, #fff);
   border: 1px solid var(--border-medium, rgba(0,0,0,.12));
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08);
   overflow: hidden;
 }
-
-/* keep popover in view when near right edge */
 @media (max-width: 600px) {
   .cpw-popover { left: auto; right: 0; }
 }
-
-/* ── Transition ─────────────────────────────────────────── */
-.cpw-fade-enter-active, .cpw-fade-leave-active { transition: opacity .15s, transform .15s; }
-.cpw-fade-enter-from, .cpw-fade-leave-to { opacity: 0; transform: translateY(-6px); }
-
-/* ── Tabs ───────────────────────────────────────────────── */
+.cpw-fade-enter-active, .cpw-fade-leave-active {
+  transition: opacity .15s, transform .15s;
+}
+.cpw-fade-enter-from, .cpw-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
 .cpw-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color, rgba(0,0,0,.1));
+  border-bottom: 1px solid var(--border-primary, rgba(0,0,0,.1));
 }
 .cpw-tab {
   flex: 1;
@@ -451,18 +501,18 @@ export default {
   color: var(--primary, #6d7bba);
   font-weight: 600;
 }
-.cpw-tab:hover:not(.active) { background: rgba(0,0,0,.04); }
-.cpw-tab-icon { font-size: .65rem; }
-
-/* ── Body ───────────────────────────────────────────────── */
+.cpw-tab:hover:not(.active) {
+  background: rgba(0,0,0,.04);
+}
+.cpw-tab-icon {
+  font-size: .65rem;
+}
 .cpw-body {
   padding: .75rem;
   display: flex;
   flex-direction: column;
   gap: .6rem;
 }
-
-/* ── Native color input (full-width swatch) ─────────────── */
 .cpw-native-color {
   -webkit-appearance: none;
   appearance: none;
@@ -474,17 +524,20 @@ export default {
   cursor: pointer;
   background: none;
 }
-.cpw-native-color::-webkit-color-swatch-wrapper { padding: 0; }
-.cpw-native-color::-webkit-color-swatch { border: none; border-radius: 6px; }
-
-/* ── Hex input ──────────────────────────────────────────── */
+.cpw-native-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.cpw-native-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
 .cpw-hex-row {
   display: flex;
   align-items: center;
   border: 1px solid var(--border-medium, rgba(0,0,0,.12));
   border-radius: 6px;
   overflow: hidden;
-  background: #acacac
+  background: #acacac;
 }
 .cpw-hex-hash {
   padding: 0 .4rem 0 .55rem;
@@ -503,14 +556,79 @@ export default {
   padding: .32rem .5rem .32rem 0;
   background: transparent;
   color: var(--text-primary, #0f172a);
-  width: 0; /* flex takes care of sizing */
+  width: 0;
   min-width: 0;
 }
-
-/* ── Segmented control ──────────────────────────────────── */
+.cpw-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.cpw-opacity-label {
+  font-size: .72rem;
+  color: var(--text-secondary, #475569);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cpw-opacity-track {
+  flex: 1;
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background-image:
+      linear-gradient(to right, transparent, var(--hc, #000)),
+      linear-gradient(45deg, #ccc 25%, transparent 25%),
+      linear-gradient(-45deg, #ccc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ccc 75%),
+      linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 100% 100%, 6px 6px, 6px 6px, 6px 6px, 6px 6px;
+  background-position: 0 0, 0 0, 0 3px, 3px -3px, -3px 0px;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.12);
+  overflow: hidden;
+}
+.cpw-opacity-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.cpw-opacity-track::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--pct, 100) * 1%);
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,.35);
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  pointer-events: none;
+}
+.cpw-opacity-num {
+  width: 40px;
+  font-size: .75rem;
+  font-family: monospace;
+  text-align: center;
+  border: 1px solid var(--border-medium, rgba(0,0,0,.12));
+  border-radius: 5px;
+  padding: .2rem .25rem;
+  background: #acacac;
+  color: var(--text-primary, #0f172a);
+  outline: none;
+  flex-shrink: 0;
+}
+.cpw-opacity-num::-webkit-inner-spin-button {
+  opacity: .5;
+}
 .cpw-segmented {
   display: flex;
-  border: 1px solid var(--border-color, rgba(0,0,0,.12));
+  border: 1px solid var(--border-primary, rgba(0,0,0,.12));
   border-radius: 7px;
   overflow: hidden;
 }
@@ -529,9 +647,9 @@ export default {
   color: #fff;
   font-weight: 600;
 }
-.cpw-segmented button:not(.active):hover { background: rgba(0,0,0,.05); }
-
-/* ── Angle row ──────────────────────────────────────────── */
+.cpw-segmented button:not(.active):hover {
+  background: rgba(0,0,0,.05);
+}
 .cpw-angle-row {
   display: flex;
   align-items: center;
@@ -545,7 +663,6 @@ export default {
   position: relative;
   flex-shrink: 0;
   background: var(--surface-muted, #eef2ff);
-  cursor: default;
 }
 .cpw-angle-needle {
   position: absolute;
@@ -576,9 +693,9 @@ export default {
   color: var(--text-primary, #0f172a);
   outline: none;
 }
-.cpw-angle-num::-webkit-inner-spin-button { opacity: .5; }
-
-/* ── Gradient bar + handles ─────────────────────────────── */
+.cpw-angle-num::-webkit-inner-spin-button {
+  opacity: .5;
+}
 .cpw-gradient-area {
   display: flex;
   flex-direction: column;
@@ -594,11 +711,7 @@ export default {
 .cpw-handles-track {
   height: 18px;
   position: relative;
-  background: repeating-linear-gradient(
-      45deg,
-      #ccc 0, #ccc 4px,
-      #fff 4px, #fff 8px
-  );
+  background: repeating-linear-gradient(45deg, #ccc 0, #ccc 4px, #fff 4px, #fff 8px);
   border-radius: 0 0 6px 6px;
   border: 1px solid rgba(0,0,0,.1);
   border-top: none;
@@ -616,14 +729,14 @@ export default {
   transition: box-shadow .1s, transform .1s;
   z-index: 1;
 }
-.cpw-handle:active { cursor: grabbing; }
+.cpw-handle:active {
+  cursor: grabbing;
+}
 .cpw-handle.active {
-  box-shadow: 0 0 0 2.5px var(--primary, #6d7bba), 0 2px 4px rgba(0,0,0,.3);
+  box-shadow: 0 0 0 2px var(--primary, #6d7bba), 0 2px 4px rgba(0,0,0,.3);
   transform: translate(-50%, -50%) scale(1.25);
   z-index: 2;
 }
-
-/* ── Active stop controls ───────────────────────────────── */
 .cpw-stop-row {
   display: flex;
   align-items: center;
@@ -641,9 +754,13 @@ export default {
   background: none;
   flex-shrink: 0;
 }
-.cpw-stop-color::-webkit-color-swatch-wrapper { padding: 0; }
-.cpw-stop-color::-webkit-color-swatch { border: none; border-radius: 3px; }
-
+.cpw-stop-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.cpw-stop-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
 .cpw-stop-pos {
   display: flex;
   align-items: center;
@@ -665,7 +782,9 @@ export default {
   color: var(--text-primary, #0f172a);
   text-align: center;
 }
-.cpw-pos-input::-webkit-inner-spin-button { opacity: .5; }
+.cpw-pos-input::-webkit-inner-spin-button {
+  opacity: .5;
+}
 .cpw-pos-unit {
   padding-right: .35rem;
   font-size: .72rem;
@@ -675,7 +794,7 @@ export default {
   width: 26px;
   height: 26px;
   border-radius: 5px;
-  border: 1px solid var(--border-color, rgba(0,0,0,.12));
+  border: 1px solid var(--border-primary, rgba(0,0,0,.12));
   background: var(--surface-muted, #eef2ff);
   cursor: pointer;
   font-size: 1rem;
@@ -686,11 +805,20 @@ export default {
   transition: background .15s, color .15s;
   flex-shrink: 0;
 }
-.cpw-add:hover { background: var(--success-bg, #28a745); color: #fff; border-color: var(--success-bg, #28a745); }
-.cpw-del:hover:not(:disabled) { background: var(--error-bg, #dc3545); color: #fff; border-color: var(--error-bg, #dc3545); }
-.cpw-del:disabled { opacity: .35; cursor: not-allowed; }
-
-/* ── Stops list pills ───────────────────────────────────── */
+.cpw-add:hover {
+  background: var(--success-bg, #28a745);
+  color: #fff;
+  border-color: var(--success-bg, #28a745);
+}
+.cpw-del:hover:not(:disabled) {
+  background: var(--error-bg, #dc3545);
+  color: #fff;
+  border-color: var(--error-bg, #dc3545);
+}
+.cpw-del:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
 .cpw-stops-list {
   display: flex;
   flex-wrap: wrap;
@@ -702,7 +830,7 @@ export default {
   gap: .3rem;
   padding: .2rem .45rem;
   border-radius: 20px;
-  border: 1.5px solid transparent;
+  border: 2px solid transparent;
   background: var(--surface-muted, #eef2ff);
   cursor: pointer;
   font-size: .72rem;
@@ -722,5 +850,10 @@ export default {
   background: var(--c, #000);
   border: 1px solid rgba(0,0,0,.12);
   flex-shrink: 0;
+}
+.cpw-pill-alpha {
+  font-size: .68rem;
+  opacity: .7;
+  font-style: italic;
 }
 </style>
