@@ -202,8 +202,8 @@ export default {
             this.data.description = data.description;
             this.data.workHours = data.work_hours;
             this.data.pickupAddress = data.pickup_address;
-            this.data.showCart = data.show_cart > 0;
-            this.data.showWishList = data.show_wish_list > 0;
+            this.data.showCart = data.show_cart === 'true';
+            this.data.showWishList = data.show_wish_list === 'true';
             this.data.storePhone = data.store_phone;
             this.data.adminOnly = data.admin_only > 0;
             this.data.deliveryBel = data.delivery_bel;
@@ -223,9 +223,9 @@ export default {
           pickup_address: this.data.pickupAddress || '',
           work_hours: this.data.workHours || '',
           store_phone: this.data.storePhone || '',
-          show_cart: this.data.showCart || true,
-          show_wish_list: this.data.showWishList || true,
-          admin_only: this.data.adminOnly || false,
+          show_cart: this.data.showCart ? 'true' : 'false',
+          show_wish_list: this.data.showWishList ? 'true' : 'false',
+          admin_only: this.data.adminOnly ? 'true' : 'false',
           delivery_bel: this.data.deliveryBel || 0,
           delivery_rus: this.data.deliveryRus || 0,
         };
