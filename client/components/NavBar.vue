@@ -289,17 +289,17 @@ export default {
           </a>
         </template>
         <!-- Корзина (десктоп) -->
-        <div  class="cart-icon" @click="onToggleCart">
+        <div v-if="params.show_cart === 'true'" class="cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
         <!-- Избранное (десктоп) -->
-        <div class="favorites-icon" @click="onToggleFavorites">
+        <div v-if="params.show_wish_list === 'true'" class="favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
         <!-- Меню пользователя -->
-        <div  class="user-menu" @click="toggleUserMenu">
+        <div v-if="params.admin_only === 'false' || auth.role === 'admin'" class="user-menu" @click="toggleUserMenu">
           <div class="user-avatar"><i class="fas fa-user"></i></div>
           <span class="user-name">{{ auth.username || 'Профиль' }}</span>
           <i class="fas fa-chevron-down" :class="{ rotated: userMenuOpen }"></i>
