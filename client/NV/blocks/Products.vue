@@ -1,7 +1,7 @@
 <script>
 import Props from "./Props.vue";
 import Options from "./Options.vue";
-import {api} from "../../server/api";
+import {api} from "../../../server/api";
 
 export default {
   name: "Products",

@@ -1,7 +1,7 @@
 <script>
 import {isMobileDevice} from "./service";
-import {api} from "../../server/api";
-import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../../server/api";
+import {setPageTitle} from "../../../server/src/utils";
 
 export default {
   name: "Options",

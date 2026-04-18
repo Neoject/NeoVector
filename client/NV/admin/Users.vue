@@ -1,8 +1,8 @@
 <script>
 import {formatDate} from "./service";
 import Modal from "../components/Modal.vue";
-import {api} from "../../server/api";
-import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../../server/api";
+import {setPageTitle} from "../../../server/src/utils";
 
 export default {
   name: "Users",

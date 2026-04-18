@@ -1,5 +1,5 @@
 <script >
-import {api} from "../../server/api";
+import {api} from "../../../server/api";
 
 export default {
   name: "Contact",

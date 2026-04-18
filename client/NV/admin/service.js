@@ -1,4 +1,4 @@
-import {api} from "../../server/api";
+import {api} from "../../../server/api";
 
 export async function uploadImage(e, file_name, { maxSizeMb = 8, fieldName = 'image' } = {}) {
     const file =

@@ -1,7 +1,7 @@
 <script>
 import NavBar from "./admin/NavBar.vue";
 import Taskbar from "./admin/TaskBar.vue";
-import {setPageTitle} from "../server/src/utils";
+import {setPageTitle} from "../../server/src/utils";
 
 const ROUTE_TO_PAGE = {
     'admin-dashboard': '',

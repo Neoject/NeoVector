@@ -1,6 +1,6 @@
 <script>
 import { formatDate } from "./service";
-import {api} from "../../server/api";
+import {api} from "../../../server/api";
 
 export default {
   name: "Reply",

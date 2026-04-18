@@ -15,8 +15,8 @@ import Actual from "./blocks/Actual.vue";
 import InfoButtons from "./blocks/InfoButtons.vue";
 import Footer from "./blocks/Footer.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
-import {setPageTitle} from "../server/src/utils";
-import {api} from "../server/api";
+import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../server/api";
 
 const readStorageArray = (key) => {
   if (typeof window === 'undefined') return [];
@@ -367,6 +367,12 @@ export default {
       :is="blockComponents[block.type]"
       v-bind="getBlockProps(block)"
   ></component>
+  <teleport to="body">
+    <div class="neoject">
+      Сайт разработан
+      <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
+    </div>
+  </teleport>
   <div class="overlay" :class="{ active: active }" @click="close"></div>
 </template>
 

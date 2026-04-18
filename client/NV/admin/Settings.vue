@@ -1,7 +1,7 @@
 <script>
 import ColorPicker from "./ColorPicker.vue";
-import {api} from "../../server/api";
-import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../../server/api";
+import {setPageTitle} from "../../../server/src/utils";
 
 const COLOR_GROUPS = [
   {
