@@ -14,6 +14,7 @@ import { PageBlockModel } from './models/PageBlock';
 import { CategoryModel } from './models/Category';
 import { VisitTracker } from './models/VisitTracker';
 import { ParamsModel } from './models/Params';
+import { ContactMessageModel } from "./models/ContactMessage";
 import router from './routes';
 
 const app = express();
@@ -93,6 +94,7 @@ async function start() {
         await CategoryModel.createTable();
         await ParamsModel.createTable();
         await VisitTracker.createTable();
+        await ContactMessageModel.createTable();
         await UserModel.ensureAdmin();
 
         console.log('Database initialized successfully');
