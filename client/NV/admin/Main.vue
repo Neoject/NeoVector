@@ -2,7 +2,7 @@
 import Products from './Products.vue'
 import Blocks from './Blocks.vue'
 import Pages from './Pages.vue'
-import {setPageTitle} from "../../server/src/utils";
+import {setPageTitle} from "../../../server/src/utils";
 
 export default {
   name: 'Main',

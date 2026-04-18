@@ -1,7 +1,7 @@
 <script>
 import { formatDate, isMobileDevice } from './service'
 import Modal from "../components/Modal.vue";
-import {api} from "../../server/api";
+import {api} from "../../../server/api";
 
 export default {
   name: 'Pages',

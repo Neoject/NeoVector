@@ -2,8 +2,8 @@
 import {formatDate} from "./service";
 import Message from "./Message.vue";
 import Reply from "./Reply.vue";
-import {api} from "../../server/api";
-import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../../server/api";
+import {setPageTitle} from "../../../server/src/utils";
 
 export default {
   name: "Mail",

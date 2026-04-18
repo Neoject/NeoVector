@@ -1,6 +1,6 @@
 <script>
 import { login } from './components/auth';
-import {setPageTitle} from "../server/src/utils";
+import {setPageTitle} from "../../server/src/utils";
 
 export default {
   name: 'AdminLogin',

@@ -2,21 +2,44 @@
 import { markRaw } from 'vue';
 import Props from "./blocks/Props.vue";
 import NavBar from "./components/NavBar.vue";
-import Hero from "./blocks/Hero.vue";
-import Products from "./blocks/Products.vue";
-import Projects from "./blocks/Projects.vue";
-import Features from "./blocks/Features.vue";
-import Buttons from "./blocks/Buttons.vue";
-import History from "./blocks/History.vue";
-import Text from "./blocks/Text.vue";
-import Stats from "./blocks/Stats.vue";
-import Contact from "./blocks/Contact.vue";
-import Actual from "./blocks/Actual.vue";
-import InfoButtons from "./blocks/InfoButtons.vue";
-import Footer from "./blocks/Footer.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
-import {setPageTitle} from "../server/src/utils";
-import {api} from "../server/api";
+import {setPageTitle} from "../../server/src/utils";
+import {api} from "../../server/api";
+import blocks from "./admin/Blocks.vue";
+
+const blockModules = import.meta.glob('./blocks/*.vue', { eager: true });
+const blockComponents = {};
+const componentRegistry = {};
+
+Object.entries(blockModules).forEach(([path, module]) => {
+  const fileName = path.split('/').pop().replace('.vue', '');
+  const componentKey = fileName.toLowerCase();
+  const component = module.default || module;
+  blockComponents[componentKey] = markRaw(component);
+  componentRegistry[fileName] = component;
+});
+
+const customModules = import.meta.glob('../components/*.vue', { eager: true });
+const customComponents = {};
+const customRegistry = {};
+
+Object.entries(customModules).forEach(([path, module]) => {
+  const fileName = path.split('/').pop().replace('.vue', '');
+  const componentKey = fileName.toLowerCase();
+  const component = module.default || module;
+  customComponents[componentKey] = markRaw(component);
+  customRegistry[fileName] = component;
+});
+
+console.log(customRegistry);
+console.log(customComponents);
+console.log(customModules)
+
+const components = {
+  NavBar,
+  ...componentRegistry,
+  ...customRegistry
+};
 
 const readStorageArray = (key) => {
   if (typeof window === 'undefined') return [];
@@ -32,36 +55,29 @@ const readStorageArray = (key) => {
 
 export default {
   name: "App",
-  mixins: [Props],
-  components: {
-    NavBar, Hero, Products, Projects, Features, Buttons, History, Text, Stats, Contact, Actual, InfoButtons, Footer
+  computed: {
+    blocks() {
+      return blocks
+    }
   },
+  mixins: [Props],
+  components,
   inject: ['params'],
   data() {
-    const allComponents = {
-      hero: markRaw(Hero),
-      products: markRaw(Products),
-      projects: markRaw(Projects),
-      features: markRaw(Features),
-      buttons: markRaw(Buttons),
-      history: markRaw(History),
-      text: markRaw(Text),
-      stats: markRaw(Stats),
-      contact: markRaw(Contact),
-      actual: markRaw(Actual),
-      info_buttons: markRaw(InfoButtons),
-      footer: markRaw(Footer)
-    };
-
-    const blockComponents = markRaw(Object.fromEntries(
-        Object.entries(allComponents).filter(([, component]) => !!component)
+    const loadedBlocks = markRaw(Object.fromEntries(
+        Object.entries(blockComponents).filter(([, component]) => !!component)
     ));
+
+    const loadedComponents = markRaw(Object.fromEntries(
+        Object.entries(customComponents).filter(([, component]) => !!component)
+    ))
 
     return {
       active: false,
       values: { },
       auth: getAuth(),
-      blockComponents,
+      blocks: loadedBlocks,
+      components: loadedComponents,
       products: [],
       categories: [],
       cartItems: [],
@@ -95,20 +111,6 @@ export default {
     await this.$nextTick(() => {
       this.loadProducts();
     });
-  },
-  computed: {
-    /*filteredBlocks() {
-      const blocks = this.values?.sortedPageBlocks ?? this.values?.pageBlocks ?? [];
-
-      if (!Array.isArray(blocks)) {
-        return [];
-      }
-
-      return blocks.filter(Boolean);
-    },
-    pageSections() {
-      return this.filteredBlocks.filter(block => !["info_buttons", "footer"].includes(block.type));
-    }*/
   },
   methods: {
     handleCartUpdated(items) {
@@ -333,7 +335,7 @@ export default {
       this.cartOpen = false;
     },
     openOrderModal() {
-      
+
     },
     isVideo() {
       return false;
@@ -364,9 +366,19 @@ export default {
   <component
       v-for="(block, blockIndex) in pageBlocksSorted"
       :key="(block && block.id) ? block.id : 'block-' + blockIndex"
-      :is="blockComponents[block.type]"
+      :is="blocks[block.type]"
       v-bind="getBlockProps(block)"
   ></component>
+  <component
+      v-for="(component) in components"
+      :is="component"
+  ></component>
+  <teleport to="body">
+    <div class="neoject">
+      Сайт разработан
+      <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
+    </div>
+  </teleport>
   <div class="overlay" :class="{ active: active }" @click="close"></div>
 </template>
 

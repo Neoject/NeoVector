@@ -1,5 +1,5 @@
 <script>
-import {api} from "../server/api";
+import {api} from "../../server/api";
 import {computed} from "vue";
 
 export default {
@@ -141,7 +141,7 @@ html {
 body {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;
   background: var(--background);
   color: var(--text-primary);
   overflow-x: hidden;
