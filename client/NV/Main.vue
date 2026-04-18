@@ -106,7 +106,7 @@ export default {
     });
 
     await this.loadContent();
-    setPageTitle(this.params.title, 'конструктор сайтов');
+    setPageTitle(this.params.title, this.params.main_title);
 
     await this.$nextTick(() => {
       this.loadProducts();

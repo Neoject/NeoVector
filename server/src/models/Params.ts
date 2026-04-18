@@ -1,6 +1,7 @@
 import { db } from '../config/database';
 import fs from 'fs';
 import path from 'path';
+import {writeLog} from "../config/log";
 
 export class ParamsModel {
     static async createTable(): Promise<void> {
@@ -34,9 +35,11 @@ export class ParamsModel {
 
         const rows = await db.query<{ key: string; value: string }[]>(query, values);
         const result: Record<string, string> = {};
+
         for (const row of rows) {
             result[row.key] = row.value;
         }
+
         return result;
     }
 

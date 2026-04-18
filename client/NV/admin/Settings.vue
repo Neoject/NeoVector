@@ -163,6 +163,7 @@ export default {
       data: {
         email: '',
         title: '',
+        mainTitle: '',
         description: '',
         imageMetaTags: '',
         pickupAddress: '',
@@ -194,12 +195,19 @@ export default {
           const data = await response.json();
 
           if (data) {
-            this.data.email = data.email; this.data.title = data.title;
-            this.data.description = data.description; this.data.imageMetaTags = data.image_meta_tags;
-            this.data.pickupAddress = data.pickup_address; this.data.workHours = data.work_hours;
-            this.data.storePhone = data.store_phone; this.data.showCart = data.show_cart > 0;
-            this.data.showWishList = data.show_wish_list > 0; this.data.adminOnly = data.admin_only > 0;
-            this.data.deliveryBel = data.delivery_bel; this.data.deliveryRus = data.delivery_rus;
+            this.data.title = data.title;
+            this.data.mainTitle = data.main_title;
+            this.data.email = data.email;
+            this.data.imageMetaTags = data.image_meta_tags;
+            this.data.description = data.description;
+            this.data.workHours = data.work_hours;
+            this.data.pickupAddress = data.pickup_address;
+            this.data.showCart = data.show_cart > 0;
+            this.data.showWishList = data.show_wish_list > 0;
+            this.data.storePhone = data.store_phone;
+            this.data.adminOnly = data.admin_only > 0;
+            this.data.deliveryBel = data.delivery_bel;
+            this.data.deliveryRus = data.delivery_rus;
           }
         }
       } catch (error) { console.error('Error loading params:', error); }
@@ -207,12 +215,19 @@ export default {
     async saveParams() {
       try {
         const body = {
-          email: this.data.email || '', title: this.data.title || '',
-          description: this.data.description || '', image_meta_tags: this.data.imageMetaTags || '',
-          pickup_address: this.data.pickupAddress || '', work_hours: this.data.workHours || '',
-          store_phone: this.data.storePhone || '', show_cart: this.data.showCart || false,
-          show_wish_list: this.data.showWishList || false, admin_only: this.data.adminOnly || false,
-          delivery_bel: this.data.deliveryBel || 0, delivery_rus: this.data.deliveryRus || 0,
+          title: this.data.title || '',
+          main_title: this.data.mainTitle || '',
+          email: this.data.email || '',
+          description: this.data.description || '',
+          image_meta_tags: this.data.imageMetaTags || '',
+          pickup_address: this.data.pickupAddress || '',
+          work_hours: this.data.workHours || '',
+          store_phone: this.data.storePhone || '',
+          show_cart: this.data.showCart || true,
+          show_wish_list: this.data.showWishList || true,
+          admin_only: this.data.adminOnly || false,
+          delivery_bel: this.data.deliveryBel || 0,
+          delivery_rus: this.data.deliveryRus || 0,
         };
 
         const response = await api.saveParams(body);
@@ -316,17 +331,6 @@ export default {
             this.loadColors();
           });
     },
-    exportCss() {
-      const lines = [':root {'];
-      Object.entries(this.colors).forEach(([key, val]) => lines.push(`    ${key}: ${val};`));
-      lines.push('}');
-      const blob = new Blob([lines.join('\n')], { type: 'text/css' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'theme.css';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    },
     onFileChange(e) {
       const f = e.target.files[0];
       if (f) { this.data.logo = f; this.previewUrl = URL.createObjectURL(f); }
@@ -410,8 +414,12 @@ export default {
             <input type="text" v-model="data.email" placeholder="mail@example.com">
           </div>
           <div class="form-group">
-            <label>Заголовок сайта</label>
+            <label>Название сайта</label>
             <input type="text" v-model="data.title" placeholder="Заголовок">
+          </div>
+          <div class="form-group">
+            <label>Название главной страницы</label>
+            <input type="text" v-model="data.mainTitle" placeholder="Заголовок">
           </div>
           <div class="form-group">
             <label>Описание сайта</label>
