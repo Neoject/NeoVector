@@ -16,10 +16,7 @@ export class MailController {
             return;
         }
 
-        // Save message to database
         await ContactMessageModel.create(name, email, message);
-
-        // Send notification to admin
         await EmailService.sendContactNotification(name, email, message);
 
         res.json({ success: true, message: 'Message sent successfully' });
@@ -40,6 +37,7 @@ export class MailController {
         }
 
         const deleted = await ContactMessageModel.delete(id);
+
         if (deleted) {
             res.json({ success: true, deleted_id: id });
         } else {

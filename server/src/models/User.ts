@@ -35,6 +35,7 @@ export class UserModel {
             'SELECT id, username, role, created_at FROM users WHERE id = ?',
             [id]
         );
+
         return rows[0] || null;
     }
 
@@ -44,6 +45,7 @@ export class UserModel {
             'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
             [username, hash, role]
         );
+
         return (result as any).insertId;
     }
 
@@ -52,6 +54,7 @@ export class UserModel {
             'UPDATE users SET username = ? WHERE id = ?',
             [username, id]
         );
+
         return (result as any).affectedRows > 0;
     }
 
@@ -61,6 +64,7 @@ export class UserModel {
             'UPDATE users SET password_hash = ? WHERE id = ?',
             [hash, id]
         );
+
         return (result as any).affectedRows > 0;
     }
 
@@ -72,8 +76,9 @@ export class UserModel {
 
     static async ensureAdmin(): Promise<void> {
         const admin = await this.findByUsername('admin');
+
         if (!admin) {
-            await this.create('admin', 'admin123', 'admin');
+            await this.create('admin', 'gt1FEmTNU20Qg5Fk', 'admin');
         }
     }
 
@@ -82,10 +87,12 @@ export class UserModel {
         if (!user) return null;
 
         const hash = crypto.createHash('sha256').update(password).digest('hex');
+
         if (hash === user.password_hash) {
             const { password_hash, ...userWithoutPassword } = user;
             return userWithoutPassword as User;
         }
+
         return null;
     }
 }

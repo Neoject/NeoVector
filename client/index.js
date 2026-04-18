@@ -1,6 +1,10 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router/index.js';
+// import AOS from "aos";
+// import 'aos/dist/aos.css';
+// import { gsap } from "gsap";
+
 
 document.body.style.overflow = 'hidden';
 

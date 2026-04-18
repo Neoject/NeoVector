@@ -1,6 +1,6 @@
-import { db } from '../config/database';
-import { Request, Response, NextFunction } from 'express';
-import { PageModel } from './Page';
+import {db} from '../config/database';
+import {NextFunction, Request, Response} from 'express';
+import {PageModel} from './Page';
 
 export interface Visit {
     id: number;
@@ -38,15 +38,15 @@ export class VisitTracker {
         const referer = req.headers['referer'] || '';
         let pageUrl = req.url || '/';
 
-        // Skip tracking for excluded paths
         const excludedPaths = ['/admin', '/api', '/assets', '/favicon.ico'];
+
         for (const excluded of excludedPaths) {
             if (pageUrl.startsWith(excluded)) return;
         }
 
-        // Normalize product page URL
         if (pageUrl.startsWith('/product') && req.query.id) {
             const productId = parseInt(req.query.id as string);
+
             if (!isNaN(productId) && productId > 0) {
                 pageUrl = `/product?id=${productId}`;
             } else {
@@ -72,6 +72,7 @@ export class VisitTracker {
             'SELECT COUNT(*) as total FROM visits WHERE visit_date >= ?',
             [startDate]
         );
+
         return rows[0]?.total || 0;
     }
 
@@ -80,6 +81,7 @@ export class VisitTracker {
             'SELECT COUNT(DISTINCT ip_address) as unique_visitors FROM visits WHERE visit_date >= ?',
             [startDate]
         );
+
         return rows[0]?.unique_visitors || 0;
     }
 
@@ -88,6 +90,7 @@ export class VisitTracker {
             'SELECT visit_date, COUNT(*) as count FROM visits WHERE visit_date >= ? GROUP BY visit_date ORDER BY visit_date ASC',
             [startDate]
         );
+
         return rows.map(row => ({ date: row.visit_date, count: row.count }));
     }
 
@@ -122,11 +125,10 @@ export class VisitTracker {
     }
 
     static async getHourlyVisits(startDate: string): Promise<{ hour: number; count: number }[]> {
-        const rows = await db.query<{ hour: number; count: number }[]>(
+        return await db.query<{ hour: number; count: number }[]>(
             'SELECT HOUR(visit_time) as hour, COUNT(*) as count FROM visits WHERE visit_date >= ? GROUP BY HOUR(visit_time) ORDER BY hour ASC',
             [startDate]
         );
-        return rows;
     }
 
     static async getRecentVisits(startDate: string, limit: number = 50): Promise<any[]> {
@@ -134,6 +136,7 @@ export class VisitTracker {
             'SELECT ip_address, page_url, visit_date, visit_time, referer FROM visits WHERE visit_date >= ? ORDER BY created_at DESC LIMIT ?',
             [startDate, limit]
         );
+
         return rows.map(row => ({
             ip: row.ip_address,
             url: row.page_url,
