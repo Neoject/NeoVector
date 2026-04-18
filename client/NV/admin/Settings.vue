@@ -145,6 +145,14 @@ function isGradient(val) {
   return typeof val === 'string' && val.trim().includes('gradient');
 }
 
+/** API хранит флаги как 'true' | 'false'; в форме — boolean. */
+function parseBoolParam(raw) {
+  if (raw === true || raw === 1) return true;
+  if (raw === false || raw === 0) return false;
+  const s = String(raw == null ? '' : raw).trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+}
+
 export default {
   name: "Settings",
   components: {ColorPicker},
@@ -195,19 +203,21 @@ export default {
           const data = await response.json();
 
           if (data) {
-            this.data.title = data.title;
-            this.data.mainTitle = data.main_title;
-            this.data.email = data.email;
-            this.data.imageMetaTags = data.image_meta_tags;
-            this.data.description = data.description;
-            this.data.workHours = data.work_hours;
-            this.data.pickupAddress = data.pickup_address;
-            this.data.showCart = data.show_cart === 'true';
-            this.data.showWishList = data.show_wish_list === 'true';
-            this.data.storePhone = data.store_phone;
-            this.data.adminOnly = data.admin_only > 0;
-            this.data.deliveryBel = data.delivery_bel;
-            this.data.deliveryRus = data.delivery_rus;
+            this.data.title = data.title ?? '';
+            this.data.mainTitle = data.main_title ?? '';
+            this.data.email = data.email ?? '';
+            this.data.imageMetaTags = data.image_meta_tags ?? '';
+            this.data.description = data.description ?? '';
+            this.data.workHours = data.work_hours ?? '';
+            this.data.pickupAddress = data.pickup_address ?? '';
+            this.data.showCart = parseBoolParam(data.show_cart);
+            this.data.showWishList = parseBoolParam(data.show_wish_list);
+            this.data.storePhone = data.store_phone ?? '';
+            this.data.adminOnly = parseBoolParam(data.admin_only);
+            this.data.deliveryBel =
+              data.delivery_bel != null && data.delivery_bel !== '' ? String(data.delivery_bel) : '';
+            this.data.deliveryRus =
+              data.delivery_rus != null && data.delivery_rus !== '' ? String(data.delivery_rus) : '';
           }
         }
       } catch (error) { console.error('Error loading params:', error); }
@@ -226,14 +236,36 @@ export default {
           show_cart: this.data.showCart ? 'true' : 'false',
           show_wish_list: this.data.showWishList ? 'true' : 'false',
           admin_only: this.data.adminOnly ? 'true' : 'false',
-          delivery_bel: this.data.deliveryBel || 0,
-          delivery_rus: this.data.deliveryRus || 0,
+          delivery_bel: this.data.deliveryBel === '' || this.data.deliveryBel == null
+            ? '0'
+            : String(this.data.deliveryBel),
+          delivery_rus: this.data.deliveryRus === '' || this.data.deliveryRus == null
+            ? '0'
+            : String(this.data.deliveryRus),
         };
 
         const response = await api.saveParams(body);
         const data = await response.json();
-        if (response.ok && data.success) alert('Параметры успешно сохранены');
-        else alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        if (response.ok && data.success) {
+          Object.assign(this.params, {
+            title: body.title,
+            main_title: body.main_title,
+            email: body.email,
+            description: body.description,
+            image_meta_tags: body.image_meta_tags,
+            pickup_address: body.pickup_address,
+            work_hours: body.work_hours,
+            store_phone: body.store_phone,
+            show_cart: body.show_cart,
+            show_wish_list: body.show_wish_list,
+            admin_only: body.admin_only,
+            delivery_bel: body.delivery_bel,
+            delivery_rus: body.delivery_rus,
+          });
+          alert('Параметры успешно сохранены');
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
       } catch (error) { alert('Произошла ошибка: ' + error); }
     },
     async uploadLogo(e) {

@@ -41,7 +41,16 @@ export default {
     },
     logo() {
       return this.params.logo;
-    }
+    },
+    showCartParam() {
+      return this.paramTruthy(this.params?.show_cart);
+    },
+    showWishListParam() {
+      return this.paramTruthy(this.params?.show_wish_list);
+    },
+    showUserMenuParam() {
+      return !this.paramTruthy(this.params?.admin_only) || this.auth?.role === 'admin';
+    },
   },
   mounted() {
     window.addEventListener('scroll', this.onScroll);
@@ -55,6 +64,12 @@ export default {
     document.removeEventListener('click', this.onDocumentClick);
   },
   methods: {
+    paramTruthy(val) {
+      if (val === true || val === 1) return true;
+      if (val === false || val === 0) return false;
+      const s = String(val == null ? '' : val).trim().toLowerCase();
+      return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+    },
     logout,
     closePanels() {
       this.cartOpen = false;
@@ -264,11 +279,11 @@ export default {
         <a class="logo" href="#">
           <img :src="logo" alt="" style="max-height:64px;max-width:100%" />
         </a>
-        <div class="mobile-cart-icon" @click="onToggleCart">
+        <div v-if="showCartParam" class="mobile-cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
-        <div class="mobile-favorites-icon" @click="onToggleFavorites">
+        <div v-if="showWishListParam" class="mobile-favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
@@ -289,17 +304,17 @@ export default {
           </a>
         </template>
         <!-- Корзина (десктоп) -->
-        <div v-if="params.show_cart === 'true'" class="cart-icon" @click="onToggleCart">
+        <div v-if="showCartParam" class="cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
         <!-- Избранное (десктоп) -->
-        <div v-if="params.show_wish_list === 'true'" class="favorites-icon" @click="onToggleFavorites">
+        <div v-if="showWishListParam" class="favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
         <!-- Меню пользователя -->
-        <div v-if="params.admin_only === 'false' || auth.role === 'admin'" class="user-menu" @click="toggleUserMenu">
+        <div v-if="showUserMenuParam" class="user-menu" @click="toggleUserMenu">
           <div class="user-avatar"><i class="fas fa-user"></i></div>
           <span class="user-name">{{ auth.username || 'Профиль' }}</span>
           <i class="fas fa-chevron-down" :class="{ rotated: userMenuOpen }"></i>

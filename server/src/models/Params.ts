@@ -1,7 +1,6 @@
 import { db } from '../config/database';
 import fs from 'fs';
 import path from 'path';
-import {writeLog} from "../config/log";
 
 export class ParamsModel {
     static async createTable(): Promise<void> {
