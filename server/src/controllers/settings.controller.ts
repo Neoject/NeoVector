@@ -15,9 +15,9 @@ export class SettingsController {
             pickup_address: '',
             work_hours: '',
             store_phone: '',
-            show_cart: '1',
-            show_wish_list: '1',
-            admin_only: '0',
+            show_cart: 'true',
+            show_wish_list: 'true',
+            admin_only: 'true',
             delivery_bel: '0',
             delivery_rus: '0',
         };
@@ -30,19 +30,19 @@ export class SettingsController {
         const data = req.body;
 
         const fields: Record<string, any> = {
-            email: typeof data.email === 'string' ? data.email : '',
-            title: typeof data.title === 'string' ? data.title : '',
-            main_title: typeof data.main_title === 'string' ? data.main_title : '',
-            description: typeof data.description === 'string' ? data.description : '',
-            image_meta_tags: typeof data.image_meta_tags === 'string' ? data.image_meta_tags : '',
-            pickup_address: typeof data.pickup_address === 'string' ? data.pickup_address : '',
-            work_hours: typeof data.work_hours === 'string' ? data.work_hours : '',
-            store_phone: typeof data.store_phone === 'string' ? data.store_phone : '',
-            show_cart: data.show_cart === 'true' || data.show_cart,
-            show_wish_list: data.show_wish_list === 'true' || data.show_wish_list,
-            admin_only: data.admin_only === 'true' || data.admin_only,
-            delivery_bel: SettingsController.formatNumber(typeof data.delivery_bel === 'string' ? data.delivery_bel : String(data.delivery_bel || '')),
-            delivery_rus: SettingsController.formatNumber(typeof data.delivery_rus === 'string' ? data.delivery_rus : String(data.delivery_rus || '')),
+            email: data.email,
+            title: data.title,
+            main_title: data.main_title,
+            description: data.description,
+            image_meta_tags: data.image_meta_tags,
+            pickup_address: data.pickup_address,
+            work_hours: data.work_hours,
+            store_phone: data.store_phone,
+            show_cart: data.show_cart,
+            show_wish_list: data.show_wish_list,
+            admin_only: data.admin_only,
+            delivery_bel: SettingsController.formatNumber(data.delivery_bel),
+            delivery_rus: SettingsController.formatNumber(data.delivery_rus),
         };
 
         await ParamsModel.saveMultiple(fields);
