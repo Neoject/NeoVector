@@ -19,7 +19,7 @@ Object.entries(blockModules).forEach(([path, module]) => {
   componentRegistry[fileName] = component;
 });
 
-const customModules = import.meta.glob('../components/*.vue', { eager: true });
+const customModules = import.meta.glob('../*.vue', { eager: true });
 const customComponents = {};
 const customRegistry = {};
 
