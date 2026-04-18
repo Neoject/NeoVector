@@ -6,8 +6,10 @@ import { ParamsModel } from '../models/Params';
 export class SettingsController {
     static async getAll(req: Request, res: Response): Promise<void> {
         const defaults: Record<string, string> = {
-            email: '',
+            logo: '',
             title: '',
+            main_title: '',
+            email: '',
             description: '',
             image_meta_tags: '',
             pickup_address: '',
@@ -18,7 +20,6 @@ export class SettingsController {
             admin_only: '0',
             delivery_bel: '0',
             delivery_rus: '0',
-            logo: '',
         };
 
         const params = await ParamsModel.getAll();
@@ -31,6 +32,7 @@ export class SettingsController {
         const fields: Record<string, any> = {
             email: typeof data.email === 'string' ? data.email : '',
             title: typeof data.title === 'string' ? data.title : '',
+            main_title: typeof data.main_title === 'string' ? data.main_title : '',
             description: typeof data.description === 'string' ? data.description : '',
             image_meta_tags: typeof data.image_meta_tags === 'string' ? data.image_meta_tags : '',
             pickup_address: typeof data.pickup_address === 'string' ? data.pickup_address : '',
