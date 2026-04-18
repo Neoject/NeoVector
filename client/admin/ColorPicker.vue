@@ -271,7 +271,7 @@ export default {
                 class="cpw-hex-input"
                 :value="solidColor.slice(1)"
                 @change="onSolidHexInput({ target: { value: '#' + $event.target.value } })"
-                maxlength="6"
+                maxlength="8"
                 spellcheck="false"
             />
           </div>
