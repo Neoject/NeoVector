@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { ParamsModel } from '../models/Params';
 
+const BOOL_PARAM_KEYS = ['show_cart', 'show_wish_list', 'admin_only'] as const;
+
 export class SettingsController {
     static async getAll(req: Request, res: Response): Promise<void> {
         const defaults: Record<string, string> = {
@@ -17,32 +19,38 @@ export class SettingsController {
             store_phone: '',
             show_cart: 'true',
             show_wish_list: 'true',
-            admin_only: 'true',
+            admin_only: 'false',
             delivery_bel: '0',
             delivery_rus: '0',
         };
 
         const params = await ParamsModel.getAll();
-        res.json({ ...defaults, ...params });
+        const merged: Record<string, string> = { ...defaults, ...params };
+
+        for (const key of BOOL_PARAM_KEYS) {
+            merged[key] = SettingsController.toBoolString(merged[key]);
+        }
+
+        res.json(merged);
     }
 
     static async save(req: Request, res: Response): Promise<void> {
-        const data = req.body;
+        const data = req.body || {};
 
-        const fields: Record<string, any> = {
-            email: data.email,
-            title: data.title,
-            main_title: data.main_title,
-            description: data.description,
-            image_meta_tags: data.image_meta_tags,
-            pickup_address: data.pickup_address,
-            work_hours: data.work_hours,
-            store_phone: data.store_phone,
-            show_cart: data.show_cart,
-            show_wish_list: data.show_wish_list,
-            admin_only: data.admin_only,
-            delivery_bel: SettingsController.formatNumber(data.delivery_bel),
-            delivery_rus: SettingsController.formatNumber(data.delivery_rus),
+        const fields: Record<string, string> = {
+            email: String(data.email ?? ''),
+            title: String(data.title ?? ''),
+            main_title: String(data.main_title ?? ''),
+            description: String(data.description ?? ''),
+            image_meta_tags: String(data.image_meta_tags ?? ''),
+            pickup_address: String(data.pickup_address ?? ''),
+            work_hours: String(data.work_hours ?? ''),
+            store_phone: String(data.store_phone ?? ''),
+            show_cart: SettingsController.toBoolString(data.show_cart),
+            show_wish_list: SettingsController.toBoolString(data.show_wish_list),
+            admin_only: SettingsController.toBoolString(data.admin_only),
+            delivery_bel: String(SettingsController.formatNumberInput(data.delivery_bel)),
+            delivery_rus: String(SettingsController.formatNumberInput(data.delivery_rus)),
         };
 
         await ParamsModel.saveMultiple(fields);
@@ -171,8 +179,21 @@ export class SettingsController {
         res.json({ success: true });
     }
 
-    private static formatNumber(number: string): number {
-        const value = number.replace(/[^0-9]/g, '');
-        return parseInt(value) || 0;
+    private static parseBool(value: unknown): boolean {
+        if (value === true || value === 1) return true;
+        if (value === false || value === 0) return false;
+        if (value == null) return false;
+        const s = String(value).trim().toLowerCase();
+        return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+    }
+
+    private static toBoolString(value: unknown): 'true' | 'false' {
+        return SettingsController.parseBool(value) ? 'true' : 'false';
+    }
+
+    private static formatNumberInput(value: unknown): number {
+        const raw = value == null ? '' : String(value);
+        const digits = raw.replace(/[^0-9]/g, '');
+        return parseInt(digits, 10) || 0;
     }
 }
