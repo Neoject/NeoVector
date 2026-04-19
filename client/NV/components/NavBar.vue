@@ -276,7 +276,7 @@ export default {
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
           <i class="fas fa-bars"></i>
         </button>
-        <a class="logo" href="#">
+        <a class="logo" href="/">
           <img :src="logo" alt="" style="max-height:64px;max-width:100%" />
         </a>
         <div v-if="showCartParam" class="mobile-cart-icon" @click="onToggleCart">
@@ -299,7 +299,7 @@ export default {
           >{{ button.label }}</a>
         </template>
         <template v-else>
-          <a href="#" class="btn btn-outline" style="width:auto;" @click.prevent="goHome">
+          <a href="/" class="btn btn-outline" style="width:auto;">
             На главную
           </a>
         </template>
@@ -333,7 +333,7 @@ export default {
               </div>
               <div class="user-menu-items">
                 <a v-if="auth.role === 'admin'"
-                   href="admin"
+                   href="/admin"
                    class="user-menu-item admin-item"
                 >
                 <i class="fas fa-cog"></i><span>Администрирование</span>

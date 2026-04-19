@@ -130,7 +130,7 @@ export class PageController {
             content: typeof content === 'string' ? content : '',
             settings: typeof settings === 'string' ? settings : (settings ? JSON.stringify(settings) : '{}'),
             sort_order: typeof sort_order === 'number' ? sort_order : parseInt(sort_order as string) || 0,
-            is_active: typeof is_active === 'number' ? is_active : (is_active === 'true' || is_active === 1 ? 1 : 0),
+            is_active: is_active === true || is_active === 'true' || is_active === 1 ? 1 : 0,
         });
 
         res.json({ success: true, id });
@@ -151,7 +151,7 @@ export class PageController {
             content: req.body.content,
             settings: req.body.settings,
             sort_order: req.body.sort_order,
-            is_active: req.body.is_active
+            is_active: req.body.is_active === true || req.body.is_active === 'true' || req.body.is_active === 1 ? 1 : 0,
         };
 
         const updated = await PageBlockModel.update(id, data);
