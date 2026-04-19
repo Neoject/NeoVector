@@ -371,7 +371,7 @@ export default {
       :cart-items="cartItems"
       @close="favoritesOpen = false; $emit('overlay', false)"
       @update:wishlist="onWishlistUpdated"
-      @add-to-cart="$emit('add-to-cart', $event)"
+      @add-to-cart="onCartUpdated"
       @nav-click="$emit('nav-click', $event)"
   />
   <Auth ref="authModal" />

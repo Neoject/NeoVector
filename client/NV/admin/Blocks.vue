@@ -665,7 +665,10 @@ export default {
       </template>
       <!-- footer -->
       <div v-if="blockForm.type !== 'footer' && blockForm.type !== 'info_buttons'" class="form-group">
-        <label><input type="checkbox" v-model="blockForm.is_active"> Активен</label>
+        <label>
+          <input type="checkbox" v-model="blockForm.is_active">
+          Активен
+        </label>
       </div>
       <div v-if="blockError"   class="error-message">{{ blockError }}</div>
       <div v-if="blockSuccess" class="success-message">{{ blockSuccess }}</div>

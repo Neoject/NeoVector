@@ -1,11 +1,13 @@
 <script>
 import NavBar from "./components/NavBar.vue";
+import OrderModal from "./components/Order.vue";
+import OptionSelector from "./components/Options.vue";
 import { api } from "../../server/api";
 import { checkUserAuth, getAuth } from "./components/auth";
 
 export default {
   name: "Product",
-  components: { NavBar },
+  components: { NavBar, OrderModal, OptionSelector },
   inject: ['params'],
   data() {
     return {
@@ -21,31 +23,13 @@ export default {
       wishlist: [],
       products: [],
       productOptions: [],
-      selectedProductOptions: [],
-      optionSelectionIndex: 0,
-      showOptionSelector: false,
-      selectingHandAction: null,
+      optionSelectorOpen: false,
+      optionSelectorAction: 'cart',
       productQuantity: 1,
       cartOpen: false,
       favoritesOpen: false,
       orderModalOpen: false,
       currentOrderProduct: null,
-      orderLoading: false,
-      orderError: '',
-      orderSuccess: '',
-      orderForm: {
-        customer_name: '',
-        customer_phone: '',
-        customer_email: '',
-        delivery_type: 'pickup',
-        delivery_city: '',
-        delivery_street: '',
-        delivery_building: '',
-        delivery_date: '',
-        delivery_time: '',
-        payment_type: 'cash',
-        notes: '',
-      },
       mobileGalleryTouchStart: null,
       mobileGalleryMouseStart: null,
       mobileGalleryNavigating: false,
@@ -67,9 +51,6 @@ export default {
     favoriteProducts() {
       return this.products.filter(p => this.wishlist.includes(p.id));
     },
-    currentOptionType() {
-      return this.productOptions[this.optionSelectionIndex] || null;
-    }
   },
   async mounted() {
     await this.refreshAuth();
@@ -247,119 +228,44 @@ export default {
 
       if (!this.cartItems.length && this.orderModalOpen) this.closeOrderModal();
     },
-    startProductHandSelection(point, event) {
+    selectOption(point, event) {
       if (event) event.stopPropagation();
-      this.selectedProductOptions = [];
-      this.optionSelectionIndex = 0;
-      this.selectingHandAction = point === 'buyNow' ? 'buy' : 'cart';
-
+      const action = point === 'buyNow' ? 'buy' : 'cart';
       if (this.productOptions.length) {
-        this.showOptionSelector = true;
+        this.optionSelectorAction = action;
+        this.optionSelectorOpen = true;
       } else {
-        this.finishProductOptionSelection();
+        this.onOptionDone({ options: [], optionKey: '', action });
       }
     },
-    chooseProductOptionValue(value) {
-      const opt = this.currentOptionType;
-
-      if (!opt) return;
-
-      this.selectedProductOptions.push({
-        name: opt.name,
-        slug: opt.slug, value
-      });
-
-      this.optionSelectionIndex++;
-
-      if (this.optionSelectionIndex >= this.productOptions.length) {
-        this.showOptionSelector = false;
-        this.$nextTick(() => this.finishProductOptionSelection());
-      }
-    },
-    cancelProductAddToCart() {
-      this.showOptionSelector = false;
-      this.selectingHandAction = null;
-      this.selectedProductOptions = [];
-      this.optionSelectionIndex = 0;
-    },
-    finishProductOptionSelection() {
-      const opts = [...this.selectedProductOptions];
-
-      if (this.selectingHandAction === 'buy') {
+    onOptionDone({ options, optionKey, action }) {
+      if (action === 'buy') {
         this.currentOrderProduct = {
           ...this.product,
           price: this.product.price_sale || this.product.price,
-          options: opts,
-          optionKey: this.buildOptionKey(opts),
+          options,
+          optionKey,
           quantity: this.productQuantity,
         };
         this.openOrderModal();
       } else {
-        this.addProductToCart(opts);
+        this.addProductToCart(options);
       }
-
-      this.selectingHandAction = null;
-      this.selectedProductOptions = [];
-      this.optionSelectionIndex = 0;
     },
     openOrderModal() {
       if (this.currentOrderProduct || this.cartItems.length) {
         this.orderModalOpen = true;
         this.cartOpen = false;
-        this.orderError = '';
-        this.orderSuccess = '';
       }
     },
     closeOrderModal() {
       this.orderModalOpen = false;
       this.currentOrderProduct = null;
     },
-    async submitOrder() {
-      this.orderLoading = true;
-      this.orderError = '';
-      this.orderSuccess = '';
-
-      try {
-        if (!this.orderForm.customer_name.trim()) throw new Error('Имя обязательно');
-        if (!this.orderForm.customer_phone.trim()) throw new Error('Телефон обязателен');
-
-        const items = this.currentOrderProduct ? [this.currentOrderProduct] : this.cartItems;
-        const total = this.currentOrderProduct
-            ? this.currentOrderProduct.price * this.currentOrderProduct.quantity
-            : this.cartTotal;
-
-        const body = {
-          customer_name: this.orderForm.customer_name.trim(),
-          customer_phone: this.orderForm.customer_phone.trim(),
-          customer_email: this.orderForm.customer_email.trim(),
-          delivery_type: this.orderForm.delivery_type,
-          delivery_address: this.orderForm.delivery_type === 'delivery'
-              ? `${this.orderForm.delivery_city}, ${this.orderForm.delivery_street}, ${this.orderForm.delivery_building}`
-              : '',
-          delivery_date: this.orderForm.delivery_date,
-          delivery_time: this.orderForm.delivery_time,
-          payment_type: this.orderForm.payment_type,
-          order_items: items,
-          total_amount: total,
-          notes: this.orderForm.notes.trim(),
-        };
-
-        const r = await fetch('/api/orders', {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-
-        const json = await r.json();
-        if (!json.success) throw new Error(json.error || 'Ошибка');
-
-        this.orderSuccess = 'Заказ оформлен! Мы свяжемся с вами.';
-        this.cartItems = [];
-        this.saveCart();
-        this.currentOrderProduct = null;
-        setTimeout(() => this.closeOrderModal(), 3000);
-      } catch (e) { this.orderError = e.message; }
-      finally { this.orderLoading = false; }
+    onOrderSuccess() {
+      this.cartItems = [];
+      this.saveCart();
+      this.currentOrderProduct = null;
     },
     prevMedia() {
       if (this.mobileGalleryNavigating || this.allMedia.length <= 1) return;
@@ -427,8 +333,7 @@ export default {
       this.favoritesOpen = false;
       this.orderModalOpen = false;
       this.mediaViewOpen = false;
-      this.showOptionSelector = false;
-      this.selectingHandAction = null;
+      this.optionSelectorOpen = false;
     },
     handleMobileGalleryTouchStart(e) {
       if (this.allMedia.length <= 1) return;
@@ -661,53 +566,43 @@ export default {
             </div>
             <div class="product-actions" style="margin-top:2rem">
               <div class="product-order-favorite desktop-only">
-                <table><tr>
-                  <td>
-                    <button @click="startProductHandSelection('buyNow', $event)" class="btn btn-primary add-to-cart-btn">
-                      <i class="fas fa-shopping-bag"></i> Купить сейчас
-                    </button>
-                  </td>
+                <div class="action-row">
+                  <button @click="selectOption('buyNow', $event)" class="btn btn-primary add-to-cart-btn">
+                    <i class="fas fa-shopping-bag"></i> Купить сейчас
+                  </button>
                   <template v-if="!isProductInCart">
-                    <td>
-                      <button @click="startProductHandSelection('addToCart', $event)" class="btn btn-outline add-to-cart-btn">
-                        <i class="fas fa-shopping-cart"></i> Добавить в корзину
-                      </button>
-                    </td>
-                    <td>
-                      <button @click="toggleWishlist" class="btn btn-outline wishlist-btn" :class="{ active: isInWishlist }">
-                        <i class="fas fa-heart"></i>
-                      </button>
-                    </td>
+                    <button @click="selectOption('addToCart', $event)" class="btn btn-outline add-to-cart-btn">
+                      <i class="fas fa-shopping-cart"></i> Добавить в корзину
+                    </button>
+                    <button @click="toggleWishlist" class="btn btn-outline wishlist-btn" :class="{ active: isInWishlist }">
+                      <i class="fas fa-heart"></i>
+                    </button>
                   </template>
                   <template v-else>
-                    <td colspan="2">
-                      <div class="split-button-container">
-                        <div class="split-button-wrapper">
-                          <button @click="cartOpen = true" class="split-btn split-btn-left">
-                            <i class="fas fa-shopping-cart"></i> В корзине
-                          </button>
-                          <button @click="startProductHandSelection('addToCart', $event)" class="split-btn split-btn-right">
-                            <span class="plus-circle">+</span>
-                            <span class="add-text"><i class="fas fa-plus"></i> Добавить ещё</span>
-                          </button>
-                        </div>
+                    <div class="split-button-container">
+                      <div class="split-button-wrapper">
+                        <button @click="cartOpen = true" class="split-btn split-btn-left">
+                          <i class="fas fa-shopping-cart"></i> В корзине
+                        </button>
+                        <button @click="selectOption('addToCart', $event)" class="split-btn split-btn-right">
+                          <span class="plus-circle">+</span>
+                          <span class="add-text"><i class="fas fa-plus"></i> Добавить ещё</span>
+                        </button>
                       </div>
-                    </td>
-                    <td>
-                      <button @click="toggleWishlist" class="btn btn-outline wishlist-btn" :class="{ active: isInWishlist }">
-                        <i class="fas fa-heart"></i>
-                      </button>
-                    </td>
+                    </div>
+                    <button @click="toggleWishlist" class="btn btn-outline wishlist-btn" :class="{ active: isInWishlist }">
+                      <i class="fas fa-heart"></i>
+                    </button>
                   </template>
-                </tr></table>
+                </div>
               </div>
               <div class="product-order-favorite-mobile mobile-only">
-                <button @click="startProductHandSelection('buyNow', $event)" class="add-to-cart mobile-action-btn">
+                <button @click="selectOption('buyNow', $event)" class="add-to-cart mobile-action-btn">
                   <i class="fas fa-shopping-bag"></i> Купить сейчас
                 </button>
                 <div class="mobile-actions-row">
                   <template v-if="!isProductInCart">
-                    <button @click="startProductHandSelection('addToCart', $event)" class="add-to-cart mobile-action-btn">
+                    <button @click="selectOption('addToCart', $event)" class="add-to-cart mobile-action-btn">
                       <i class="fas fa-shopping-cart"></i> В корзину
                     </button>
                   </template>
@@ -715,7 +610,7 @@ export default {
                     <button @click="cartOpen = true" class="add-to-cart mobile-action-btn">
                       <i class="fas fa-shopping-cart"></i> В корзине
                     </button>
-                    <button @click="startProductHandSelection('addToCart', $event)" class="add-to-cart mobile-action-btn mobile-add-more">
+                    <button @click="selectOption('addToCart', $event)" class="add-to-cart mobile-action-btn mobile-add-more">
                       <i class="fas fa-plus"></i>
                     </button>
                   </template>
@@ -729,62 +624,19 @@ export default {
         </div>
       </div>
     </section>
-    <div v-if="showOptionSelector" class="option-selector-modal" @click.self="cancelProductAddToCart">
-      <div class="option-selector-content">
-        <div class="option-selector-header">
-          <h3>Выберите {{ currentOptionType?.name || 'опцию' }}</h3>
-          <button @click="cancelProductAddToCart" class="close-icon"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="option-selector-body">
-          <div v-if="currentOptionType" class="option-values">
-            <button v-for="value in currentOptionType.values" :key="value"
-                    @click="chooseProductOptionValue(value)" class="option-value-btn">
-              {{ value }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="orderModalOpen" class="order-modal-overlay" @click.self="closeOrderModal">
-      <div class="order-modal">
-        <div class="order-modal-header">
-          <h3>Оформление заказа</h3>
-          <button @click="closeOrderModal" class="close-icon"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="order-modal-body">
-          <div v-if="orderSuccess" class="alert-success">{{ orderSuccess }}</div>
-          <div v-if="orderError" class="alert-error">{{ orderError }}</div>
-          <form @submit.prevent="submitOrder">
-            <div class="form-group"><label>Имя *</label><input v-model="orderForm.customer_name" required></div>
-            <div class="form-group"><label>Телефон *</label><input v-model="orderForm.customer_phone" required type="tel"></div>
-            <div class="form-group"><label>Email</label><input v-model="orderForm.customer_email" type="email"></div>
-            <div class="form-group">
-              <label>Доставка</label>
-              <select v-model="orderForm.delivery_type">
-                <option value="pickup">Самовывоз</option>
-                <option value="delivery">Доставка</option>
-              </select>
-            </div>
-            <template v-if="orderForm.delivery_type === 'delivery'">
-              <div class="form-group"><label>Город *</label><input v-model="orderForm.delivery_city" required></div>
-              <div class="form-group"><label>Улица *</label><input v-model="orderForm.delivery_street" required></div>
-              <div class="form-group"><label>Дом/квартира *</label><input v-model="orderForm.delivery_building" required></div>
-            </template>
-            <div class="form-group">
-              <label>Оплата</label>
-              <select v-model="orderForm.payment_type">
-                <option value="cash">Наличные</option>
-                <option value="card">Карта</option>
-              </select>
-            </div>
-            <div class="form-group"><label>Комментарий</label><textarea v-model="orderForm.notes" rows="3"></textarea></div>
-            <button type="submit" class="btn btn-primary" :disabled="orderLoading" style="width:100%">
-              {{ orderLoading ? 'Отправка...' : 'Оформить заказ' }}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+    <OptionSelector
+        v-model="optionSelectorOpen"
+        :options="productOptions"
+        :action="optionSelectorAction"
+        @done="onOptionDone"
+    />
+    <OrderModal
+        v-model="orderModalOpen"
+        :current-order-product="currentOrderProduct"
+        :cart-items="cartItems"
+        :cart-total="cartTotal"
+        @order-success="onOrderSuccess"
+    />
     <div class="cart-modal" :class="{ active: cartOpen }">
       <div class="cart-header">
         <h3>Ваша корзина</h3>
@@ -863,7 +715,7 @@ export default {
         </button>
       </div>
     </div>
-    <div class="overlay" :class="{ active: cartOpen || favoritesOpen || orderModalOpen || showOptionSelector }" @click="closeAllModals"></div>
+    <div class="overlay" :class="{ active: cartOpen || favoritesOpen || orderModalOpen || optionSelectorOpen }" @click="closeAllModals"></div>
   </main>
 </template>
 
@@ -965,6 +817,7 @@ export default {
 .product-features li i { color: var(--primary); margin-top: 3px; }
 
 /* Action buttons */
+.action-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .add-to-cart-btn { margin: 0; }
 .wishlist-btn { margin: 0; }
 .wishlist-btn.active i { color: var(--warning); }
@@ -979,24 +832,6 @@ export default {
 .mobile-add-more { width: auto; flex: 0 0 auto; }
 .mobile-actions-row { display: flex; gap: 8px; }
 
-/* Option Selector */
-.option-selector-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.option-selector-content { background: var(--background); border-radius: 12px; width: 100%; max-width: 420px; overflow: hidden; }
-.option-selector-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-light); }
-.option-selector-header h3 { font-size: 18px; color: var(--primary); margin: 0; }
-.option-selector-body { padding: 20px; }
-.option-values { display: flex; flex-wrap: wrap; gap: 10px; }
-.option-value-btn { padding: 10px 18px; background: var(--background-secondary); border: 2px solid var(--border-light); border-radius: 8px; cursor: pointer; color: var(--text-primary); font-size: 15px; transition: all 0.2s; }
-.option-value-btn:hover { border-color: var(--primary); background: var(--hover-secondary); }
-
-/* Order Modal */
-.order-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.order-modal { background: var(--background); border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-.order-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-light); }
-.order-modal-header h3 { font-size: 20px; color: var(--primary); margin: 0; }
-.order-modal-body { padding: 20px; }
-.alert-success { background: var(--success-bg); color: #fff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
-.alert-error { background: var(--error-bg); color: #fff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
 
 /* Cart / Favorites (mirrors main page) */
 .cart-modal { position: fixed; top: 0; right: 0; width: 380px; max-width: 100vw; height: 100vh; background: var(--background); box-shadow: -4px 0 20px rgba(0,0,0,.2); z-index: 1500; transform: translateX(100%); transition: transform 0.3s ease; overflow-y: auto; padding: 20px; }
