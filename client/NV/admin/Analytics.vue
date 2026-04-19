@@ -1,7 +1,7 @@
 <script>
-import {Values} from "./service";
 import {api} from "../../../server/api";
 import {setPageTitle} from "../../../server/src/utils";
+import Chart from 'chart.js/auto';
 
 export default {
   name: 'Analytics',
@@ -240,7 +240,7 @@ export default {
       Object.entries(saved).forEach(([columnName, width]) => {
         if (!columnName.startsWith(prefix)) return;
 
-        const column = table.querySelector(`th[values-column="${columnName}"]`);
+        const column = table.querySelector(`th[data-column="${columnName}"]`);
         if (!column) return;
 
         const w = width + 'px';
@@ -263,7 +263,20 @@ export default {
       if (!this.analyticsData) return;
 
       this.dailyChart?.destroy();
+      this.dailyChart = null;
       this.hourlyChart?.destroy();
+      this.hourlyChart = null;
+
+      const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+      const primary = css('--primary') || '#3498db';
+      const primaryAlt = css('--primary-alt') || '#2ecc71';
+      const textColor = css('--text-additional') || '#aaa';
+      const gridColor = css('--border-light') || 'rgba(255,255,255,0.1)';
+
+      const sharedScaleOptions = {
+        ticks: { color: textColor, stepSize: 1 },
+        grid: { color: gridColor }
+      };
 
       const dailyCtx = this.$refs.dailyChart;
       if (dailyCtx && this.analyticsData.daily_visits) {
@@ -279,8 +292,8 @@ export default {
             datasets: [{
               label: 'Посещений',
               data: dailyData,
-              borderColor: '#3498db',
-              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              borderColor: primary,
+              backgroundColor: primary + '1a',
               tension: 0.4,
               fill: true
             }]
@@ -289,7 +302,10 @@ export default {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: {
+              x: { ...sharedScaleOptions },
+              y: { ...sharedScaleOptions, beginAtZero: true }
+            }
           }
         });
       }
@@ -311,8 +327,8 @@ export default {
             datasets: [{
               label: 'Посещений',
               data: hourlyData,
-              backgroundColor: '#2ecc71',
-              borderColor: '#27ae60',
+              backgroundColor: primaryAlt + 'cc',
+              borderColor: primaryAlt,
               borderWidth: 1
             }]
           },
@@ -320,7 +336,10 @@ export default {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: {
+              x: { ...sharedScaleOptions },
+              y: { ...sharedScaleOptions, beginAtZero: true }
+            }
           }
         });
       }

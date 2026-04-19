@@ -528,7 +528,7 @@ export default {
                   <i class="fas fa-chevron-right"></i>
                 </button>
                 <div class="product-image-dots">
-                  <span v-for="(item, index) in allMedia" :key="index"
+                  <span v-for="(index) in allMedia" :key="index"
                         class="product-image-dot" :class="{ active: currentMediaIndex === index }"
                         @click.stop.prevent="setMediaIndex(index)"></span>
                 </div>

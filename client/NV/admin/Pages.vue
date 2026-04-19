@@ -26,6 +26,8 @@ export default {
       draggingElement: null,
       listItems: [],
       listIsOrdered: false,
+      linkMode: 'manual',
+      linkPageSearch: '',
       availableElements: [
         { type: 'heading', label: 'Заголовок', icon: 'fas fa-heading', defaultContent: 'Новый заголовок' },
         { type: 'paragraph', label: 'Абзац', icon: 'fas fa-paragraph', defaultContent: 'Новый абзац текста' },
@@ -39,6 +41,24 @@ export default {
   watch: {
     selectedElement(el) {
       if (el?.type === 'list') this.parseListItems(el.content);
+      if (el?.type === 'button') {
+        const matched = this.pages.find(p => el.link === '/' + p.slug);
+        this.linkMode = matched ? 'page' : 'manual';
+        this.linkPageSearch = '';
+      } else {
+        this.linkMode = 'manual';
+        this.linkPageSearch = '';
+      }
+    },
+  },
+  computed: {
+    filteredLinkPages() {
+      const q = this.linkPageSearch.trim().toLowerCase();
+      if (!q) return this.pages;
+      return this.pages.filter(p =>
+          (p.title || '').toLowerCase().includes(q) ||
+          (p.slug  || '').toLowerCase().includes(q)
+      );
     },
   },
   mounted() {
@@ -188,6 +208,12 @@ export default {
       this.pageElements.splice(idx + 1, 0, el);
       this.selectedElement = this.pageElements[idx + 1];
     },
+    selectPageLink(page) {
+      if (this.selectedElement) {
+        this.selectedElement.link = '/' + page.slug;
+        this.updateElementContent();
+      }
+    },
     addNavButton() {
       if (!Array.isArray(this.pageForm.navigation_buttons)) this.pageForm.navigation_buttons = [];
       this.pageForm.navigation_buttons.push({ label: '', target: '' });
@@ -241,7 +267,7 @@ export default {
       this.draggingElement = null
     },
     onPreviewDragLeave(e) { if (!e.currentTarget.contains(e.relatedTarget)) this.draggingElement = null },
-    onElementDragOver(idx, e) {
+    onElementDragOver(_idx, e) {
       e.preventDefault()
       e.stopPropagation()
       document.querySelectorAll('.page-element').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
@@ -486,7 +512,28 @@ export default {
               </div>
               <div v-if="selectedElement.type==='button'" class="form-group">
                 <label>Ссылка</label>
-                <input type="text" v-model="selectedElement.link" @input="updateElementContent" placeholder="/product?id=1 или #section">
+                <div class="link-mode-toggle">
+                  <button type="button" :class="['link-mode-btn', { active: linkMode === 'manual' }]" @click="linkMode = 'manual'">
+                    <i class="fas fa-link"></i> Вручную
+                  </button>
+                  <button type="button" :class="['link-mode-btn', { active: linkMode === 'page' }]" @click="linkMode = 'page'">
+                    <i class="fas fa-file"></i> Страница
+                  </button>
+                </div>
+                <input v-if="linkMode === 'manual'" type="text" v-model="selectedElement.link"
+                       @input="updateElementContent" placeholder="/product?id=1 или #section">
+                <div v-else class="page-link-selector">
+                  <input type="text" v-model="linkPageSearch" placeholder="Поиск страницы...">
+                  <div class="page-link-list">
+                    <div v-for="page in filteredLinkPages" :key="page.id"
+                         :class="['page-link-item', { active: selectedElement.link === '/' + page.slug }]"
+                         @click="selectPageLink(page)">
+                      <span class="page-link-title">{{ page.title || page.slug }}</span>
+                      <code class="page-link-slug">/{{ page.slug }}</code>
+                    </div>
+                    <div v-if="!filteredLinkPages.length" class="page-link-empty">Страниц не найдено</div>
+                  </div>
+                </div>
               </div>
               <div v-if="selectedElement.type==='button'" class="form-group">
                 <label>Стиль</label>
@@ -971,4 +1018,53 @@ table.pages-table td:last-child {
     width: 100%;
   }
 }
+.link-mode-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.link-mode-btn {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  color: var(--text-additional);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.link-mode-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-dark);
+}
+.page-link-selector { display: flex; flex-direction: column; gap: 6px; }
+.page-link-list {
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--background);
+}
+.page-link-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  cursor: pointer;
+  gap: 8px;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border-light);
+}
+.page-link-item:last-child { border-bottom: none; }
+.page-link-item:hover { background: var(--background-secondary); }
+.page-link-item.active { background: var(--hover-secondary); }
+.page-link-title { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.page-link-slug { font-size: 11px; color: var(--text-additional); background: rgba(255,255,255,.08); padding: 2px 5px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+.page-link-empty { padding: 12px; text-align: center; color: var(--text-additional); font-size: 13px; }
 </style>
