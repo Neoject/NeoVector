@@ -561,7 +561,11 @@ export default {
           Кнопки навигации
           <small style="color:var(--text-additional)">(отображаются в шапке на главной странице)</small>
         </label>
-        <div v-for="(btn, i) in pageForm.navigation_buttons" :key="i" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <div
+            v-for="(btn, i) in pageForm.navigation_buttons"
+            :key="i"
+            style="display:flex; gap:8px; margin-bottom:8px; align-items:center"
+        >
           <input type="text" v-model="btn.label" placeholder="Текст кнопки" style="flex:1">
           <input type="text" v-model="btn.target" placeholder="Якорь (#section)" style="flex:1">
           <button type="button" @click="removeNavButton(i)" class="btn-icon btn-delete">
@@ -574,14 +578,22 @@ export default {
         </button>
       </div>
       <div class="form-group" style="display:flex;gap:20px;flex-wrap:wrap">
-        <label><input type="checkbox" v-model="pageForm.is_published"> Опубликовано</label>
-        <label><input type="checkbox" v-model="pageForm.is_main_page"> Главная страница</label>
+        <label>
+          <input type="checkbox" v-model="pageForm.is_published"> Опубликовано
+        </label>
+        <label>
+          <input type="checkbox" v-model="pageForm.is_main_page"> Главная страница
+        </label>
       </div>
       <div v-if="pageError" class="error-message">{{ pageError }}</div>
       <div v-if="pageSuccess" class="success-message">{{ pageSuccess }}</div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" :disabled="pageLoading">{{ editingPage ? 'Сохранить' : 'Создать' }}</button>
-        <button type="button" @click="closePageModal" class="btn btn-secondary">Отмена</button>
+        <button type="submit" class="btn btn-primary" :disabled="pageLoading">
+          {{ editingPage ? 'Сохранить' : 'Создать' }}
+        </button>
+        <button type="button" @click="closePageModal" class="btn btn-secondary">
+          Отмена
+        </button>
       </div>
     </form>
   </Modal>
@@ -1043,7 +1055,11 @@ table.pages-table td:last-child {
   border-color: var(--primary);
   color: var(--text-dark);
 }
-.page-link-selector { display: flex; flex-direction: column; gap: 6px; }
+.page-link-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .page-link-list {
   border: 1px solid var(--border-medium);
   border-radius: 4px;
@@ -1061,10 +1077,35 @@ table.pages-table td:last-child {
   transition: background 0.15s;
   border-bottom: 1px solid var(--border-light);
 }
-.page-link-item:last-child { border-bottom: none; }
-.page-link-item:hover { background: var(--background-secondary); }
-.page-link-item.active { background: var(--hover-secondary); }
-.page-link-title { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.page-link-slug { font-size: 11px; color: var(--text-additional); background: rgba(255,255,255,.08); padding: 2px 5px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
-.page-link-empty { padding: 12px; text-align: center; color: var(--text-additional); font-size: 13px; }
+.page-link-item:last-child {
+  border-bottom: none;
+}
+.page-link-item:hover {
+  background: var(--background-secondary);
+}
+.page-link-item.active {
+  background: var(--hover-secondary);
+}
+.page-link-title {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-link-slug {
+  font-size: 11px;
+  color: var(--text-additional);
+  background: rgba(255,255,255,.08);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.page-link-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-additional);
+  font-size: 13px;
+}
 </style>
