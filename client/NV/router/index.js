@@ -10,6 +10,7 @@ const router = createRouter({
         },
         {
             path: '/product',
+            alias: '/product/',
             component: () => import('../Product.vue')
         },
         {

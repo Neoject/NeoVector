@@ -290,10 +290,22 @@ export class ProductModel {
       sort_order INT DEFAULT 0,
       product_type_id INT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY group_value_unique (\`group\`, \`value\`)
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
+
+        try {
+            await db.query(`ALTER TABLE product_options DROP INDEX group_value_unique`);
+        } catch {  }
+
+        try {
+            await db.query(`
+                ALTER TABLE product_options
+                ADD UNIQUE KEY group_value_type_unique (\`group\`, \`value\`, \`product_type_id\`)
+            `);
+        } catch {
+            console.error('Failed to alter options')
+        }
 
         await db.query(`
     CREATE TABLE IF NOT EXISTS product_types (

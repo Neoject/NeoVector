@@ -27,6 +27,7 @@ export const api = {
     setTitle: (title) => post('/set-title', { title }),
     getUsers: () => get('/users'),
     getProducts: () => get('/products'),
+    getProduct: (id) => get(`/products/${id}`),
     addProduct: (fd) => post('/products', fd),
     updateProduct: (id, fd) => put(`/products/${id}`, fd),
     deleteProduct: (id) => del(`/products/${id}`),
