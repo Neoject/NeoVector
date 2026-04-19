@@ -499,7 +499,6 @@ export default {
       </button>
     </div>
   </section>
-
   <Modal
       v-model="showAddBlockModal"
       modal-id="blockModal"
@@ -666,7 +665,10 @@ export default {
       </template>
       <!-- footer -->
       <div v-if="blockForm.type !== 'footer' && blockForm.type !== 'info_buttons'" class="form-group">
-        <label><input type="checkbox" v-model="blockForm.is_active"> Активен</label>
+        <label>
+          <input type="checkbox" v-model="blockForm.is_active">
+          Активен
+        </label>
       </div>
       <div v-if="blockError"   class="error-message">{{ blockError }}</div>
       <div v-if="blockSuccess" class="success-message">{{ blockSuccess }}</div>
@@ -676,7 +678,6 @@ export default {
       </div>
     </form>
   </Modal>
-
   <Modal
       v-model="showIconPicker"
       modal-id="iconPickerModal"
@@ -714,7 +715,6 @@ export default {
   flex-direction: column;
   gap: 15px;
 }
-
 .block-item {
   background: var(--background-secondary);
   border-radius: 8px;
@@ -722,17 +722,14 @@ export default {
   overflow: hidden;
   transition: all 0.3s ease;
 }
-
 .block-item:hover {
   border-color: var(--border-medium);
   transform: translateY(-2px);
 }
-
 .block-item.inactive {
   opacity: 0.6;
   border-color: var(--border-medium);
 }
-
 .block-header {
   display: flex;
   justify-content: space-between;
@@ -741,14 +738,12 @@ export default {
   background: var(--background-secondary);
   border-bottom: 1px solid var(--border-light);
 }
-
 .block-info {
   display: flex;
   align-items: center;
   gap: 15px;
   user-select: none;
 }
-
 .block-type {
   background: var(--btn-bg);
   color: var(--text-secondary);
@@ -757,68 +752,59 @@ export default {
   font-size: 12px;
   font-weight: bold;
 }
-
-.block-title { color: var(--primary); font-weight: 500; }
-.block-order { color: var(--text-additional); font-size: 12px; }
-
+.block-title {
+  color: var(--primary);
+  font-weight: 500;
+}
+.block-order {
+  color: var(--text-additional);
+  font-size: 12px;
+}
 .block-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .drag-handle {
   color: var(--text-additional-dark);
   cursor: grab;
   padding: 5px;
 }
-
-.drag-handle:hover { color: var(--primary); }
-
+.drag-handle:hover {
+  color: var(--primary);
+}
 .block-preview {
   padding: 15px 20px;
   background: var(--background-secondary);
   user-select: none;
 }
-
 .preview-content {
   color: var(--text-additional-light);
   font-size: 14px;
 }
-
-.preview-content h3, .preview-content h4 { color: var(--primary); margin-bottom: 8px; }
-.preview-content p { margin: 0; line-height: 1.4; }
-
+.preview-content h3,
+.preview-content h4 {
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.preview-content p {
+  margin: 0;
+  line-height: 1.4;
+}
 .empty-blocks {
   text-align: center;
   padding: 60px 20px;
   color: var(--text-additional-dark);
 }
-
-.empty-blocks i { display: block; margin-bottom: 20px; }
-
+.empty-blocks i {
+  display: block;
+  margin-bottom: 20px;
+}
 .block-modal {
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
 }
-
-.block-type-fields {
-  background: var(--background-secondary);
-  border-radius: 8px;
-  padding: 20px;
-  margin: 15px 0;
-  border: 1px solid var(--border-light);
-  user-select: none;
-}
-
-.features-list, .history-list, .stats-list, .promotions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
 .block-type-fields .feature-item,
 .block-type-fields .history-item,
 .block-type-fields .stat-item,
@@ -828,27 +814,23 @@ export default {
   padding: 15px;
   border: 1px solid var(--border-light);
 }
-
 .feature-header, .history-header, .stat-header, .promotion-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
-
 .link-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 5px;
 }
-
 .icon-picker-field {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .icon-preview {
   width: 40px;
   height: 40px;
@@ -861,10 +843,14 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
-.icon-preview:hover { background: var(--background-additional); border-color: var(--primary); }
-.icon-preview i { font-size: 18px; color: var(--primary); }
-
+.icon-preview:hover {
+  background: var(--background-additional);
+  border-color: var(--primary);
+}
+.icon-preview i {
+  font-size: 18px;
+  color: var(--primary);
+}
 .icon-picker-field input {
   flex: 1;
   background: var(--background-secondary);
@@ -874,10 +860,14 @@ export default {
   border-radius: 4px;
   font-size: 14px;
 }
-
-.icon-picker-field input:focus { outline: none; border-color: var(--primary); background: var(--background-secondary); }
-
-.icon-picker-overlay { z-index: 1200; }
+.icon-picker-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--background-secondary);
+}
+.icon-picker-overlay {
+  z-index: 1200;
+}
 .icon-picker-modal {
   max-width: 900px;
   max-height: 90vh;
@@ -885,8 +875,9 @@ export default {
   z-index: 1201;
   position: relative;
 }
-
-.icon-search { margin-bottom: 20px; }
+.icon-search {
+  margin-bottom: 20px;
+}
 .icon-search-input {
   width: 100%;
   background: var(--background-secondary);
@@ -896,10 +887,14 @@ export default {
   border-radius: 8px;
   font-size: 16px;
 }
-
-.icon-search-input:focus { outline: none; border-color: var(--primary); background: var(--background-secondary); }
-.icon-search-input::placeholder { color: var(--text-additional); }
-
+.icon-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--background-secondary);
+}
+.icon-search-input::placeholder {
+  color: var(--text-additional);
+}
 .icon-categories {
   display: flex;
   flex-wrap: wrap;
@@ -908,7 +903,6 @@ export default {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border-light);
 }
-
 .category-btn {
   display: flex;
   align-items: center;
@@ -922,11 +916,18 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
-.category-btn:hover { background: var(--background-secondary); border-color: var(--border-medium); }
-.category-btn.active { background: var(--primary); color: var(--text-dark); border-color: var(--primary); }
-.category-btn i { font-size: 14px; }
-
+.category-btn:hover {
+  background: var(--background-secondary);
+  border-color: var(--border-medium);
+}
+.category-btn.active {
+  background: var(--primary);
+  color: var(--text-dark);
+  border-color: var(--primary);
+}
+.category-btn i {
+  font-size: 14px;
+}
 .icons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -938,7 +939,6 @@ export default {
   background: var(--background-additional);
   border-radius: 8px;
 }
-
 .icon-item {
   display: flex;
   flex-direction: column;
@@ -952,14 +952,34 @@ export default {
   transition: all 0.2s ease;
   text-align: center;
 }
-
-.icon-item:hover { background: var(--hover-primary); border-color: var(--border-medium); transform: translateY(-2px); }
-.icon-item.selected { background: var(--background-additional); border-color: var(--border-strong); transform: translateY(-2px); }
-.icon-item i { font-size: 24px; color: var(--primary); }
-.icon-item.selected i { color: var(--primary); transform: scale(1.1); }
-.icon-name { font-size: 12px; color: var(--text-additional-light); line-height: 1.2; word-break: break-word; }
-.icon-item.selected .icon-name { color: var(--primary); font-weight: 500; }
-
+.icon-item:hover {
+  background: var(--hover-primary);
+  border-color: var(--border-medium);
+  transform: translateY(-2px);
+}
+.icon-item.selected {
+  background: var(--background-additional);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+.icon-item i {
+  font-size: 24px;
+  color: var(--primary);
+}
+.icon-item.selected i {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+.icon-name {
+  font-size: 12px;
+  color: var(--text-additional-light);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.icon-item.selected .icon-name {
+  color: var(--primary);
+  font-weight: 500;
+}
 .icon-picker-actions {
   display: flex;
   justify-content: flex-end;
@@ -967,7 +987,6 @@ export default {
   padding-top: 20px;
   border-top: 1px solid var(--border-light);
 }
-
 .image-upload-field {
   border: 2px dashed rgba(255, 255, 255, 0.3);
   border-radius: 8px;
@@ -975,25 +994,21 @@ export default {
   text-align: center;
   transition: all 0.3s ease;
 }
-
 .image-upload-field:hover {
   border-color: var(--primary);
   background: rgba(255, 237, 179, 0.05);
 }
-
 .image-preview {
   position: relative;
   display: inline-block;
   margin-bottom: 15px;
 }
-
 .image-preview img {
   max-width: 200px;
   max-height: 150px;
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow-primary);
 }
-
 .image-preview button {
   position: absolute;
   top: -10px;
@@ -1006,50 +1021,61 @@ export default {
   justify-content: center;
   font-size: 12px;
 }
-
 .image-upload-placeholder {
   padding: 40px 20px;
   color: var(--text-additional);
 }
-
 .image-upload-placeholder i {
   font-size: 48px;
   margin-bottom: 15px;
   display: block;
 }
-
 .image-upload-placeholder p {
   margin: 0;
   font-size: 14px;
 }
-
 @media (max-width: 768px) {
-  .icon-picker-modal { max-width: 95vw; margin: 10px; }
-  .icons-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-  .icon-item { padding: 12px 8px; }
-  .icon-item i { font-size: 20px; }
-  .icon-name { font-size: 11px; }
-  .icon-categories { flex-direction: column; }
-  .category-btn { justify-content: center; }
-  .btn-success { margin: 2rem 4rem 0 4rem; width: fit-content; }
-
+  .icon-picker-modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
+  .icons-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  .icon-item {
+    padding: 12px 8px;
+  }
+  .icon-item i {
+    font-size: 20px;
+  }
+  .icon-name {
+    font-size: 11px;
+  }
+  .icon-categories {
+    flex-direction: column;
+  }
+  .category-btn {
+    justify-content: center;
+  }
+  .btn-success {
+    margin: 2rem 4rem 0 4rem;
+    width: fit-content;
+  }
   .block-header {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
   }
-
   .block-info {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
   }
-
   .block-actions {
     width: 100%;
     justify-content: flex-end;
   }
-
   .block-modal {
     max-width: 95vw;
     margin: 10px;

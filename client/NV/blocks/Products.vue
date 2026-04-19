@@ -1,10 +1,13 @@
 <script>
 import Props from "./Props.vue";
 import Options from "./Options.vue";
+import OrderModal from "../components/Order.vue";
+import OptionSelector from "../components/Options.vue";
 import {api} from "../../../server/api";
 
 export default {
   name: "Products",
+  components: { OrderModal, OptionSelector },
   mixins: [Props, Options],
   emits: [
     'update:cart-items',
@@ -13,13 +16,14 @@ export default {
     'open-cart',
     'open-favorites',
     'close-favorites',
-    'open-order',
     'start-option-selection'
   ],
   data() {
     return {
       currentProduct: null,
       activeFilter: 'all',
+      orderOpen: false,
+      currentOrderProduct: null,
       imageInfo: { },
       imageLoadingStates: { },
       productImageIndices: { },
@@ -31,6 +35,10 @@ export default {
       productQuantity: 1,
       buyNowPressed: false,
       addToCartPressed: false,
+      optionSelectorOpen: false,
+      selectingHandProductId: null,
+      selectingHandAction: null,
+      selectingFromFavorites: false,
     }
   },
   props: {
@@ -97,7 +105,12 @@ export default {
     isCurrentProductInCart() {
       if (!this.currentProduct) return false;
       return this.cartItems.some(item => item.id === this.currentProduct.id);
-    }
+    },
+    cartTotal() {
+      return Array.isArray(this.localCartItems)
+          ? this.localCartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0)
+          : 0;
+    },
   },
   watch: {
     filteredProducts: {
@@ -135,6 +148,56 @@ export default {
     });
   },
   methods: {
+    async startOptionSelection(product, action, point, event) {
+      if (event) event.stopPropagation();
+
+      this.resetOptionSelectionState();
+      this.selectingHandProductId = product.id;
+      this.selectingHandAction = action;
+
+      if (point === 'buyNow') this.buyNowPressed = true;
+      else if (point === 'addToCart') this.addToCartPressed = true;
+
+      await this.loadProductOptions();
+
+      if (this.productOptions.length) {
+        this.optionSelectorOpen = true;
+      } else {
+        this.finishOptionSelection(product);
+      }
+    },
+    onOptionDone({ options, optionKey, action }) {
+      const product = this.selectingHandProduct();
+      if (!product) return;
+
+      if (action === 'buy') {
+        this.currentOrderProduct = {
+          ...product,
+          price: product.price_sale || product.price,
+          options,
+          optionKey,
+          quantity: 1,
+        };
+
+        this.orderOpen = true;
+      } else {
+        this.addToCartInternal(product, options, optionKey);
+
+        if (this.selectingFromFavorites) {
+          this.localWishlist = (this.localWishlist || []).filter(id => id !== product.id);
+          this.saveWishlist();
+          this.closeFavorites();
+          this.toCart();
+          this.selectingFromFavorites = false;
+        }
+      }
+
+      this.selectingHandProductId = null;
+      this.selectingHandAction = null;
+      this.buyNowPressed = false;
+      this.addToCartPressed = false;
+      this.resetOptionSelectionState();
+    },
     toggleCurrentProductWishlist() {
       if (!this.currentProduct) return;
       this.toggleWishlist(this.currentProduct.id);
@@ -210,6 +273,7 @@ export default {
         event.stopPropagation();
         event.stopImmediatePropagation();
       }
+
       if (!product) return;
 
       if (this.productImageNavigating[product.id]) return;
@@ -226,6 +290,7 @@ export default {
 
       const currentIndex = this.productImageIndices[product.id] || 0;
       this.productImageIndices[product.id] = currentIndex === 0 ? allImages.length - 1 : currentIndex - 1;
+
       this.$nextTick(() => {
         this.updateImageContainerStyle(product);
         setTimeout(() => {
@@ -239,6 +304,7 @@ export default {
         event.stopPropagation();
         event.stopImmediatePropagation();
       }
+
       if (!product) return;
 
       if (this.productImageNavigating[product.id]) return;
@@ -309,7 +375,9 @@ export default {
       const items = Array.isArray(this.localCartItems) && this.localCartItems.length
           ? this.localCartItems
           : this.getStoredCart();
+
       const item = items.find(el => el && el.id === id);
+
       return !!item;
     },
     toggleCart() {
@@ -334,11 +402,13 @@ export default {
       const targetId = this.normalizeWishlistId(productId);
 
       let updated;
+
       if (current.some((id) => this.normalizeWishlistId(id) === targetId)) {
         updated = current.filter((id) => this.normalizeWishlistId(id) !== targetId);
       } else {
         updated = [...current, productId];
       }
+
       this.saveWishlist(updated);
     },
     showAllProductCards() {
@@ -479,6 +549,7 @@ export default {
     touchEnd(product, event) {
       if (!product || !this.hasMultipleImages(product)) return;
       const touchStart = this.productImageTouchStart[product.id];
+
       if (!touchStart) {
         return;
       }
@@ -636,11 +707,9 @@ export default {
       }
     },
     buildOptionKey(options = []) {
-      if (!Array.isArray(options) || options.length === 0) {
-        return '';
-      }
+      if (!Array.isArray(options) || options.length === 0) return '';
       return options
-          .map(option => option.slug || option.name || option.value)
+          .map(o => `${o.slug || o.name}:${o.value ?? ''}`)
           .join('|');
     },
     saveCart() {
@@ -653,13 +722,13 @@ export default {
       localStorage.setItem('wishlist', JSON.stringify(list));
       this.$emit('update:wishlist', [...list]);
     },
-    addToCartInternal(product, options = []) {
+    addToCartInternal(product, options = [], optionKey = null) {
       const currentCart = Array.isArray(this.localCartItems) ? [...this.localCartItems] : this.getStoredCart();
-      const optionKey = this.buildOptionKey(options);
+      const key = optionKey !== null ? optionKey : this.buildOptionKey(options);
       const existingItem = currentCart.find(item =>
           item &&
           item.id === product.id &&
-          (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
+          (item.optionKey ?? this.buildOptionKey(item.options || [])) === key
       );
 
       if (existingItem) {
@@ -669,7 +738,7 @@ export default {
           ...product,
           price: product.price_sale || product.price,
           options,
-          optionKey,
+          optionKey: key,
           quantity: 1
         });
       }
@@ -682,6 +751,40 @@ export default {
       this.$emit('close-favorites');
       this.$emit('open-cart');
       this.hideOverlay();
+    },
+    finishOptionSelection(product) {
+      const optionsSnapshot = this.selectedProductOptions.map(o => ({ ...o }));
+      const optionKey = this.buildOptionKey(optionsSnapshot);
+
+      if (this.selectingHandAction === 'buy') {
+        this.currentOrderProduct = {
+          ...product,
+          price: product.price_sale || product.price,
+          options: optionsSnapshot,
+          optionKey,
+          quantity: 1,
+        };
+        this.orderOpen = true;
+      } else if (this.selectingHandAction === 'cart') {
+        this.addToCartInternal(product, optionsSnapshot);
+
+        if (this.selectingFromFavorites) {
+          this.localWishlist = this.localWishlist.filter(id => id !== product.id);
+          this.saveWishlist();
+          this.closeFavorites();
+          this.toCart();
+          this.selectingFromFavorites = false;
+        }
+      }
+
+      this.selectingHandProductId = null;
+      this.selectingHandAction = null;
+      this.buyNowPressed = false;
+      this.addToCartPressed = false;
+      this.resetOptionSelectionState();
+    },
+    onOrderSuccess() {
+      this.currentOrderProduct = null;
     },
     cancelProductAddToCart() {
       this.hideOverlay();
@@ -868,30 +971,20 @@ export default {
           </div>
         </template>
       </div>
-      <div v-if="showOptionSelector && currentOptionType()" class="option-selector-modal"
-           @click.self="cancelOptionSelection">
-        <div class="option-selector-content">
-          <div class="option-selector-header">
-            <h3>Выберите {{ currentOptionType() ? currentOptionType().name : 'опцию' }}</h3>
-            <button type="button" class="close-icon" @click="cancelOptionSelection">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="option-selector-body">
-            <p class="option-selector-question">{{ currentOptionType().name }}</p>
-            <div class="option-values">
-              <button v-for="value in currentOptionType().values"
-                      :key="value"
-                      type="button"
-                      class="option-value-btn"
-                      @click="chooseOptionValue(selectingHandProduct(), value)">
-                {{ value }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+    <OptionSelector
+        v-model="optionSelectorOpen"
+        :options="productOptions"
+        :action="selectingHandAction"
+        @done="onOptionDone"
+    />
+    <OrderModal
+        v-model="orderOpen"
+        :current-order-product="currentOrderProduct"
+        :cart-items="localCartItems"
+        :cart-total="cartTotal"
+        @order-success="onOrderSuccess"
+    />
   </section>
 </template>
 

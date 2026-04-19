@@ -1,40 +1,37 @@
 <script>
-import Cart from "./Cart.vue";
 import WishList from "./WishList.vue";
 import Auth from "./AuthModals.vue";
 import {logout} from "./auth";
 
 export default {
   name: "NavBar",
-  components: { Auth, Cart, WishList },
+  components: { Auth, WishList },
   inject: ['params'],
   props: {
-    // cartItems: { type: Array, default: () => [] },
     auth: { type: Object, default: () => ({ authenticated: false, role: null, username: null }) },
     products: { type: Array, default: [] },
     wishlist: { type: Array, default: () => [] },
+    cartItems: { type: Array, default: () => [] },
     isMainPage: { type: Boolean, default: true },
     navigationButtons: { type: Array, default: () => [] },
     currentVirtualPage: { type: Object, default: null }
   },
   emits: [
-    'toggle-cart', 'toggle-favorites', 'nav-click', 'go-home',
+    'toggle-cart', 'close-cart', 'toggle-favorites', 'nav-click', 'go-home',
     'logout', 'auth-changed',
     'update:cartItems', 'update:wishlist',
-    'open-order', 'add-to-cart', 'overlay'
+    'add-to-cart', 'overlay'
   ],
   data() {
     return {
-      cartItems: [],
       mobileMenuOpen: false,
       userMenuOpen: false,
-      cartOpen: false,
       favoritesOpen: false
     }
   },
   computed: {
     cartItemsCount() {
-      return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      return (Array.isArray(this.cartItems) ? this.cartItems : []).reduce((sum, item) => sum + (item.quantity || 0), 0);
     },
     wishlistCount() {
       return this.wishlist.length;
@@ -56,7 +53,6 @@ export default {
     window.addEventListener('scroll', this.onScroll);
     window.addEventListener('resize', this.onResize);
     document.addEventListener('click', this.onDocumentClick);
-    this.loadCart();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
@@ -72,8 +68,8 @@ export default {
     },
     logout,
     closePanels() {
-      this.cartOpen = false;
       this.favoritesOpen = false;
+      this.$emit('close-cart');
       this.$emit('overlay', false);
     },
     normalizeMediaUrl(url) {
@@ -86,100 +82,43 @@ export default {
       const basePath = this.getBasePath ? this.getBasePath() : '/';
       return basePath + url;
     },
-    /* ── мобильное меню ── */
-    toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
-    closeMobileMenu() { this.mobileMenuOpen = false; },
-    /* ── корзина / избранное ── */
+    toggleMobileMenu() {
+      this.mobileMenuOpen = !this.mobileMenuOpen;
+      },
+    closeMobileMenu() {
+      this.mobileMenuOpen = false;
+      },
     overlay() {
-      this.$emit('overlay', this.cartOpen || this.favoritesOpen);
+      this.$emit('overlay', this.favoritesOpen);
     },
     onToggleCart() {
-      if (this.mobileMenuOpen) {
-        this.mobileMenuOpen = false;
-        setTimeout(() => {
-          this.cartOpen = !this.cartOpen;
-          if (this.cartOpen) {
-            this.favoritesOpen = false;
-          }
-          this.overlay();
-          this.$emit('toggle-cart');
-        }, 300);
-      } else {
-        this.cartOpen = !this.cartOpen;
-        if (this.cartOpen) {
-          this.favoritesOpen = false;
-        }
+      const toggle = () => {
+        this.favoritesOpen = false;
         this.overlay();
         this.$emit('toggle-cart');
-      }
-    },
-    onToggleFavorites() {
+      };
+
       if (this.mobileMenuOpen) {
         this.mobileMenuOpen = false;
-        setTimeout(() => {
-          this.favoritesOpen = !this.favoritesOpen;
-          if (this.favoritesOpen) {
-            this.cartOpen = false;
-          }
-          this.overlay();
-          this.$emit('toggle-favorites');
-        }, 300);
-      } else {
+        setTimeout(toggle, 300);
+      } else toggle();
+    },
+    onToggleFavorites() {
+      const toggle = () => {
         this.favoritesOpen = !this.favoritesOpen;
-        if (this.favoritesOpen) {
-          this.cartOpen = false;
-        }
+        if (this.favoritesOpen) this.$emit('close-cart');
         this.overlay();
         this.$emit('toggle-favorites');
-      }
-    },
-    normalizeCartItem(item) {
-      const normalized = { ...item };
+      };
 
-      normalized.optionKey = normalized.optionKey || this.buildOptionKey(normalized.options);
-
-      if (normalized.image && typeof normalized.image === 'string') {
-        normalized.image = this.normalizeMediaUrl(normalized.image);
-      }
-
-      return normalized;
-    },
-    loadCart() {
-      const savedCart = localStorage.getItem('cart');
-
-      if (!savedCart) {
-        this.cartItems = [];
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(savedCart);
-        this.cartItems = Array.isArray(parsed) ? parsed.map(item => this.normalizeCartItem(item)) : [];
-      } catch (error) {
-        console.error('Failed to parse cart from storage:', error);
-        this.cartItems = [];
-      }
-    },
-    onCartUpdated(items) {
-      const normalized = Array.isArray(items) ? items.map(item => this.normalizeCartItem(item)) : [];
-      this.cartItems = normalized;
-      this.$emit('update:cartItems', normalized);
+      if (this.mobileMenuOpen) {
+        this.mobileMenuOpen = false;
+        setTimeout(toggle, 300);
+      } else toggle();
     },
     onWishlistUpdated(items) {
-      const normalized = Array.isArray(items) ? [...items] : [];
-      this.$emit('update:wishlist', normalized);
+      this.$emit('update:wishlist', Array.isArray(items) ? [...items] : []);
     },
-    buildOptionKey(options) {
-      if (!options || !Array.isArray(options) || options.length === 0) {
-        return '';
-      }
-
-      return options
-          .map(opt => `${opt.slug || opt.name}:${opt.value}`)
-          .sort()
-          .join('|');
-    },
-    /* ── навигация ── */
     navClick(event, target) {
       event.preventDefault();
       this.closeMobileMenu();
@@ -191,7 +130,6 @@ export default {
       this.userMenuOpen = false;
       this.$emit('go-home', { updateHistory: true, scrollToTop: true });
     },
-    /* ── меню пользователя ── */
     toggleUserMenu() {
       this.userMenuOpen = !this.userMenuOpen;
 
@@ -244,8 +182,12 @@ export default {
         transform: 'none'
       });
     },
-    onScroll() { if (this.userMenuOpen) this.positionUserMenu(); },
-    onResize() { if (this.userMenuOpen) this.positionUserMenu(); },
+    onScroll() {
+      if (this.userMenuOpen) this.positionUserMenu();
+      },
+    onResize() {
+      if (this.userMenuOpen) this.positionUserMenu();
+      },
     onDocumentClick(e) {
       const root = this.navBarRoot();
       const userMenu = root?.querySelector?.('.user-menu');
@@ -271,12 +213,11 @@ export default {
 <template>
   <header ref="navBarHeader">
     <div class="container nav-container">
-      <!-- Левая часть -->
       <div class="nav-left">
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
           <i class="fas fa-bars"></i>
         </button>
-        <a class="logo" href="#">
+        <a class="logo" href="/">
           <img :src="logo" alt="" style="max-height:64px;max-width:100%" />
         </a>
         <div v-if="showCartParam" class="mobile-cart-icon" @click="onToggleCart">
@@ -288,7 +229,6 @@ export default {
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
       </div>
-      <!-- Навигация -->
       <nav class="nav-links" :key="'nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
         <template v-if="isMainPage">
           <a
@@ -299,21 +239,18 @@ export default {
           >{{ button.label }}</a>
         </template>
         <template v-else>
-          <a href="#" class="btn btn-outline" style="width:auto;" @click.prevent="goHome">
+          <a href="/" class="btn btn-outline" style="width:auto;">
             На главную
           </a>
         </template>
-        <!-- Корзина (десктоп) -->
         <div v-if="showCartParam" class="cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
-        <!-- Избранное (десктоп) -->
         <div v-if="showWishListParam" class="favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
-        <!-- Меню пользователя -->
         <div v-if="showUserMenuParam" class="user-menu" @click="toggleUserMenu">
           <div class="user-avatar"><i class="fas fa-user"></i></div>
           <span class="user-name">{{ auth.username || 'Профиль' }}</span>
@@ -333,7 +270,7 @@ export default {
               </div>
               <div class="user-menu-items">
                 <a v-if="auth.role === 'admin'"
-                   href="admin"
+                   href="/admin"
                    class="user-menu-item admin-item"
                 >
                 <i class="fas fa-cog"></i><span>Администрирование</span>
@@ -356,14 +293,6 @@ export default {
       </nav>
     </div>
   </header>
-  <Cart
-      :cart-open="cartOpen"
-      :cart-items="cartItems"
-      @close="cartOpen = false; $emit('overlay', false)"
-      @update:cart-items="onCartUpdated"
-      @open-order="$emit('open-order')"
-      @nav-click="$emit('nav-click', $event)"
-  />
   <WishList
       :favorites-open="favoritesOpen"
       :wishlist="wishlist"

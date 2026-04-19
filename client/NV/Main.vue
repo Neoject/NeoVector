@@ -2,6 +2,7 @@
 import { markRaw } from 'vue';
 import Props from "./blocks/Props.vue";
 import NavBar from "./components/NavBar.vue";
+import Cart from "./components/Cart.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../../server/src/utils";
 import {api} from "../../server/api";
@@ -37,6 +38,7 @@ console.log(customModules)
 
 const components = {
   NavBar,
+  Cart,
   ...componentRegistry,
   ...customRegistry
 };
@@ -100,6 +102,7 @@ export default {
   },
   async mounted() {
     await this.refreshAuth();
+    this.cartItems = readStorageArray('cart');
 
     this.loadBlocks().then(() => {
       this.updateBlocks();
@@ -114,19 +117,7 @@ export default {
   },
   methods: {
     handleCartUpdated(items) {
-      let nextItems = items;
-
-      if (!Array.isArray(nextItems)) {
-        try {
-          const raw = localStorage.getItem('cart');
-          nextItems = raw ? JSON.parse(raw) : [];
-        } catch (_error) {
-          nextItems = [];
-        }
-      }
-
-      this.cartItems = Array.isArray(nextItems) ? nextItems : [];
-      this.$refs.navBar?.loadCart?.();
+      this.cartItems = Array.isArray(items) ? [...items] : readStorageArray('cart');
     },
     handleWishlistUpdated(items) {
       this.wishlist = Array.isArray(items) ? [...items] : [];
@@ -134,8 +125,8 @@ export default {
     },
     close() {
       this.$refs.navBar?.closePanels?.();
+      this.cartOpen = false;
       this.active = false;
-      this.$emit('close');
     },
     show(value = true) {
       this.active = value;
@@ -239,7 +230,7 @@ export default {
             'onUpdate:wishlist': e => this.handleWishlistUpdated(e),
 
             onOpenCart: () => {
-              this.closeFavorites();
+              this.$refs.navBar?.closePanels?.();
               this.cartOpen = true;
             },
             onOpenFavorites: () => {
@@ -357,11 +348,21 @@ export default {
       :auth="auth"
       :products="products"
       :wishlist="wishlist"
+      :cart-items="cartItems"
       @auth-changed="refreshAuth"
       @logout="onLogout"
-      @update:cartItems="handleCartUpdated"
+      @toggle-cart="cartOpen = !cartOpen"
+      @close-cart="cartOpen = false"
+      @add-to-cart="handleCartUpdated"
       @update:wishlist="handleWishlistUpdated"
       @overlay="show"
+  />
+  <Cart
+      :cart-open="cartOpen"
+      :cart-items="cartItems"
+      @close="cartOpen = false"
+      @update:cart-items="handleCartUpdated"
+      @nav-click="navClick"
   />
   <component
       v-for="(block, blockIndex) in pageBlocksSorted"
@@ -379,7 +380,7 @@ export default {
       <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
     </div>
   </teleport>
-  <div class="overlay" :class="{ active: active }" @click="close"></div>
+  <div class="overlay" :class="{ active: active || cartOpen }" @click="close"></div>
 </template>
 
 <style scoped>

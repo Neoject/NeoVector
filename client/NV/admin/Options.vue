@@ -32,9 +32,7 @@ export default {
   },
   mounted() {
     setPageTitle(this.params.title, 'типы и опции товаров');
-
     this.loadProductTypes().then(() => null);
-    this.loadProductOptions().then(() => null);
   },
   methods: {
     isMobileDevice,
@@ -54,7 +52,7 @@ export default {
         this.optionsError = '';
         this.newOptionName = '';
       } catch (error) {
-        alert('Error loading product options:' + error);
+        this.optionsError = 'Ошибка загрузки опций';
       }
     },
     async loadProductTypes() {
@@ -68,13 +66,19 @@ export default {
               ? data.types.map(type => ({ id: type.id || null, name: type.name || '' }))
               : [];
 
-          if (!this.selectedProductTypeId && this.productTypes.length) {
+          const stillExists = this.selectedProductTypeId
+              && this.productTypes.some(t => t.id === this.selectedProductTypeId);
+
+          if (!stillExists && this.productTypes.length) {
             this.selectedProductTypeId = this.productTypes[0].id || null;
+          } else if (!this.productTypes.length) {
+            this.selectedProductTypeId = null;
+            this.productOptions = [];
           }
         }
         this.newProductTypeName = '';
       } catch (error) {
-        alert('Error loading product types: ' + error);
+        this.typesError = 'Ошибка загрузки типов товаров';
       }
     },
     async saveProductOptions() {
@@ -108,6 +112,7 @@ export default {
     },
     async saveProductTypes() {
       this.typesLoading = true;
+      this.typesError = '';
 
       try {
         const preparedTypes = this.productTypes.map(t => ({ name: (t.name || '').trim() })).filter(t => t.name);
@@ -126,7 +131,28 @@ export default {
 
         if (response.ok && result.success) {
           this.typesSuccess = 'Типы товаров успешно сохранены';
-          setTimeout(() => { this.typesSuccess = '' }, 3000);
+          setTimeout(() => { this.typesSuccess = ''; }, 3000);
+
+          const selectedWasNew = this.selectedProductTypeId === null;
+          const prevName = selectedWasNew
+              ? null
+              : this.productTypes.find(t => t.id === this.selectedProductTypeId)?.name;
+
+          const r2 = await api.getProductTypes();
+          if (r2.ok) {
+            const d2 = await r2.json();
+            this.productTypes = Array.isArray(d2.types)
+                ? d2.types.map(t => ({ id: t.id, name: t.name }))
+                : [];
+
+            const match = prevName ? this.productTypes.find(t => t.name === prevName) : null;
+            const newId = selectedWasNew
+                ? (this.productTypes[this.productTypes.length - 1]?.id ?? null)
+                : (match?.id ?? this.productTypes[0]?.id ?? null);
+
+            this.selectedProductTypeId = newId;
+            await this.loadProductOptions();
+          }
         } else {
           this.typesError = result.error || 'Ошибка сохранения';
         }
@@ -192,15 +218,6 @@ export default {
       this.productOptions[typeIndex] = this.productOptions[typeIndex - 1];
       this.productOptions[typeIndex - 1] = temp;
     },
-    moveProductTypeUp(index) {
-      if (index <= 0 || index >= this.productTypes.length) {
-        return;
-      }
-
-      const temp = this.productTypes[index];
-      this.productTypes[index] = this.productTypes[index - 1];
-      this.productTypes[index - 1] = temp;
-    },
     moveOptionTypeDown(typeIndex) {
       if (typeIndex < 0 || typeIndex >= this.productOptions.length - 1) {
         return;
@@ -209,15 +226,6 @@ export default {
       const temp = this.productOptions[typeIndex];
       this.productOptions[typeIndex] = this.productOptions[typeIndex + 1];
       this.productOptions[typeIndex + 1] = temp;
-    },
-    moveProductTypeDown(index) {
-      if (index < 0 || index >= this.productTypes.length - 1) {
-        return;
-      }
-
-      const temp = this.productTypes[index];
-      this.productTypes[index] = this.productTypes[index + 1];
-      this.productTypes[index + 1] = temp;
     },
     addOptionValue(typeIndex) {
       if (!this.productOptions[typeIndex]) {
@@ -564,30 +572,5 @@ export default {
 .options-actions {
   display: flex;
   gap: 15px;
-}
-.product-options {
-  display: flex;
-  flex-direction: column;
-  padding: 2vh;
-  width: 100%;
-  border-radius: 24px;
-  box-shadow: var(--text-dark) 0 0 20px
-}
-.option-selector {
-  margin-bottom: 4px;
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-  max-width: 20vw;
-  gap: 8px;
-  align-items: start;
-}
-.option-selector-question {
-  width: 100%;
-  min-width: 20vw;
-  font-size: 18px;
-  color: var(--text-primary);
-  place-content: start;
-  margin-bottom: 8px;
 }
 </style>

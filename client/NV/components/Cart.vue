@@ -1,15 +1,19 @@
 <script>
+import OrderModal from "./Order.vue";
+
 export default {
   name: "Cart",
+  components: { OrderModal },
   props: {
     cartOpen:  { type: Boolean, default: false },
     cartItems: { type: Array,   default: () => [] }
   },
-  emits: ['close', 'update:cartItems', 'update:cart-items', 'open-order', 'nav-click'],
+  emits: ['close', 'update:cartItems', 'update:cart-items', 'nav-click'],
   data() {
     return {
       imageLoadingStates: {},
-      localItems: []
+      localItems: [],
+      orderOpen: false,
     }
   },
   watch: {
@@ -35,7 +39,10 @@ export default {
       this.$emit('close');
     },
     openOrderModal() {
-      this.$emit('open-order');
+      this.orderOpen = true;
+    },
+    onOrderSuccess() {
+      this.persist([]);
     },
     navClick(event, target) {
       this.$emit('nav-click', event, target);
@@ -185,6 +192,12 @@ export default {
       </div>
     </div>
   </div>
+  <OrderModal
+      v-model="orderOpen"
+      :cart-items="localItems"
+      :cart-total="cartTotal"
+      @order-success="onOrderSuccess"
+  />
 </template>
 
 <style scoped>

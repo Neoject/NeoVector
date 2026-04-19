@@ -55,9 +55,9 @@ export default {
           </a>
         </div>
         <div class="admin-actions">
-          <router-link to="/admin" class="btn btn-secondary" title="Управление" @click="setPageTitle(params.title, 'управление товарами')">
+          <a href="/" class="btn btn-secondary" title="Главная">
             <i class="fa-solid fa-house"></i>
-          </router-link>
+          </a>
           <router-link to="/admin/options" class="btn btn-secondary" title="Опции товаров" @click="setPageTitle(params.title, 'типы и опции товаров')">
             <i class="fa-solid fa-sliders"></i>
           </router-link>

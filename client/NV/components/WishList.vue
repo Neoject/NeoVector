@@ -1,6 +1,10 @@
 <script>
+import OptionSelector from "./Options.vue";
+import { api } from "../../../server/api";
+
 export default {
   name: "WishList",
+  components: { OptionSelector },
   props: {
     favoritesOpen: { type: Boolean, default: false },
     wishlist: { type: Array, default: () => [] },
@@ -14,7 +18,10 @@ export default {
       touchStartX: 0,
       touchStartY: 0,
       touchEndX: 0,
-      touchEndY: 0
+      touchEndY: 0,
+      optionSelectorOpen: false,
+      optionSelectorProduct: null,
+      productOptions: [],
     }
   },
   computed: {
@@ -50,8 +57,64 @@ export default {
       localStorage.setItem('wishlist', JSON.stringify(updated));
       this.$emit('update:wishlist', updated);
     },
-    addFromFavoritesToCart(product, event) {
-      this.$emit('add-to-cart', product, event);
+    async addFromFavoritesToCart(product) {
+      this.optionSelectorProduct = product;
+      await this.loadProductOptions(product);
+      if (this.productOptions.length) {
+        this.optionSelectorOpen = true;
+      } else {
+        this.addToCartWithOptions(product, [], '');
+      }
+    },
+    async loadProductOptions(product) {
+      this.productOptions = [];
+      try {
+        const r = await api.getProductOptions(product?.product_type_id ?? null);
+        if (r?.ok) {
+          const data = await r.json();
+          const raw = Array.isArray(data.options) ? data.options : [];
+          this.productOptions = raw
+              .map((t, i) => ({
+                name: (t.name || '').trim() || `Опция ${i + 1}`,
+                slug: t.slug || (t.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                values: (t.values || []).map(v => String(v).trim()).filter(Boolean),
+              }))
+              .filter(t => t.values.length);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    onOptionDone({ options, optionKey }) {
+      if (!this.optionSelectorProduct) return;
+      this.addToCartWithOptions(this.optionSelectorProduct, options, optionKey);
+      this.optionSelectorProduct = null;
+    },
+    buildOptionKey(options) {
+      if (!options?.length) return '';
+      return options.map(o => `${o.slug || o.name}:${o.value}`).join('|');
+    },
+    addToCartWithOptions(product, options, optionKey) {
+      let cart = [];
+      try { cart = JSON.parse(localStorage.getItem('cart') || '[]'); } catch { cart = []; }
+      if (!Array.isArray(cart)) cart = [];
+
+      const key = optionKey || this.buildOptionKey(options);
+      const existing = cart.find(i => i.id === product.id && (i.optionKey || '') === key);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({
+          ...product,
+          price: product.price_sale || product.price,
+          options,
+          optionKey: key,
+          quantity: 1,
+        });
+      }
+
+      localStorage.setItem('cart', JSON.stringify(cart));
+      this.$emit('add-to-cart', cart);
     },
     /* ── свайп ── */
     handleFavoritesTouchStart(e) {
@@ -142,7 +205,7 @@ export default {
               <div class="favorites-item-actions">
                 <button
                     class="add-to-cart-btn fav-cart-btn"
-                    @click="addFromFavoritesToCart(product, $event)"
+                    @click="addFromFavoritesToCart(product)"
                 >
                   <i class="fas fa-shopping-cart"></i> В корзину
                 </button>
@@ -163,6 +226,12 @@ export default {
       </div>
     </div>
   </div>
+  <OptionSelector
+      v-model="optionSelectorOpen"
+      :options="productOptions"
+      action="cart"
+      @done="onOptionDone"
+  />
 </template>
 
 <style scoped>
