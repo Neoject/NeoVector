@@ -46,6 +46,7 @@ export const api = {
     updatePaymentStatus: (id, status) => post('/update-payment-status', { order_id: id, payment_status: status }),
     deleteOrder: (id) => del('/orders', { order_id: id }),
     getPages: () => get('/pages'),
+    getPageBySlug: (slug) => get(`/pages/${slug}`),
     addPage: (body) => post('/pages', body),
     updatePage: (id, body) => put(`/pages/${id}`, body),
     deletePage: (id) => del(`/pages/${id}`),
