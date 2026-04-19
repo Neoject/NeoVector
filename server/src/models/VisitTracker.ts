@@ -132,9 +132,10 @@ export class VisitTracker {
     }
 
     static async getRecentVisits(startDate: string, limit: number = 50): Promise<any[]> {
+        const safeLimit = Math.max(1, Math.floor(limit));
         const rows = await db.query<any[]>(
-            'SELECT ip_address, page_url, visit_date, visit_time, referer FROM visits WHERE visit_date >= ? ORDER BY created_at DESC LIMIT ?',
-            [startDate, limit]
+            `SELECT ip_address, page_url, visit_date, visit_time, referer FROM visits WHERE visit_date >= ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+            [startDate]
         );
 
         return rows.map(row => ({
