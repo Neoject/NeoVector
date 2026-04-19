@@ -24,6 +24,8 @@ export default {
       pageElements: [],
       selectedElement: null,
       draggingElement: null,
+      listItems: [],
+      listIsOrdered: false,
       availableElements: [
         { type: 'heading', label: 'Заголовок', icon: 'fas fa-heading', defaultContent: 'Новый заголовок' },
         { type: 'paragraph', label: 'Абзац', icon: 'fas fa-paragraph', defaultContent: 'Новый абзац текста' },
@@ -33,6 +35,11 @@ export default {
         { type: 'divider', label: 'Разделитель', icon: 'fas fa-minus', defaultContent: '<hr>' },
       ],
     }
+  },
+  watch: {
+    selectedElement(el) {
+      if (el?.type === 'list') this.parseListItems(el.content);
+    },
   },
   mounted() {
     this.loadPages()
@@ -175,6 +182,42 @@ export default {
           this.selectedElement = this.pageElements[i]
         }
       }
+    },
+    duplicateElement(idx) {
+      const el = { ...this.pageElements[idx], id: Date.now() + Math.random() };
+      this.pageElements.splice(idx + 1, 0, el);
+      this.selectedElement = this.pageElements[idx + 1];
+    },
+    addNavButton() {
+      if (!Array.isArray(this.pageForm.navigation_buttons)) this.pageForm.navigation_buttons = [];
+      this.pageForm.navigation_buttons.push({ label: '', target: '' });
+    },
+    removeNavButton(idx) {
+      this.pageForm.navigation_buttons.splice(idx, 1);
+    },
+    parseListItems(content) {
+      const div = document.createElement('div');
+      div.innerHTML = content || '<ul><li></li></ul>';
+      this.listIsOrdered = !!div.querySelector('ol');
+      this.listItems = Array.from(div.querySelectorAll('li')).map(li => li.textContent || '');
+      if (!this.listItems.length) this.listItems = [''];
+    },
+    rebuildListHtml() {
+      const tag = this.listIsOrdered ? 'ol' : 'ul';
+      const html = `<${tag}>${this.listItems.map(i => `<li>${i}</li>`).join('')}</${tag}>`;
+      if (this.selectedElement) {
+        this.selectedElement.content = html;
+        this.updateElementContent();
+      }
+    },
+    addListItem() {
+      this.listItems.push('');
+      this.rebuildListHtml();
+    },
+    removeListItem(idx) {
+      this.listItems.splice(idx, 1);
+      if (!this.listItems.length) this.listItems = [''];
+      this.rebuildListHtml();
     },
     async handleImageUpload(e) {
       const file = e.target.files?.[0];
@@ -328,7 +371,7 @@ export default {
           <td>{{ formatDate(page.updated_at) }}</td>
           <td>
             <div class="actions-container">
-              <a :href="'../' + page.slug" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a>
+              <a :href="'/' + page.slug" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a>
               <button @click="editPage(page)" class="btn btn-sm btn-edit"><i class="fas fa-edit"></i></button>
               <button @click="deletePage(page.id)" class="btn btn-sm btn-delete"><i class="fas fa-trash"></i></button>
             </div>
@@ -366,7 +409,9 @@ export default {
           <div class="elements-sidebar">
             <h4>Элементы</h4>
             <div v-for="el in availableElements" :key="el.type" class="element-item" draggable="true" @dragstart="startDragElement(el,$event)">
-              <i :class="el.icon"></i><span>{{ el.label }}</span>
+              <i :class="el.icon"></i>
+              <span style="flex:1">{{ el.label }}</span>
+              <button type="button" @click.stop="addElementToPage(el)" class="btn-icon" style="flex-shrink:0" title="Добавить"><i class="fas fa-plus"></i></button>
             </div>
           </div>
           <div class="page-preview-area" @dragover.prevent="onPreviewDragOver" @drop.prevent="onPreviewDrop" @dragleave.prevent="onPreviewDragLeave">
@@ -381,6 +426,7 @@ export default {
                 <div class="element-controls">
                   <button @click.stop="moveElementUp(i)" class="btn-icon" :disabled="i===0"><i class="fas fa-arrow-up"></i></button>
                   <button @click.stop="moveElementDown(i)" class="btn-icon" :disabled="i===pageElements.length-1"><i class="fas fa-arrow-down"></i></button>
+                  <button @click.stop="duplicateElement(i)" class="btn-icon" title="Дублировать"><i class="fas fa-copy"></i></button>
                   <button @click.stop="removeElement(i)" class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
                 </div>
                 <div class="element-content" v-html="renderElement(el)"></div>
@@ -392,28 +438,62 @@ export default {
             </div>
           </div>
           <div v-if="selectedElement" class="element-editor-panel">
-            <div class="panel-header"><h4>{{ getElementTypeLabel(selectedElement.type) }}</h4><button @click="selectedElement=null" class="btn-icon"><i class="fas fa-times"></i></button></div>
+            <div class="panel-header">
+              <h4>{{ getElementTypeLabel(selectedElement.type) }}</h4>
+              <button @click="selectedElement=null" class="btn-icon">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
             <div class="panel-content">
               <div v-if="selectedElement.type==='heading'" class="form-group">
                 <label>Уровень</label>
                 <select v-model="selectedElement.level" @change="updateElementContent">
-                  <option :value="1">H1</option><option :value="2">H2</option><option :value="3">H3</option><option :value="4">H4</option>
+                  <option :value="1">H1</option>
+                  <option :value="2">H2</option>
+                  <option :value="3">H3</option>
+                  <option :value="4">H4</option>
                 </select>
               </div>
               <div class="form-group">
                 <label>Содержимое</label>
-                <textarea v-if="selectedElement.type!=='image'" v-model="selectedElement.content" @input="updateElementContent" rows="5"></textarea>
+                <textarea v-if="selectedElement.type!=='image' && selectedElement.type!=='list'" v-model="selectedElement.content" @input="updateElementContent" rows="5"></textarea>
+                <div v-else-if="selectedElement.type==='list'">
+                  <div style="margin-bottom:8px">
+                    <select v-model="listIsOrdered" @change="rebuildListHtml" style="width:100%">
+                      <option :value="false">Маркированный список (ul)</option>
+                      <option :value="true">Нумерованный список (ol)</option>
+                    </select>
+                  </div>
+                  <div v-for="(item, idx) in listItems" :key="idx" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+                    <input type="text" :value="item" @input="listItems[idx]=$event.target.value; rebuildListHtml()" placeholder="Элемент списка" style="flex:1">
+                    <button type="button" @click="removeListItem(idx)" class="btn-icon btn-delete" :disabled="listItems.length<=1">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                  <button type="button" @click="addListItem" class="btn btn-secondary" style="width:100%;margin-top:4px">
+                    <i class="fas fa-plus"></i>
+                    Добавить элемент
+                  </button>
+                </div>
                 <div v-else>
                   <input type="text" v-model="selectedElement.content" @input="updateElementContent" placeholder="URL">
                   <input type="file" @change="handleImageUpload" accept="image/*" ref="elemImgInput" style="display:none">
-                  <button type="button" @click="$refs.elemImgInput.click()" class="btn btn-secondary" style="margin-top:6px"><i class="fas fa-upload"></i> Загрузить</button>
+                  <button type="button" @click="$refs.elemImgInput.click()" class="btn btn-secondary" style="margin-top:6px">
+                    <i class="fas fa-upload"></i>
+                    Загрузить
+                  </button>
                 </div>
               </div>
-              <div v-if="selectedElement.type==='button'" class="form-group"><label>Ссылка</label><input type="url" v-model="selectedElement.link" @input="updateElementContent"></div>
+              <div v-if="selectedElement.type==='button'" class="form-group">
+                <label>Ссылка</label>
+                <input type="text" v-model="selectedElement.link" @input="updateElementContent" placeholder="/product?id=1 или #section">
+              </div>
               <div v-if="selectedElement.type==='button'" class="form-group">
                 <label>Стиль</label>
                 <select v-model="selectedElement.style" @change="updateElementContent">
-                  <option value="primary">Primary</option><option value="secondary">Secondary</option><option value="outline">Outline</option>
+                  <option value="primary">Primary</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="outline">Outline</option>
                 </select>
               </div>
             </div>
@@ -421,9 +501,35 @@ export default {
         </div>
         <textarea v-else v-model="pageForm.content" class="rich-editor-textarea" rows="15" placeholder="HTML-содержимое"></textarea>
       </div>
-      <div class="form-group"><label>Meta Title</label><input type="text" v-model="pageForm.meta_title"></div>
-      <div class="form-group"><label>Meta Description</label><textarea v-model="pageForm.meta_description" rows="3"></textarea></div>
-      <div class="form-group"><label><input type="checkbox" v-model="pageForm.is_published"> Опубликовано</label></div>
+      <div class="form-group">
+        <label>Meta Title</label>
+        <input type="text" v-model="pageForm.meta_title">
+      </div>
+      <div class="form-group">
+        <label>Meta Description</label>
+        <textarea v-model="pageForm.meta_description" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>
+          Кнопки навигации
+          <small style="color:var(--text-additional)">(отображаются в шапке на главной странице)</small>
+        </label>
+        <div v-for="(btn, i) in pageForm.navigation_buttons" :key="i" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <input type="text" v-model="btn.label" placeholder="Текст кнопки" style="flex:1">
+          <input type="text" v-model="btn.target" placeholder="Якорь (#section)" style="flex:1">
+          <button type="button" @click="removeNavButton(i)" class="btn-icon btn-delete">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button type="button" @click="addNavButton" class="btn btn-secondary">
+          <i class="fas fa-plus"></i>
+          Добавить кнопку
+        </button>
+      </div>
+      <div class="form-group" style="display:flex;gap:20px;flex-wrap:wrap">
+        <label><input type="checkbox" v-model="pageForm.is_published"> Опубликовано</label>
+        <label><input type="checkbox" v-model="pageForm.is_main_page"> Главная страница</label>
+      </div>
       <div v-if="pageError" class="error-message">{{ pageError }}</div>
       <div v-if="pageSuccess" class="success-message">{{ pageSuccess }}</div>
       <div class="form-actions">
@@ -439,7 +545,6 @@ export default {
   overflow-x: auto;
   overflow-y: hidden;
 }
-
 table.pages-table {
   backdrop-filter: blur(10px);
   border: 2px solid var(--border-secondary);
@@ -448,24 +553,21 @@ table.pages-table {
   position: relative;
   min-width: 300px;
 }
-
 table.pages-table.pages-table-th {
   padding: unset;
   width: auto;
   background: var(--background);
 }
-
 table.pages-table td {
   padding: 0 0.8vw;
   background: var(--background);
   border: 1px solid var(--border-medium);
 }
-
 table.pages-table th:last-child,
 table.pages-table td:last-child {
   position: sticky;
   right: 0;
-  background: var(--background-additional);
+  background: var(--background-table-last);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 10;
@@ -478,91 +580,46 @@ table.pages-table td:last-child {
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
-
-@media (max-width: 768px) {
-  table.pages-table {
-    overflow-x: auto;
-    font-size: 14px;
-  }
-
-  table.pages-table th,
-  table.pages-table td {
-    padding: 10px 8px;
-  }
-
-  table.pages-table th:last-child,
-  table.pages-table td:last-child {
-    position: sticky;
-    right: 0;
-    background: var(--bg-black-95);
-    backdrop-filter: blur(10px);
-    z-index: 10;
-    min-width: 120px;
-    width: 120px;
-    border-left: 1px solid var(--border-light);
-    vertical-align: middle;
-    text-align: center;
-  }
-
-  table.pages-table th:last-child {
-    background: var(--bg-black-95);
-    backdrop-filter: blur(10px);
-  }
-
-  table.pages-table tbody tr td:last-child {
-    position: sticky;
-    right: 0;
-    background: var(--bg-black-95);
-    backdrop-filter: blur(10px);
-    z-index: 5;
-    border-left: 1px solid var(--border-light);
-    min-width: 120px;
-    width: 120px;
-    vertical-align: middle;
-    text-align: center;
-  }
-
-  table.pages-table td:last-child .actions-container {
-    display: flex;
-    gap: 8px;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    min-height: 50px;
-    flex-direction: column;
-  }
+.rich-editor h1 {
+  font-size: 2em;
 }
-
-.rich-editor {
-  min-height: 300px;
-  max-height: 500px;
-  overflow-y: auto;
-  padding: 16px;
-  background: var(--background-secondary);
-  color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.6;
-  outline: none;
-  word-wrap: break-word;
+.rich-editor h2 {
+  font-size: 1.75em;
 }
-
-.rich-editor:focus {
-  background: var(--background-secondary);
+.rich-editor h3 {
+  font-size: 1.5em;
 }
-
-.rich-editor h1 { font-size: 2em; }
-.rich-editor h2 { font-size: 1.75em; }
-.rich-editor h3 { font-size: 1.5em; }
-.rich-editor p { margin: 8px 0; }
-.rich-editor ul, .rich-editor ol { margin: 8px 0; padding-left: 24px; }
-.rich-editor li { margin: 4px 0; }
-.rich-editor a { color: var(--primary); text-decoration: underline; }
-.rich-editor a:hover { color: var(--text-simple); }
-.rich-editor img { max-width: 100%; height: auto; border-radius: 4px; margin: 8px 0; }
-.rich-editor strong, .rich-editor b { font-weight: 600; }
-.rich-editor em, .rich-editor i { font-style: italic; }
-.rich-editor u { text-decoration: underline; }
-
+.rich-editor p {
+  margin: 8px 0;
+}
+.rich-editor ul, .rich-editor ol {
+  margin: 8px 0; padding-left: 24px;
+}
+.rich-editor li {
+  margin: 4px 0;
+}
+.rich-editor a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.rich-editor a:hover {
+  color: var(--text-simple);
+}
+.rich-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+.rich-editor strong, .rich-editor b {
+  font-weight: 600;
+}
+.rich-editor em, .rich-editor i {
+  font-style: italic;
+}
+.rich-editor u {
+  text-decoration: underline;
+}
 .rich-editor-textarea {
   width: 100%;
   padding: 12px 16px;
@@ -576,19 +633,15 @@ table.pages-table td:last-child {
   resize: vertical;
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
-  overflow: hidden;
-  min-height: 80px;
-  max-height: 200px;
+  overflow: auto;
+  min-height: 300px;
+  max-height: 600px;
 }
-
 .rich-editor h1, .rich-editor h2, .rich-editor h3, .rich-editor h4, .rich-editor h5, .rich-editor h6 {
   margin: 16px 0 8px 0;
   color: var(--primary);
   font-weight: 600;
 }
-
-
-
 .editor-controls {
   padding: 12px 16px;
   background: var(--background-secondary);
@@ -597,13 +650,11 @@ table.pages-table td:last-child {
   justify-content: flex-end;
   gap: 10px;
 }
-
 .visual-editor-wrapper {
   display: flex;
   height: 600px;
   position: relative;
 }
-
 .elements-sidebar {
   width: 220px;
   background: var(--background-secondary);
@@ -612,7 +663,6 @@ table.pages-table td:last-child {
   padding: 16px;
   flex-shrink: 0;
 }
-
 .elements-sidebar h4 {
   color: var(--primary);
   font-size: 14px;
@@ -621,18 +671,11 @@ table.pages-table td:last-child {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
-.elements-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .element-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px;
+  padding: 8px 10px;
   background: var(--background-secondary);
   border: 1px solid var(--border-light);
   border-radius: 6px;
@@ -641,16 +684,19 @@ table.pages-table td:last-child {
   transition: all 0.2s ease;
   user-select: none;
 }
-
 .element-item:hover {
   background: var(--background-secondary);
   border-color: var(--border-strong);
   transform: translateX(4px);
 }
-
-.element-item:active { opacity: 0.7; }
-.element-item i { color: var(--primary); width: 20px; text-align: center; }
-
+.element-item:active {
+  opacity: 0.7;
+}
+.element-item i {
+  color: var(--primary);
+  width: 20px;
+  text-align: center;
+}
 .page-preview-area {
   flex: 1;
   background: var(--background-secondary);
@@ -659,18 +705,15 @@ table.pages-table td:last-child {
   position: relative;
   transition: all 0.3s ease;
 }
-
 .page-preview-area.drag-over {
   background: var(--background-secondary);
   border: 2px dashed var(--border-secondary);
 }
-
 .preview-header {
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-light);
 }
-
 .preview-header span {
   color: var(--primary);
   font-weight: 600;
@@ -678,7 +721,6 @@ table.pages-table td:last-child {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
 .page-elements-container {
   display: flex;
   flex-direction: column;
@@ -686,7 +728,6 @@ table.pages-table td:last-child {
   min-height: 100px;
   margin-bottom: 8vh;
 }
-
 .page-element {
   position: relative;
   background: var(--background-secondary);
@@ -696,28 +737,23 @@ table.pages-table td:last-child {
   transition: all 0.2s ease;
   cursor: pointer;
 }
-
 .page-element:hover {
   background: var(--background-secondary);
   border-color: var(--border-medium);
 }
-
 .page-element.selected {
   border-color: var(--primary);
   background: var(--hover-secondary);
   box-shadow: 0 0 0 2px var(--border-medium);
 }
-
 .page-element.drag-over-top {
   border-top-color: var(--primary);
   border-top-width: 3px;
 }
-
 .page-element.drag-over-bottom {
   border-bottom-color: var(--primary);
   border-bottom-width: 3px;
 }
-
 .element-controls {
   position: absolute;
   top: 8px;
@@ -728,12 +764,10 @@ table.pages-table td:last-child {
   transition: opacity 0.2s ease;
   z-index: 10;
 }
-
 .page-element:hover .element-controls,
 .page-element.selected .element-controls {
   opacity: 1;
 }
-
 .btn-icon {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--border-medium);
@@ -749,37 +783,40 @@ table.pages-table td:last-child {
   min-width: 28px;
   height: 28px;
 }
-
 .btn-icon:hover:not(:disabled) {
   background: var(--background-additional);
   border-color: var(--border-alternative);
 }
-
 .btn-icon:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 .btn-icon.btn-delete:hover:not(:disabled) {
   background: var(--warning);
   border-color: var(--warning-dark);
 }
-
 .element-content {
   padding-right: 80px;
   color: var(--text-primary);
 }
-
 .element-content h1, .element-content h2, .element-content h3,
 .element-content h4, .element-content h5, .element-content h6 {
   color: var(--primary);
   margin: 0 0 8px 0;
 }
-
-.element-content p { margin: 0; line-height: 1.6; }
-.element-content img { max-width: 100%; height: auto; border-radius: 4px; }
-.element-content .btn { display: inline-block; margin: 0; }
-
+.element-content p {
+  margin: 0;
+  line-height: 1.6;
+}
+.element-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+.element-content .btn {
+  display: inline-block;
+  margin: 0;
+}
 .empty-preview {
   display: flex;
   flex-direction: column;
@@ -789,7 +826,6 @@ table.pages-table td:last-child {
   color: var(--text-additional);
   text-align: center;
 }
-
 .element-editor-panel {
   width: 300px;
   background: var(--background-secondary);
@@ -798,7 +834,6 @@ table.pages-table td:last-child {
   padding: 16px;
   flex-shrink: 0;
 }
-
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -807,7 +842,6 @@ table.pages-table td:last-child {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-medium);
 }
-
 .panel-header h4 {
   color: var(--primary);
   font-size: 14px;
@@ -816,15 +850,20 @@ table.pages-table td:last-child {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
 .panel-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-
-.panel-content .form-group { margin-bottom: 0; }
-.panel-content label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-additional-light); }
+.panel-content .form-group {
+  margin-bottom: 0;
+}
+.panel-content label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-additional-light);
+}
 .panel-content input, .panel-content textarea, .panel-content select {
   width: 100%;
   padding: 8px 12px;
@@ -834,35 +873,28 @@ table.pages-table td:last-child {
   color: var(--text-primary);
   font-size: 14px;
 }
-
-.panel-content textarea { resize: vertical; min-height: 100px; }
-
+.panel-content textarea {
+  resize: vertical;
+  min-height: 100px;
+}
 .form-actions {
   display: flex;
   gap: 15px;
   justify-content: flex-end;
   margin-top: 30px;
 }
-
-@media (max-width: 768px) {
-  .form-actions { flex-direction: column; width: fit-content; }
-  .form-actions .btn { width: 100%; }
-}
-
 @media (max-width: 1024px) {
   .visual-editor-wrapper {
     flex-direction: column;
     height: auto;
     min-height: 600px;
   }
-
   .elements-sidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border-medium);
     max-height: 200px;
   }
-
   .element-editor-panel {
     width: 100%;
     border-left: none;
@@ -870,15 +902,73 @@ table.pages-table td:last-child {
     max-height: 300px;
   }
 }
-
 @media (max-width: 768px) {
-  .visual-editor-wrapper { height: auto; }
-  .elements-list { flex-direction: row; flex-wrap: wrap; }
+  table.pages-table {
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  table.pages-table th,
+  table.pages-table td {
+    padding: 10px 8px;
+  }
+  table.pages-table th:last-child,
+  table.pages-table td:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--background-table-last);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    min-width: 120px;
+    width: 120px;
+    border-left: 1px solid var(--border-light);
+    vertical-align: middle;
+    text-align: center;
+  }
+  table.pages-table th:last-child {
+    background: var(--background-table-last);
+    backdrop-filter: blur(10px);
+  }
+  table.pages-table tbody tr td:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--background-table-last);
+    backdrop-filter: blur(10px);
+    z-index: 5;
+    border-left: 1px solid var(--border-light);
+    min-width: 120px;
+    width: 120px;
+    vertical-align: middle;
+    text-align: center;
+  }
+  table.pages-table td:last-child .actions-container {
+    display: flex;
+    gap: 8px;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    flex-direction: column;
+  }
+  .visual-editor-wrapper {
+    height: auto;
+  }
   .element-item {
     flex: 1 1 calc(50% - 4px);
     min-width: 140px;
   }
-  .page-preview-area { min-height: 400px; }
-  .element-content { padding-right: 0; padding-top: 40px; }
+  .page-preview-area {
+    min-height: 400px;
+  }
+  .element-content {
+    padding-right: 0;
+    padding-top: 40px;
+  }
+  .form-actions {
+    flex-direction: column;
+    width: fit-content;
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
 }
 </style>

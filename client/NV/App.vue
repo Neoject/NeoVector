@@ -61,6 +61,8 @@ export default {
   --background-secondary: #dcdcdc;;
   --background-additional: #acacac;
   --background-empty: #ffffff00;
+  --background-table-main: #ffffff;
+  --background-table-last: #ffffff;
   /* основные цвета */
   --primary: #000000;
   --primary-alt: #545454;
