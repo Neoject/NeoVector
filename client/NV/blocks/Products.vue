@@ -178,9 +178,10 @@ export default {
           optionKey,
           quantity: 1,
         };
+
         this.orderOpen = true;
       } else {
-        this.addToCartInternal(product, options);
+        this.addToCartInternal(product, options, optionKey);
 
         if (this.selectingFromFavorites) {
           this.localWishlist = (this.localWishlist || []).filter(id => id !== product.id);
@@ -272,6 +273,7 @@ export default {
         event.stopPropagation();
         event.stopImmediatePropagation();
       }
+
       if (!product) return;
 
       if (this.productImageNavigating[product.id]) return;
@@ -288,6 +290,7 @@ export default {
 
       const currentIndex = this.productImageIndices[product.id] || 0;
       this.productImageIndices[product.id] = currentIndex === 0 ? allImages.length - 1 : currentIndex - 1;
+
       this.$nextTick(() => {
         this.updateImageContainerStyle(product);
         setTimeout(() => {
@@ -301,6 +304,7 @@ export default {
         event.stopPropagation();
         event.stopImmediatePropagation();
       }
+
       if (!product) return;
 
       if (this.productImageNavigating[product.id]) return;
@@ -371,7 +375,9 @@ export default {
       const items = Array.isArray(this.localCartItems) && this.localCartItems.length
           ? this.localCartItems
           : this.getStoredCart();
+
       const item = items.find(el => el && el.id === id);
+
       return !!item;
     },
     toggleCart() {
@@ -396,11 +402,13 @@ export default {
       const targetId = this.normalizeWishlistId(productId);
 
       let updated;
+
       if (current.some((id) => this.normalizeWishlistId(id) === targetId)) {
         updated = current.filter((id) => this.normalizeWishlistId(id) !== targetId);
       } else {
         updated = [...current, productId];
       }
+
       this.saveWishlist(updated);
     },
     showAllProductCards() {
@@ -541,6 +549,7 @@ export default {
     touchEnd(product, event) {
       if (!product || !this.hasMultipleImages(product)) return;
       const touchStart = this.productImageTouchStart[product.id];
+
       if (!touchStart) {
         return;
       }
@@ -698,11 +707,9 @@ export default {
       }
     },
     buildOptionKey(options = []) {
-      if (!Array.isArray(options) || options.length === 0) {
-        return '';
-      }
+      if (!Array.isArray(options) || options.length === 0) return '';
       return options
-          .map(option => option.slug || option.name || option.value)
+          .map(o => `${o.slug || o.name}:${o.value ?? ''}`)
           .join('|');
     },
     saveCart() {
@@ -715,13 +722,13 @@ export default {
       localStorage.setItem('wishlist', JSON.stringify(list));
       this.$emit('update:wishlist', [...list]);
     },
-    addToCartInternal(product, options = []) {
+    addToCartInternal(product, options = [], optionKey = null) {
       const currentCart = Array.isArray(this.localCartItems) ? [...this.localCartItems] : this.getStoredCart();
-      const optionKey = this.buildOptionKey(options);
+      const key = optionKey !== null ? optionKey : this.buildOptionKey(options);
       const existingItem = currentCart.find(item =>
           item &&
           item.id === product.id &&
-          (item.optionKey || this.buildOptionKey(item.options || [])) === optionKey
+          (item.optionKey ?? this.buildOptionKey(item.options || [])) === key
       );
 
       if (existingItem) {
@@ -731,7 +738,7 @@ export default {
           ...product,
           price: product.price_sale || product.price,
           options,
-          optionKey,
+          optionKey: key,
           quantity: 1
         });
       }
