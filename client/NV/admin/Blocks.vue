@@ -209,17 +209,66 @@ export default {
     },
     onBlockTypeChange() {
       const defaults = {
-        hero: { sectionTitle: '', mainTitle: '', subtitle: '', description: '', backgroundImage: '', backgroundPosition: 'center', backgroundSize: 'cover', buttonA: '', buttonB: '' },
-        features: { sectionTitle: '', features: [{ icon: 'fas fa-gem', title: '', description: '' }] },
-        history: { sectionTitle: '', events: [{ year: '', title: '', description: '' }] },
-        stats: { sectionTitle: '', stats: [{ number: '', label: '' }] },
-        products: { sectionTitle: 'Наша коллекция' },
-        buttons: { sectionTitle: '', buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }] },
-        actual: { sectionTitle: 'Акции', promotions: [{ title: '', description: '', image: '', links: [], linkType: 'url', link: '', linkText: '' }] },
-        contact: { sectionTitle: 'Контакты', email: '', phone: '', address: '', socialLinks: { telegram: '', instagram: '', tiktok: '' } },
-        info_buttons: { sectionTitle: '', buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }] },
-        footer: {},
-        text: { sectionTitle: '' },
+        hero: {
+          sectionTitle: '',
+          mainTitle: '',
+          subtitle: '',
+          description: '',
+          backgroundImage: '',
+          backgroundPosition: 'center',
+          backgroundSize: 'cover',
+          buttonA: '',
+          buttonB: ''
+        },
+        features: {
+          sectionTitle: '',
+          features: [{ icon: 'fas fa-gem', title: '', description: '' }]
+        },
+        history: {
+          sectionTitle: '',
+          events: [{ year: '', title: '', description: '' }]
+        },
+        stats: {
+          sectionTitle: '',
+          stats: [{ number: '', label: '' }]
+        },
+        products: {
+          sectionTitle: 'Товары'
+        },
+        buttons: {
+          sectionTitle: '',
+          buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }]
+        },
+        actual: {
+          sectionTitle: 'Акции',
+          promotions: [{
+            title: '',
+            description: '',
+            image: '',
+            links: [],
+            linkType: 'url',
+            link: '',
+            linkText: ''
+          }]
+        },
+        contact: {
+          sectionTitle: 'Контакты',
+          email: '',
+          phone: '',
+          address: '',
+          socialLinks: { telegram: '', instagram: '', tiktok: '' }
+        },
+        custom: {
+          anchorId: ''
+        },
+        info_buttons: {
+          sectionTitle: '',
+          buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }]
+        },
+        footer: { },
+        text: {
+          sectionTitle: ''
+        },
       }
       this.blockForm.settings = defaults[this.blockForm.type] || { sectionTitle: '' }
     },
@@ -402,6 +451,7 @@ export default {
       return {
         hero: 'Hero секция', features: 'Преимущества', products: 'Товары', history: 'История', stats: 'Статистика',
         contact: 'Контакты', text: 'Текстовый блок', buttons: 'Кнопки', actual: 'Акции',
+        custom: 'Пользовательский HTML',
         info_buttons: 'Информационные кнопки', footer: 'Футер',
       }[type] || type
     },
@@ -419,6 +469,7 @@ export default {
         footer: `<div><h4>Футер</h4><p>${(block.content || '').substring(0, 50)}</p></div>`,
         info_buttons: `<div><h4>Инфо-кнопки</h4><p>${(s.buttons || []).length} кнопок</p></div>`,
         text: `<div><h4>Текст</h4><p>${(block.content || '').substring(0, 80)}</p></div>`,
+        custom: `<div><h4>HTML</h4><p>${(block.content || '').replace(/<[^>]+>/g, '').substring(0, 80) || '—'}</p></div>`,
       }
       return map[block.type] || `<div><h4>${this.getBlockTypeName(block.type)}</h4><p>${block.title || '—'}</p></div>`
     },
@@ -525,6 +576,7 @@ export default {
           <option value="text">Текстовый блок</option>
           <option value="buttons">Кнопки</option>
           <option value="actual">Акции</option>
+          <option value="custom">Пользовательский HTML</option>
           <option value="info_buttons" disabled>Инфо-кнопки (авто)</option>
           <option value="footer" disabled>Футер (авто)</option>
         </select>
@@ -661,6 +713,23 @@ export default {
             </div>
           </div>
           <button type="button" @click="addPromotion" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить акцию</button>
+        </div>
+      </template>
+      <!-- custom -->
+      <template v-if="blockForm.type==='custom'">
+        <div class="form-group">
+          <label>Anchor ID <span style="color:#888;font-size:12px">(необязательно, для навигации)</span></label>
+          <input type="text" v-model="blockForm.settings.anchorId" placeholder="my-section">
+        </div>
+        <div class="form-group">
+          <label>HTML код</label>
+          <textarea
+            v-model="blockForm.content"
+            rows="12"
+            placeholder="<div class=&quot;my-block&quot;>...</div>"
+            style="font-family: monospace; font-size: 13px;"
+          ></textarea>
+          <small style="color:#888;display:block;margin-top:4px">HTML отображается напрямую на странице. Используйте с осторожностью.</small>
         </div>
       </template>
       <!-- footer -->
