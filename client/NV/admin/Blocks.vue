@@ -1,11 +1,12 @@
 <script>
 import { isMobileDevice } from './service'
 import Modal from "../components/Modal.vue";
+import IconPicker from "./IconPicker.vue";
 import {api} from "../../../server/api";
 
 export default {
   name: 'Blocks',
-  components: {Modal},
+  components: {Modal, IconPicker},
   emits: ['update:page'],
   data() {
     return {
@@ -24,11 +25,9 @@ export default {
       pages: [],
       productsCatalog: [],
       showIconPicker: false,
-      iconSearchQuery: '',
-      selectedIconCategory: 'all',
-      selectedIconClass: '',
       currentIconTarget: null,
-      filteredIcons: [],
+      showProjectIconPicker: false,
+      currentProjectIconIndex: null,
       customViewMode: 'visual',
       customElements: [],
       customSelectedElement: null,
@@ -36,72 +35,43 @@ export default {
       customListItems: [],
       customListIsOrdered: false,
       availableElements: [
-        { type: 'heading',   label: 'Заголовок',    icon: 'fas fa-heading',      defaultContent: 'Новый заголовок' },
-        { type: 'paragraph', label: 'Абзац',         icon: 'fas fa-paragraph',    defaultContent: 'Новый абзац текста' },
-        { type: 'image',     label: 'Изображение',   icon: 'fas fa-photo-film',   defaultContent: '' },
-        { type: 'list',      label: 'Список',         icon: 'fas fa-list',         defaultContent: '<ul><li>Элемент 1</li></ul>' },
-        { type: 'button',    label: 'Кнопка',         icon: 'fas fa-hand-pointer', defaultContent: 'Кнопка' },
-        { type: 'divider',   label: 'Разделитель',    icon: 'fas fa-minus',        defaultContent: '<hr>' },
-      ],
-      iconCategories: [
-        { name: 'all', label: 'Все', icon: 'fas fa-th' },
-        { name: 'business', label: 'Бизнес', icon: 'fas fa-briefcase' },
-        { name: 'technology', label: 'Технологии', icon: 'fas fa-laptop' },
-        { name: 'shopping', label: 'Покупки', icon: 'fas fa-shopping-cart' },
-        { name: 'communication', label: 'Общение', icon: 'fas fa-comments' },
-        { name: 'media', label: 'Медиа', icon: 'fas fa-play' },
-        { name: 'travel', label: 'Путешествия', icon: 'fas fa-plane' },
-        { name: 'health', label: 'Здоровье', icon: 'fas fa-heart' },
-        { name: 'education', label: 'Образование', icon: 'fas fa-graduation-cap' },
-        { name: 'food', label: 'Еда', icon: 'fas fa-utensils' },
-        { name: 'sports', label: 'Спорт', icon: 'fas fa-football-ball' },
-        { name: 'weather', label: 'Погода', icon: 'fas fa-sun' },
-      ],
-      availableIcons: [
-        { class: 'fas fa-gem', name: 'Камень', category: 'all' },
-        { class: 'fas fa-tools', name: 'Инструменты', category: 'all' },
-        { class: 'fas fa-award', name: 'Награда', category: 'all' },
-        { class: 'fas fa-heart', name: 'Сердце', category: 'health' },
-        { class: 'fas fa-star', name: 'Звезда', category: 'all' },
-        { class: 'fas fa-shield-alt', name: 'Щит', category: 'all' },
-        { class: 'fas fa-lock', name: 'Замок', category: 'all' },
-        { class: 'fas fa-home', name: 'Дом', category: 'all' },
-        { class: 'fas fa-user', name: 'Пользователь', category: 'all' },
-        { class: 'fas fa-cog', name: 'Настройки', category: 'all' },
-        { class: 'fas fa-briefcase', name: 'Портфель', category: 'business' },
-        { class: 'fas fa-chart-line', name: 'График', category: 'business' },
-        { class: 'fas fa-trophy', name: 'Трофей', category: 'business' },
-        { class: 'fas fa-laptop', name: 'Ноутбук', category: 'technology' },
-        { class: 'fas fa-mobile-alt', name: 'Телефон', category: 'technology' },
-        { class: 'fas fa-wifi', name: 'WiFi', category: 'technology' },
-        { class: 'fas fa-rocket', name: 'Ракета', category: 'technology' },
-        { class: 'fas fa-shopping-cart', name: 'Корзина', category: 'shopping' },
-        { class: 'fas fa-gift', name: 'Подарок', category: 'shopping' },
-        { class: 'fas fa-tags', name: 'Теги', category: 'shopping' },
-        { class: 'fas fa-envelope', name: 'Письмо', category: 'communication' },
-        { class: 'fas fa-phone', name: 'Звонок', category: 'communication' },
-        { class: 'fas fa-comments', name: 'Комментарии', category: 'communication' },
-        { class: 'fas fa-plane', name: 'Самолет', category: 'travel' },
-        { class: 'fas fa-car', name: 'Авто', category: 'travel' },
-        { class: 'fas fa-map-marker-alt', name: 'Метка', category: 'travel' },
-        { class: 'fas fa-globe', name: 'Глобус', category: 'travel' },
-        { class: 'fas fa-heartbeat', name: 'Пульс', category: 'health' },
-        { class: 'fas fa-stethoscope', name: 'Стетоскоп', category: 'health' },
-        { class: 'fas fa-graduation-cap', name: 'Диплом', category: 'education' },
-        { class: 'fas fa-book', name: 'Книга', category: 'education' },
-        { class: 'fas fa-utensils', name: 'Приборы', category: 'food' },
-        { class: 'fas fa-coffee', name: 'Кофе', category: 'food' },
-        { class: 'fas fa-football-ball', name: 'Мяч', category: 'sports' },
-        { class: 'fas fa-dumbbell', name: 'Гантель', category: 'sports' },
-        { class: 'fas fa-sun', name: 'Солнце', category: 'weather' },
-        { class: 'fas fa-cloud-rain', name: 'Дождь', category: 'weather' },
-        { class: 'fas fa-snowflake', name: 'Снег', category: 'weather' },
+        {
+          type: 'heading',
+          label: 'Заголовок',
+          icon: 'fas fa-heading',
+          defaultContent: 'Новый заголовок'
+        },
+        {
+          type: 'paragraph',
+          label: 'Абзац',
+          icon: 'fas fa-paragraph',
+          defaultContent: 'Новый абзац текста'
+        },
+        { type: 'image',
+          label: 'Изображение',
+          icon: 'fas fa-photo-film',
+          defaultContent: ''
+        },
+        { type: 'list',
+          label: 'Список',
+          icon: 'fas fa-list',
+          defaultContent: '<ul><li>Элемент 1</li></ul>'
+        },
+        {
+          type: 'button',
+          label: 'Кнопка',
+          icon: 'fas fa-hand-pointer',
+          defaultContent: 'Кнопка'
+        },
+        { type: 'divider',
+          label: 'Разделитель',
+          icon: 'fas fa-minus',
+          defaultContent: '<hr>'
+        },
       ],
     }
   },
   watch: {
-    selectedIconCategory() { this.updateFilteredIcons() },
-    iconSearchQuery() { this.updateFilteredIcons() },
     customSelectedElement(el) {
       if (el?.type === 'list') this.parseCustomListItems(el.content);
     },
@@ -114,19 +84,22 @@ export default {
   methods: {
     isMobileDevice,
     getProductsObject() {
-      const obj = {}
-      ;(this.productsCatalog || []).forEach(p => { obj[p.id] = { ...p } })
-      return obj
+      const obj = {};
+      (this.productsCatalog || []).forEach(p => { obj[p.id] = { ...p } })
+      return obj;
     },
     async loadProductsCatalog() {
       try {
         const r = await api.getProducts();
         if (r.ok) this.productsCatalog = await r.json();
-      } catch { this.productsCatalog = []; }
+      } catch {
+        this.productsCatalog = [];
+      }
     },
     async loadPages() {
       try {
         const r = await api.getPages();
+
         if (r.ok) {
           const pages = await r.json();
           this.pages = pages.map(p => ({
@@ -144,96 +117,168 @@ export default {
       try {
         const r = await api.getPageBlocks();
 
-        if (!r.ok) { this.pageBlocks = []; return }
+        if (!r.ok) {
+          this.pageBlocks = [];
+          return;
+        }
 
-        const blocks = await r.json()
-        const regular = blocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-        const infoBtn = blocks.filter(b => b.type === 'info_buttons')
-        const footer = blocks.filter(b => b.type === 'footer')
+        const blocks = await r.json();
+        const regular = blocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        const infoBtn = blocks.filter(b => b.type === 'info_buttons');
+        const footer = blocks.filter(b => b.type === 'footer');
 
         this.pageBlocks = [
           ...regular,
           ...(infoBtn.length ? [{ ...infoBtn[0], sort_order: regular.length }] : []),
           ...(footer.length ? [{ ...footer[0], sort_order: regular.length + (infoBtn.length ? 1 : 0) }] : []),
-        ]
+        ];
 
-        await this.ensureInfoButtonsBlock()
-        await this.ensureFooterBlock()
+        await this.ensureInfoButtonsBlock();
+        await this.ensureFooterBlock();
 
-        this.originalBlocksOrder = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b)).map(b => b.id)
-        this.hasUnsavedChanges = false
-      } catch { this.pageBlocks = [] }
+        this.originalBlocksOrder = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b)).map(b => b.id);
+        this.hasUnsavedChanges = false;
+      } catch {
+        this.pageBlocks = [];
+      }
     },
     async ensureFooterBlock() {
       if (this.pageBlocks.find(b => b.type === 'footer')) return;
+
       const r = await api.addPageBlock({
         type: 'footer', title: 'Футер', content: '',
         settings: {}, sort_order: this.pageBlocks.length, is_active: true,
       });
+
       if (r.ok) {
         const res = await r.json();
-        this.pageBlocks.push({ id: res.id, type: 'footer', title: 'Футер', content: '', settings: {}, sort_order: this.pageBlocks.length, is_active: true });
+        this.pageBlocks.push({
+          id: res.id,
+          type: 'footer',
+          title: 'Футер',
+          content: '',
+          settings: {},
+          sort_order: this.pageBlocks.length,
+          is_active: true
+        });
       }
     },
     async ensureInfoButtonsBlock() {
       if (this.pageBlocks.find(b => b.type === 'info_buttons')) return;
+
       const def = { sectionTitle: '', buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }] };
+
       const r = await api.addPageBlock({
         type: 'info_buttons', title: 'Информационные кнопки', content: '',
         settings: def, sort_order: this.pageBlocks.length, is_active: true,
       });
+
       if (r.ok) {
         const res = await r.json();
         const footerIdx = this.pageBlocks.findIndex(b => b.type === 'footer');
-        const nb = { id: res.id, type: 'info_buttons', title: 'Информационные кнопки', content: '', settings: def, sort_order: this.pageBlocks.length, is_active: true };
+
+        const nb = {
+          id: res.id,
+          type: 'info_buttons',
+          title: 'Информационные кнопки',
+          content: '',
+          settings: def,
+          sort_order: this.pageBlocks.length,
+          is_active: true
+        };
+
         footerIdx !== -1 ? this.pageBlocks.splice(footerIdx, 0, nb) : this.pageBlocks.push(nb);
       }
     },
-    isFooterBlock(b) { return b.type === 'footer' },
-    isInfoButtonsBlock(b) { return b.type === 'info_buttons' },
+    isFooterBlock(b) {
+      return b.type === 'footer';
+      },
+    isInfoButtonsBlock(b) {
+      return b.type === 'info_buttons';
+      },
     openAddBlockModal() {
-      const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b))
-      this.blockForm = { type: '', title: '', content: '', settings: {}, sort_order: regular.length, is_active: true }
-      this.customElements = []
-      this.customSelectedElement = null
-      this.customViewMode = 'visual'
-      if (!this.pages.length) this.loadPages()
-      if (!this.isMobileDevice()) this.showAddBlockModal = true
-      else this.$emit('update:page', 'block')
+      const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
+
+      this.blockForm = {
+        type: '',
+        title: '',
+        content: '',
+        settings: {},
+        sort_order: regular.length,
+        is_active: true
+      };
+
+      this.customElements = [];
+      this.customSelectedElement = null;
+      this.customViewMode = 'visual';
+      if (!this.pages.length) this.loadPages();
+      if (!this.isMobileDevice()) {
+        this.showAddBlockModal = true;
+      } else {
+        this.$emit('update:page', 'block');
+      }
     },
     editBlock(block) {
-      this.editingBlock = block
-      this.blockForm = { type: block.type, title: block.title, content: block.content, settings: { ...block.settings }, sort_order: block.sort_order, is_active: block.is_active }
-      if ((block.type === 'buttons' || block.type === 'info_buttons') && !Array.isArray(this.blockForm.settings.buttons)) {
-        this.blockForm.settings.buttons = [{ text: '', linkType: 'page', link: '', style: 'primary' }]
+      this.editingBlock = block;
+
+      this.blockForm = {
+        type: block.type,
+        title: block.title,
+        content: block.content,
+        settings: { ...block.settings },
+        sort_order: block.sort_order,
+        is_active: block.is_active
       }
+
+      if ((block.type === 'buttons' || block.type === 'info_buttons') &&
+          !Array.isArray(this.blockForm.settings.buttons)
+      ) {
+        this.blockForm.settings.buttons = [{ text: '', linkType: 'page', link: '', style: 'primary' }];
+      }
+
       if (block.type === 'actual') {
-        if (!Array.isArray(this.blockForm.settings.promotions)) this.blockForm.settings.promotions = []
+        if (!Array.isArray(this.blockForm.settings.promotions)) this.blockForm.settings.promotions = [];
+
         this.blockForm.settings.promotions.forEach(p => {
-          if (!Array.isArray(p.links)) p.links = p.links ? Object.values(p.links) : []
-        })
+          if (!Array.isArray(p.links)) p.links = p.links ? Object.values(p.links) : [];
+        });
       }
+
       if (block.type === 'contact' && !this.blockForm.settings.socialLinks) {
-        this.blockForm.settings.socialLinks = { telegram: '', instagram: '', tiktok: '' }
+        this.blockForm.settings.socialLinks = { telegram: '', instagram: '', tiktok: '' };
       }
+
       if (block.type === 'custom') {
         this.customElements = this.parseHTMLToCustomElements(block.content || '');
         this.customSelectedElement = null;
         this.customViewMode = 'visual';
       }
-      if (!this.isMobileDevice()) this.showAddBlockModal = true
-      else this.$emit('update:page', 'block')
+
+      if (!this.isMobileDevice()) {
+        this.showAddBlockModal = true;
+      } else {
+        this.$emit('update:page', 'block');
+      }
     },
     closeBlockModal() {
-      if (!this.isMobileDevice()) this.showAddBlockModal = false
-      else this.$emit('update:page', '')
-      this.editingBlock = null
-      this.blockError = ''
-      this.blockSuccess = ''
-      this.blockForm = { type: '', title: '', content: '', settings: {}, sort_order: 0, is_active: true }
-      this.customElements = []
-      this.customSelectedElement = null
-      this.customViewMode = 'visual'
+      if (!this.isMobileDevice()) this.showAddBlockModal = false;
+      else this.$emit('update:page', '');
+      this.editingBlock = null;
+      this.blockError = '';
+      this.blockSuccess = '';
+
+      this.blockForm = {
+        type: '',
+        title: '',
+        content: '',
+        settings: {},
+        sort_order: 0,
+        is_active: true
+      };
+
+      this.customElements = [];
+      this.customSelectedElement = null;
+      this.customViewMode = 'visual';
     },
     onBlockTypeChange() {
       const defaults = {
@@ -286,6 +331,21 @@ export default {
           address: '',
           socialLinks: { telegram: '', instagram: '', tiktok: '' }
         },
+        projects: {
+          sectionTitle: 'Мои проекты',
+          projects: [{
+            title: '',
+            description: '',
+            icon: '🚀',
+            iconType: 'text',
+            tech: '',
+            github: '',
+            github2: '',
+            github2_title: '',
+            demo: '',
+            site: ''
+          }]
+        },
         custom: {
           anchorId: ''
         },
@@ -298,47 +358,76 @@ export default {
           sectionTitle: ''
         },
       }
-      this.blockForm.settings = defaults[this.blockForm.type] || { sectionTitle: '' }
+
+      this.blockForm.settings = defaults[this.blockForm.type] || { sectionTitle: '' };
     },
-    addFeature() { this.blockForm.settings.features.push({ icon: 'fas fa-check', title: '', description: '' }) },
-    removeFeature(i) { this.blockForm.settings.features.splice(i, 1) },
-    addHistoryEvent() { this.blockForm.settings.events.push({ year: '', title: '', description: '' }) },
-    removeHistoryEvent(i) { this.blockForm.settings.events.splice(i, 1) },
-    addStat() { this.blockForm.settings.stats.push({ number: '', label: '' }) },
-    removeStat(i) { this.blockForm.settings.stats.splice(i, 1) },
+    addFeature() {
+      this.blockForm.settings.features.push({ icon: 'fas fa-check', title: '', description: '' })
+    },
+    removeFeature(i) {
+      this.blockForm.settings.features.splice(i, 1);
+    },
+    addHistoryEvent() {
+      this.blockForm.settings.events.push({ year: '', title: '', description: '' });
+    },
+    removeHistoryEvent(i) {
+      this.blockForm.settings.events.splice(i, 1);
+    },
+    addStat() {
+      this.blockForm.settings.stats.push({ number: '', label: '' });
+    },
+    removeStat(i) {
+      this.blockForm.settings.stats.splice(i, 1);
+    },
     addButton() {
-      if (!this.blockForm.settings.buttons) this.blockForm.settings.buttons = []
-      this.blockForm.settings.buttons.push({ text: '', linkType: 'page', link: '', style: 'primary' })
+      if (!this.blockForm.settings.buttons) this.blockForm.settings.buttons = [];
+      this.blockForm.settings.buttons.push({ text: '', linkType: 'page', link: '', style: 'primary' });
     },
-    removeButton(i) { this.blockForm.settings.buttons.splice(i, 1) },
+    removeButton(i) {
+      this.blockForm.settings.buttons.splice(i, 1);
+    },
     addPromotion() {
-      if (!this.blockForm.settings.promotions) this.blockForm.settings.promotions = []
-      this.blockForm.settings.promotions.push({ title: '', description: '', image: '', links: [], linkType: 'url', link: '', linkText: '' })
+      if (!this.blockForm.settings.promotions) this.blockForm.settings.promotions = [];
+
+      this.blockForm.settings.promotions.push({
+        title: '',
+        description: '',
+        image: '',
+        links: [],
+        linkType: 'url',
+        link: '',
+        linkText: ''
+      });
     },
-    removePromotion(i) { this.blockForm.settings.promotions.splice(i, 1) },
+    removePromotion(i) {
+      this.blockForm.settings.promotions.splice(i, 1);
+    },
     addLink(pi) {
-      const p = this.blockForm.settings.promotions?.[pi]
-      if (!p) return
-      if (!Array.isArray(p.links)) p.links = []
-      p.links.push({ name: '', link: '', title: '', description: '' })
+      const p = this.blockForm.settings.promotions?.[pi];
+      if (!p) return;
+      if (!Array.isArray(p.links)) p.links = [];
+      p.links.push({ name: '', link: '', title: '', description: '' });
     },
-    removeLink(pi, li) { this.blockForm.settings.promotions?.[pi]?.links?.splice(li, 1) },
+    removeLink(pi, li) {
+      this.blockForm.settings.promotions?.[pi]?.links?.splice(li, 1);
+    },
     getPromoLinkProductId(link) {
-      if (!link) return ''
-      if (link.data?.id) return link.data.id
-      const m = String(link.link || '').match(/[?&]id=(\d+)/)
-      return m ? m[1] : ''
+      if (!link) return '';
+      if (link.data?.id) return link.data.id;
+      const m = String(link.link || '').match(/[?&]id=(\d+)/);
+      return m ? m[1] : '';
     },
     onPromoLinkProductChange(e, pi, li) {
-      const id = e.target.value
-      const products = this.getProductsObject()
-      const p = products[id]
-      const link = this.blockForm.settings.promotions[pi].links[li]
-      const keepTitle = link?.title || ''
-      const keepDesc = link?.description || ''
+      const id = e.target.value;
+      const products = this.getProductsObject();
+      const p = products[id];
+      const link = this.blockForm.settings.promotions[pi].links[li];
+      const keepTitle = link?.title || '';
+      const keepDesc = link?.description || '';
+
       this.blockForm.settings.promotions[pi].links[li] = p
         ? { name: p.name, link: window.location.origin + '/product/?id=' + p.id, title: keepTitle, description: keepDesc, data: p }
-        : { name: '', link: '', title: keepTitle, description: keepDesc }
+        : { name: '', link: '', title: keepTitle, description: keepDesc };
     },
     async handleBackgroundImageUpload(e) {
       const file = e.target.files[0];
@@ -352,7 +441,9 @@ export default {
         this.blockForm.settings.backgroundImage = res.url;
       }
     },
-    removeBackgroundImage() { this.blockForm.settings.backgroundImage = '' },
+    removeBackgroundImage() {
+      this.blockForm.settings.backgroundImage = '';
+    },
     async handlePromotionImageUpload(e, idx) {
       const file = e.target.files[0];
       if (!file || idx == null) return;
@@ -364,27 +455,36 @@ export default {
         const res = await r.json();
         if (this.blockForm.settings.promotions?.[idx]) this.blockForm.settings.promotions[idx].image = res.url;
       }
+
       e.target.value = '';
     },
-    removePromotionImage(idx) { if (this.blockForm.settings.promotions?.[idx]) this.blockForm.settings.promotions[idx].image = '' },
+    removePromotionImage(idx) {
+      if (this.blockForm.settings.promotions?.[idx]) this.blockForm.settings.promotions[idx].image = '';
+    },
     async saveBlock() {
-      this.blockLoading = true
-      this.blockError = ''
-      this.blockSuccess = ''
+      this.blockLoading = true;
+      this.blockError = '';
+      this.blockSuccess = '';
+
       try {
         if (this.blockForm.type === 'custom' && this.customViewMode === 'visual') {
           this.blockForm.content = this.customElementsToHTML();
         }
-        const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b))
-        if (!this.editingBlock) this.blockForm.sort_order = regular.length
-        const settings = JSON.parse(JSON.stringify(this.blockForm.settings || {}));
+
+        const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
+        if (!this.editingBlock) this.blockForm.sort_order = regular.length;
+        const settings = JSON.parse(JSON.stringify(this.blockForm.settings || {}));;
 
         if (this.blockForm.type === 'actual' && Array.isArray(settings.promotions)) {
           settings.promotions.forEach(p2 => {
             p2.links = (Array.isArray(p2.links) ? p2.links : Object.values(p2.links || {})).map(l => ({
-              name: l.name || '', link: l.link || '', title: l.title || '', description: l.description || '', data: l.data || {},
-            }))
-          })
+              name: l.name || '',
+              link: l.link || '',
+              title: l.title || '',
+              description: l.description || '',
+              data: l.data || {},
+            }));
+          });
         }
 
         const body = {
@@ -406,25 +506,33 @@ export default {
           const idx = this.pageBlocks.findIndex(b => b.id === this.editingBlock.id)
           if (idx !== -1) this.pageBlocks[idx] = { ...this.pageBlocks[idx], ...this.blockForm, settings }
         } else {
-          const res = await r.json()
-          const nb = { id: res.id, ...this.blockForm, settings }
-          const fi = this.pageBlocks.findIndex(b => this.isFooterBlock(b))
-          const ii = this.pageBlocks.findIndex(b => this.isInfoButtonsBlock(b))
-          const insertAt = ii !== -1 ? ii : (fi !== -1 ? fi : this.pageBlocks.length)
-          this.pageBlocks.splice(insertAt, 0, nb)
+          const res = await r.json();
+          const nb = { id: res.id, ...this.blockForm, settings };
+          const fi = this.pageBlocks.findIndex(b => this.isFooterBlock(b));
+          const ii = this.pageBlocks.findIndex(b => this.isInfoButtonsBlock(b));
+          const insertAt = ii !== -1 ? ii : (fi !== -1 ? fi : this.pageBlocks.length);
+          this.pageBlocks.splice(insertAt, 0, nb);
         }
 
-        await this.ensureInfoButtonsBlock()
-        await this.ensureFooterBlock()
-        this.blockSuccess = 'Блок сохранён'
-        setTimeout(() => this.closeBlockModal(), 1500)
-      } catch (e) { this.blockError = e.message || 'Ошибка' }
-      this.blockLoading = false
+        await this.ensureInfoButtonsBlock();
+        await this.ensureFooterBlock();
+        this.blockSuccess = 'Блок сохранён';
+        setTimeout(() => this.closeBlockModal(), 1500);
+      } catch (e) {
+        this.blockError = e.message || 'Ошибка'
+      }
+
+      this.blockLoading = false;
     },
     async deleteBlock(id) {
       const b = this.pageBlocks.find(b2 => b2.id === id);
-      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b))) { alert('Этот блок нельзя удалить'); return; }
+      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b))) {
+        alert('Этот блок нельзя удалить');
+        return;
+      }
+
       if (!confirm('Удалить блок?')) return;
+
       const r = await api.deletePageBlock(id);
 
       if (r.ok) {
@@ -442,52 +550,71 @@ export default {
 
       if (r.ok) block.is_active = !block.is_active;
     },
-    startDrag(block, e) { this.draggingBlockId = block.id; e.dataTransfer.effectAllowed = 'move' },
-    endDrag() { this.draggingBlockId = null },
+    startDrag(block, e) {
+      this.draggingBlockId = block.id;
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    endDrag() {
+      this.draggingBlockId = null;
+    },
     dropBlock(target, e) {
-      e.preventDefault()
-      const dragged = this.pageBlocks.find(b => b.id === this.draggingBlockId)
-      if (!dragged || this.isFooterBlock(dragged) || this.isInfoButtonsBlock(dragged)) return
-      if (this.isFooterBlock(target) || this.isInfoButtonsBlock(target)) return
-      const di = this.pageBlocks.findIndex(b => b.id === this.draggingBlockId)
-      const ti = this.pageBlocks.findIndex(b => b.id === target.id)
-      if (di === -1 || ti === -1) return
-      const [d] = this.pageBlocks.splice(di, 1)
-      this.pageBlocks.splice(ti, 0, d)
-      this.checkForChanges()
+      e.preventDefault();
+      const dragged = this.pageBlocks.find(b => b.id === this.draggingBlockId);
+      if (!dragged || this.isFooterBlock(dragged) || this.isInfoButtonsBlock(dragged)) return;
+      if (this.isFooterBlock(target) || this.isInfoButtonsBlock(target)) return;
+      const di = this.pageBlocks.findIndex(b => b.id === this.draggingBlockId);
+      const ti = this.pageBlocks.findIndex(b => b.id === target.id);
+      if (di === -1 || ti === -1) return;
+      const [d] = this.pageBlocks.splice(di, 1);
+      this.pageBlocks.splice(ti, 0, d);
+      this.checkForChanges();
     },
     checkForChanges() {
-      const cur = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b)).map(b => b.id)
-      this.hasUnsavedChanges = JSON.stringify(cur) !== JSON.stringify(this.originalBlocksOrder)
+      const cur = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b)).map(b => b.id);
+      this.hasUnsavedChanges = JSON.stringify(cur) !== JSON.stringify(this.originalBlocksOrder);
     },
     async saveBlocksOrder() {
       if (!this.hasUnsavedChanges) return;
       const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
       const infoBtn = this.pageBlocks.find(b => this.isInfoButtonsBlock(b));
       const footer  = this.pageBlocks.find(b => this.isFooterBlock(b));
+
       const order = [
         ...regular.map((b, i) => ({ id: b.id, sort_order: i })),
         ...(infoBtn ? [{ id: infoBtn.id, sort_order: regular.length }] : []),
         ...(footer  ? [{ id: footer.id,  sort_order: regular.length + (infoBtn ? 1 : 0) }] : []),
       ];
+
       const r = await api.saveBlocksOrder(order);
+
       if (r.ok) {
         this.originalBlocksOrder = this.pageBlocks.map(b => b.id);
         this.hasUnsavedChanges = false;
         this.blockSuccess = 'Порядок сохранён';
-        setTimeout(() => { this.blockSuccess = ''; }, 3000);
+
+        setTimeout(() => {
+          this.blockSuccess = '';
+        }, 3000);
       }
     },
     getBlockTypeName(type) {
       return {
-        hero: 'Hero секция', features: 'Преимущества', products: 'Товары', history: 'История', stats: 'Статистика',
-        contact: 'Контакты', text: 'Текстовый блок', buttons: 'Кнопки', actual: 'Акции',
-        custom: 'Пользовательский HTML',
-        info_buttons: 'Информационные кнопки', footer: 'Футер',
-      }[type] || type
+        hero: 'Hero секция',
+        actual: 'Акции',
+        products: 'Товары',
+        projects: 'Проекты',
+        features: 'Преимущества',
+        history: 'История',
+        stats: 'Статистика',
+        contact: 'Контакты',
+        text: 'Текстовый блок',
+        buttons: 'Кнопки',
+        custom: 'Пользовательский HTML'
+      } [type] || type
     },
     getBlockPreview(block) {
-      const s = block.settings || {}
+      const s = block.settings || {};
+
       const map = {
         hero: `<div><h3>${s.mainTitle || 'Заголовок'}</h3><p>${s.subtitle || ''}</p></div>`,
         features: `<div><h4>${s.sectionTitle || 'Преимущества'}</h4><p>${(s.features || []).length} элементов</p></div>`,
@@ -500,41 +627,73 @@ export default {
         footer: `<div><h4>Футер</h4><p>${(block.content || '').substring(0, 50)}</p></div>`,
         info_buttons: `<div><h4>Инфо-кнопки</h4><p>${(s.buttons || []).length} кнопок</p></div>`,
         text: `<div><h4>Текст</h4><p>${(block.content || '').substring(0, 80)}</p></div>`,
+        projects: `<div><h4>${s.sectionTitle || 'Проекты'}</h4><p>${(s.projects || []).length} проектов</p></div>`,
         custom: `<div><h4>HTML</h4><p>${(block.content || '').replace(/<[^>]+>/g, '').substring(0, 80) || '—'}</p></div>`,
-      }
-      return map[block.type] || `<div><h4>${this.getBlockTypeName(block.type)}</h4><p>${block.title || '—'}</p></div>`
+      };
+
+      return map[block.type] || `<div><h4>${this.getBlockTypeName(block.type)}</h4><p>${block.title || '—'}</p></div>`;
     },
     openIconPicker(target, prop) {
-      this.currentIconTarget = { target, property: prop }
-      this.selectedIconClass = target[prop] || ''
-      this.iconSearchQuery = ''
-      this.selectedIconCategory = 'all'
-      this.showIconPicker = true
-      this.updateFilteredIcons()
+      this.currentIconTarget = { target, property: prop };
+      this.selectedIconClass = target[prop] || '';
+      this.iconSearchQuery = '';
+      this.selectedIconCategory = 'all';
+      this.showIconPicker = true;
+      this.updateFilteredIcons();
     },
-    closeIconPicker() {
-      this.showIconPicker = false
-      this.currentIconTarget = null
-      this.selectedIconClass = ''
-    },
-    selectIcon(icon) { this.selectedIconClass = icon.class },
-    confirmIconSelection() {
-      if (this.currentIconTarget && this.selectedIconClass) {
-        this.currentIconTarget.target[this.currentIconTarget.property] = this.selectedIconClass
+    confirmIconSelection(iconClass) {
+      if (this.currentIconTarget && iconClass) {
+        this.currentIconTarget.target[this.currentIconTarget.property] = iconClass;
       }
-      this.closeIconPicker()
-    },
-    updateFilteredIcons() {
-      let list = this.availableIcons
-      if (this.selectedIconCategory !== 'all') list = list.filter(i => i.category === this.selectedIconCategory)
-      if (this.iconSearchQuery) {
-        const q = this.iconSearchQuery.toLowerCase()
-        list = list.filter(i => i.name.toLowerCase().includes(q) || i.class.toLowerCase().includes(q))
-      }
-      this.filteredIcons = list
-    },
 
-    // --- Custom block visual editor ---
+      this.currentIconTarget = null;
+    },
+    addProject() {
+      if (!Array.isArray(this.blockForm.settings.projects)) this.blockForm.settings.projects = [];
+      this.blockForm.settings.projects.push({
+        title: '',
+        description: '',
+        icon: '🚀',
+        iconType: 'text',
+        tech: '',
+        github: '',
+        github2: '',
+        github2_title: '',
+        demo: '',
+        site: ''
+      });
+    },
+    removeProject(i) {
+      this.blockForm.settings.projects.splice(i, 1);
+    },
+    openProjectIconPicker(pi) {
+      this.currentProjectIconIndex = pi;
+      this.showProjectIconPicker = true;
+    },
+    onProjectIconSelected(iconClass) {
+      const proj = this.blockForm.settings.projects?.[this.currentProjectIconIndex];
+      if (proj) proj.icon = iconClass;
+      this.currentProjectIconIndex = null;
+    },
+    async handleProjectIconUpload(e, pi) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await api.uploadMedia(fd);
+
+      if (r.ok) {
+        const res = await r.json();
+        const proj = this.blockForm.settings.projects?.[pi];
+        if (proj) proj.icon = '/' + res.url;
+      }
+
+      e.target.value = '';
+    },
+    getProjectIconInitial(pi) {
+      const proj = this.blockForm.settings.projects?.[pi];
+      return (proj?.iconType === 'fa' ? proj.icon : '') || '';
+    },
     escapeHtml(t) {
       const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
     },
@@ -549,16 +708,34 @@ export default {
       }
     },
     addCustomElement(tpl) {
-      const nb = { id: Date.now() + Math.random(), type: tpl.type, content: tpl.defaultContent || '', level: tpl.type === 'heading' ? 2 : null, link: tpl.type === 'button' ? '' : null, style: tpl.type === 'button' ? 'primary' : null };
+      const nb = {
+        id: Date.now() + Math.random(),
+        type: tpl.type,
+        content: tpl.defaultContent || '',
+        level: tpl.type === 'heading' ? 2 : null,
+        link: tpl.type === 'button' ? '' : null,
+        style: tpl.type === 'button' ? 'primary' : null
+      };
+
       this.customElements.push(nb);
       this.customSelectedElement = nb;
     },
     insertCustomElementAt(idx, tpl) {
-      const nb = { id: Date.now() + Math.random(), type: tpl.type, content: tpl.defaultContent || '', level: tpl.type === 'heading' ? 2 : null, link: tpl.type === 'button' ? '' : null, style: tpl.type === 'button' ? 'primary' : null };
+      const nb = {
+        id: Date.now() + Math.random(),
+        type: tpl.type,
+        content: tpl.defaultContent || '',
+        level: tpl.type === 'heading' ? 2 : null,
+        link: tpl.type === 'button' ? '' : null,
+        style: tpl.type === 'button' ? 'primary' : null
+      };
+
       this.customElements.splice(idx, 0, nb);
       this.customSelectedElement = nb;
     },
-    selectCustomElement(el) { this.customSelectedElement = el; },
+    selectCustomElement(el) {
+      this.customSelectedElement = el;
+    },
     removeCustomElement(idx) {
       if (confirm('Удалить?')) {
         if (this.customSelectedElement?.id === this.customElements[idx].id) this.customSelectedElement = null;
@@ -566,15 +743,25 @@ export default {
       }
     },
     moveCustomElementUp(idx) {
-      if (idx > 0) { const [el] = this.customElements.splice(idx, 1); this.customElements.splice(idx - 1, 0, el); }
+      if (idx > 0) {
+        const [el] = this.customElements.splice(idx, 1);
+        this.customElements.splice(idx - 1, 0, el);
+      }
     },
     moveCustomElementDown(idx) {
-      if (idx < this.customElements.length - 1) { const [el] = this.customElements.splice(idx, 1); this.customElements.splice(idx + 1, 0, el); }
+      if (idx < this.customElements.length - 1) {
+        const [el] = this.customElements.splice(idx, 1);
+        this.customElements.splice(idx + 1, 0, el);
+      }
     },
     updateCustomElementContent() {
       if (this.customSelectedElement) {
         const i = this.customElements.findIndex(e => e.id === this.customSelectedElement.id);
-        if (i !== -1) { this.customElements[i] = { ...this.customSelectedElement }; this.customSelectedElement = this.customElements[i]; }
+
+        if (i !== -1) {
+          this.customElements[i] = { ...this.customSelectedElement };
+          this.customSelectedElement = this.customElements[i];
+        }
       }
     },
     duplicateCustomElement(idx) {
@@ -592,9 +779,16 @@ export default {
     rebuildCustomListHtml() {
       const tag = this.customListIsOrdered ? 'ol' : 'ul';
       const html = `<${tag}>${this.customListItems.map(i => `<li>${i}</li>`).join('')}</${tag}>`;
-      if (this.customSelectedElement) { this.customSelectedElement.content = html; this.updateCustomElementContent(); }
+
+      if (this.customSelectedElement) {
+        this.customSelectedElement.content = html;
+        this.updateCustomElementContent();
+      }
     },
-    addCustomListItem() { this.customListItems.push(''); this.rebuildCustomListHtml(); },
+    addCustomListItem() {
+      this.customListItems.push('');
+      this.rebuildCustomListHtml();
+    },
     removeCustomListItem(idx) {
       this.customListItems.splice(idx, 1);
       if (!this.customListItems.length) this.customListItems = [''];
@@ -605,24 +799,51 @@ export default {
       if (!file || !this.customSelectedElement) return;
       const fd = new FormData(); fd.append('image', file);
       const r = await api.uploadBackground(fd);
-      if (r.ok) { const res = await r.json(); this.customSelectedElement.content = res.url; this.updateCustomElementContent(); }
+
+      if (r.ok) {
+        const res = await r.json();
+        this.customSelectedElement.content = res.url;
+        this.updateCustomElementContent();
+      }
     },
-    startDragCustomAvail(el, e) { this.customDraggingElement = { ...el, isNew: true }; e.dataTransfer.effectAllowed = 'copy'; },
-    startDragCustomEl(el, e) { this.customDraggingElement = { ...el, isNew: false, index: this.customElements.findIndex(ce => ce.id === el.id) }; e.dataTransfer.effectAllowed = 'move'; },
-    onCustomPreviewDrop(e) { e.preventDefault(); if (this.customDraggingElement?.isNew) this.addCustomElement(this.customDraggingElement); this.customDraggingElement = null; },
+    startDragCustomAvail(el, e) {
+      this.customDraggingElement = { ...el, isNew: true };
+      e.dataTransfer.effectAllowed = 'copy';
+    },
+    startDragCustomEl(el, e) {
+      this.customDraggingElement = {
+        ...el,
+        isNew: false,
+        index: this.customElements.findIndex(ce => ce.id === el.id)
+      };
+
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    onCustomPreviewDrop(e) {
+      e.preventDefault();
+      if (this.customDraggingElement?.isNew) this.addCustomElement(this.customDraggingElement);
+      this.customDraggingElement = null;
+    },
     onCustomElDragOver(_idx, e) {
-      e.preventDefault(); e.stopPropagation();
-      document.querySelectorAll('.custom-page-element').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll('.custom-page-element')
+          .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+
       const rect = e.currentTarget.getBoundingClientRect();
       e.currentTarget.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-over-top' : 'drag-over-bottom');
     },
     onCustomElDrop(idx, e) {
       e.preventDefault(); e.stopPropagation();
-      document.querySelectorAll('.custom-page-element').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+      document.querySelectorAll('.custom-page-element')
+          .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+
       if (!this.customDraggingElement) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const after = e.clientY >= rect.top + rect.height / 2;
       const targetIdx = after ? idx + 1 : idx;
+
       if (this.customDraggingElement.isNew) {
         this.insertCustomElementAt(targetIdx, this.customDraggingElement);
       } else {
@@ -630,47 +851,113 @@ export default {
         const ni = oi < targetIdx ? targetIdx - 1 : targetIdx;
         if (oi !== ni) { const [el] = this.customElements.splice(oi, 1); this.customElements.splice(ni, 0, el); }
       }
+
       this.customDraggingElement = null;
     },
     renderCustomElement(el) {
-      if (el.type === 'heading')   return `<h${el.level || 2}>${el.content || 'Заголовок'}</h${el.level || 2}>`;
-      if (el.type === 'paragraph') return `<p>${el.content || 'Абзац'}</p>`;
-      if (el.type === 'image')     return el.content ? `<img src="${el.content}" style="max-width:100%">` : '<div style="padding:40px;text-align:center;opacity:.5"><i class="fas fa-image" style="font-size:48px"></i></div>';
-      if (el.type === 'list')      return el.content || '<ul><li>Элемент</li></ul>';
-      if (el.type === 'button')    return `<a href="${el.link || '#'}" class="btn btn-${el.style || 'primary'}">${el.content || 'Кнопка'}</a>`;
-      if (el.type === 'divider')   return '<hr>';
-      return el.content || '';
+      switch (el.type) {
+        case 'heading':
+          return `<h${el.level || 2}>${el.content || 'Заголовок'}</h${el.level || 2}>`;
+        case 'paragraph':
+          return `<p>${el.content || 'Абзац'}</p>`;
+        case 'image':
+          return el.content ? `<img src="${el.content}" style="max-width:100%">` :
+              '<div style="padding:40px;text-align:center;opacity:.5"><i class="fas fa-image" style="font-size:48px"></i></div>';
+        case 'list':
+          return el.content || '<ul><li>Элемент</li></ul>';
+        case 'button':
+          return `<a href="${el.link || '#'}" class="btn btn-${el.style || 'primary'}">${el.content || 'Кнопка'}</a>`;
+        case 'divider':
+          return '<hr>';
+        default:
+          return el.content || '';
+      }
     },
-    getCustomElementLabel(type) { return this.availableElements.find(e => e.type === type)?.label || type; },
+    getCustomElementLabel(type) {
+      return this.availableElements.find(e => e.type === type)?.label || type;
+      },
     customElementsToHTML() {
       return this.customElements.map(el => {
-        if (el.type === 'heading')   return `<h${el.level || 2}>${this.escapeHtml(el.content || '')}</h${el.level || 2}>`;
-        if (el.type === 'paragraph') return `<p>${this.escapeHtml(el.content || '')}</p>`;
-        if (el.type === 'image')     return el.content ? `<img src="${this.escapeHtml(el.content)}" style="max-width:100%">` : '';
-        if (el.type === 'list')      return el.content || '';
-        if (el.type === 'button')    return `<a href="${this.escapeHtml(el.link || '#')}" class="btn btn-${el.style || 'primary'}">${this.escapeHtml(el.content || '')}</a>`;
-        if (el.type === 'divider')   return '<hr>';
+        if (el.type === 'heading')
+          return `<h${el.level || 2}>${this.escapeHtml(el.content || '')}</h${el.level || 2}>`;
+        if (el.type === 'paragraph')
+          return `<p>${this.escapeHtml(el.content || '')}</p>`;
+        if (el.type === 'image')
+          return el.content ? `<img src="${this.escapeHtml(el.content)}" style="max-width:100%">` : '';
+        if (el.type === 'list')
+          return el.content || '';
+        if (el.type === 'button')
+          return `<a href="${this.escapeHtml(el.link || '#')}" class="btn btn-${el.style || 'primary'}">${this.escapeHtml(el.content || '')}</a>`;
+        if (el.type === 'divider')
+          return '<hr>';
+
         return this.escapeHtml(el.content || '');
       }).join('\n');
     },
     parseHTMLToCustomElements(html) {
       if (!html?.trim()) return [];
       const els = []; const div = document.createElement('div'); div.innerHTML = html.trim(); let eid = Date.now();
+
       const process = (node) => {
-        if (node.nodeType === Node.TEXT_NODE) { const t = node.textContent.trim(); if (t) els.push({ id: eid++, type: 'paragraph', content: t }); return; }
+        if (node.nodeType === Node.TEXT_NODE) {
+          const t = node.textContent.trim();
+          if (t) els.push({
+            id: eid++,
+            type: 'paragraph',
+            content: t
+          });
+
+          return;
+        }
+
         if (node.nodeType !== Node.ELEMENT_NODE) return;
         const tag = node.tagName.toLowerCase();
-        if (/^h[1-6]$/.test(tag)) { els.push({ id: eid++, type: 'heading', content: node.textContent.trim(), level: +tag[1] }); return; }
-        if (tag === 'p') { const t = node.textContent.trim(); if (t) els.push({ id: eid++, type: 'paragraph', content: t }); return; }
-        if (tag === 'img') { els.push({ id: eid++, type: 'image', content: node.getAttribute('src') || '' }); return; }
-        if (tag === 'ul' || tag === 'ol') { els.push({ id: eid++, type: 'list', content: node.outerHTML }); return; }
-        if (tag === 'a' && node.classList.contains('btn')) {
-          const style = node.classList.contains('btn-secondary') ? 'secondary' : node.classList.contains('btn-outline') ? 'outline' : 'primary';
-          els.push({ id: eid++, type: 'button', content: node.textContent.trim(), link: node.getAttribute('href') || '#', style }); return;
+
+        if (/^h[1-6]$/.test(tag)) {
+          els.push({ id: eid++, type: 'heading', content: node.textContent.trim(), level: +tag[1] });
+          return;
         }
-        if (tag === 'hr') { els.push({ id: eid++, type: 'divider', content: '<hr>' }); return; }
-        Array.from(node.childNodes).forEach(child => { if (child.nodeType === Node.ELEMENT_NODE) process(child); });
+
+        if (tag === 'p') {
+          const t = node.textContent.trim();
+          if (t) els.push({ id: eid++, type: 'paragraph', content: t });
+          return;
+        }
+
+        if (tag === 'img') {
+          els.push({ id: eid++, type: 'image', content: node.getAttribute('src') || '' });
+          return;
+        }
+
+        if (tag === 'ul' || tag === 'ol') {
+          els.push({ id: eid++, type: 'list', content: node.outerHTML });
+          return;
+        }
+
+        if (tag === 'a' && node.classList.contains('btn')) {
+          const style = node.classList.contains('btn-secondary') ? 'secondary' :
+              node.classList.contains('btn-outline') ? 'outline' : 'primary';
+
+          els.push({
+            id: eid++,
+            type: 'button',
+            content: node.textContent.trim(),
+            link: node.getAttribute('href') || '#', style
+          });
+
+          return;
+        }
+
+        if (tag === 'hr') {
+          els.push({ id: eid++, type: 'divider', content: '<hr>' });
+          return;
+        }
+
+        Array.from(node.childNodes).forEach(child => {
+          if (child.nodeType === Node.ELEMENT_NODE) process(child);
+        });
       };
+
       Array.from(div.childNodes).forEach(process);
       return els;
     },
@@ -748,6 +1035,7 @@ export default {
           <option value="text">Текстовый блок</option>
           <option value="buttons">Кнопки</option>
           <option value="actual">Акции</option>
+          <option value="projects">Проекты</option>
           <option value="custom">Пользовательский HTML</option>
           <option value="info_buttons" disabled>Инфо-кнопки (авто)</option>
           <option value="footer" disabled>Футер (авто)</option>
@@ -822,11 +1110,78 @@ export default {
       </template>
       <!-- text / footer -->
       <template v-if="blockForm.type==='text' || blockForm.type==='footer'">
-        <div class="form-group"><label>Содержимое</label><textarea v-model="blockForm.content" rows="6"></textarea></div>
+        <div class="form-group">
+          <label>Содержимое</label>
+          <textarea v-model="blockForm.content" rows="6"></textarea>
+        </div>
       </template>
       <!-- products -->
       <template v-if="blockForm.type==='products'">
-        <div class="form-group"><label>Описание</label><textarea v-model="blockForm.content" rows="3"></textarea></div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea v-model="blockForm.content" rows="3"></textarea>
+        </div>
+      </template>
+      <!-- projects -->
+      <template v-if="blockForm.type==='projects'">
+        <div class="form-group">
+          <label>Проекты</label>
+          <div v-for="(proj, pi) in (blockForm.settings.projects || [])" :key="pi"
+               style="background:rgba(255,255,255,.05);padding:14px;border-radius:8px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+              <strong style="color:var(--primary)">Проект {{ pi + 1 }}</strong>
+              <button type="button" @click="removeProject(pi)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;align-items:start">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">Иконка</label>
+                <div class="proj-icon-toggle">
+                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'text' }]" @click="proj.iconType = 'text'">
+                    <i class="fas fa-font"></i> Текст
+                  </button>
+                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'fa' }]" @click="proj.iconType = 'fa'">
+                    <i class="fas fa-icons"></i> FA
+                  </button>
+                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'image' }]" @click="proj.iconType = 'image'">
+                    <i class="fas fa-image"></i> Фото
+                  </button>
+                </div>
+                <template v-if="proj.iconType === 'text' || !proj.iconType">
+                  <input type="text" v-model="proj.icon" placeholder="🚀" style="text-align:center;font-size:20px;margin-top:6px">
+                </template>
+                <template v-else-if="proj.iconType === 'fa'">
+                  <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+                    <span style="font-size:22px;width:36px;text-align:center"><i v-if="proj.icon" :class="proj.icon"></i><span v-else style="color:#888;font-size:13px">—</span></span>
+                    <button type="button" @click="openProjectIconPicker(pi)" class="btn btn-secondary btn-sm" style="flex:1"><i class="fas fa-search"></i> Выбрать</button>
+                  </div>
+                </template>
+                <template v-else-if="proj.iconType === 'image'">
+                  <div style="margin-top:6px">
+                    <img v-if="proj.icon" :src="proj.icon" style="height:36px;border-radius:4px;display:block;margin-bottom:4px">
+                    <input type="file" :id="'proj-icon-'+pi" @change="handleProjectIconUpload($event, pi)" accept="image/*" style="display:none">
+                    <label :for="'proj-icon-'+pi" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center">
+                      <i class="fas fa-upload"></i> {{ proj.icon ? 'Изменить' : 'Загрузить' }}
+                    </label>
+                  </div>
+                </template>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">Название</label>
+                <input type="text" v-model="proj.title" placeholder="Название проекта">
+              </div>
+            </div>
+            <div class="form-group"><label style="font-size:11px">Описание</label><textarea v-model="proj.description" rows="2" placeholder="Краткое описание"></textarea></div>
+            <div class="form-group"><label style="font-size:11px">Технологии <span style="color:#888">(через запятую)</span></label><input type="text" v-model="proj.tech" placeholder="Vue.js, Node.js, TypeScript"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="form-group" style="margin:0"><label style="font-size:11px">GitHub</label><input type="url" v-model="proj.github" placeholder="https://github.com/..."></div>
+              <div class="form-group" style="margin:0"><label style="font-size:11px">Demo</label><input type="url" v-model="proj.demo" placeholder="https://..."></div>
+              <div class="form-group" style="margin:0"><label style="font-size:11px">Сайт</label><input type="url" v-model="proj.site" placeholder="https://..."></div>
+              <div class="form-group" style="margin:0"><label style="font-size:11px">GitHub 2 (доп.)</label><input type="url" v-model="proj.github2" placeholder="https://github.com/..."></div>
+            </div>
+            <div v-if="proj.github2" class="form-group" style="margin-top:8px"><label style="font-size:11px">Название GitHub 2</label><input type="text" v-model="proj.github2_title" placeholder="Репозиторий desktop"></div>
+          </div>
+          <button type="button" @click="addProject" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить проект</button>
+        </div>
       </template>
       <!-- buttons / info_buttons -->
       <template v-if="blockForm.type==='buttons' || blockForm.type==='info_buttons'">
@@ -982,8 +1337,12 @@ export default {
               </div>
             </div>
           </div>
-          <textarea v-else v-model="blockForm.content" rows="12" placeholder="HTML код..."
-                    style="font-family:monospace;font-size:13px;width:100%;padding:12px;background:var(--background-secondary);border:none;color:var(--text-primary);min-height:200px;resize:vertical"></textarea>
+          <textarea v-else
+                    v-model="blockForm.content"
+                    rows="12"
+                    placeholder="HTML код..."
+                    style="font-family:monospace;font-size:13px;width:100%;padding:12px;background:var(--background-secondary);border:none;color:var(--text-primary);min-height:200px;resize:vertical"
+          ></textarea>
         </div>
       </template>
       <!-- footer -->
@@ -993,7 +1352,7 @@ export default {
           Активен
         </label>
       </div>
-      <div v-if="blockError"   class="error-message">{{ blockError }}</div>
+      <div v-if="blockError" class="error-message">{{ blockError }}</div>
       <div v-if="blockSuccess" class="success-message">{{ blockSuccess }}</div>
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" :disabled="blockLoading">{{ editingBlock ? 'Сохранить' : 'Добавить' }}</button>
@@ -1001,35 +1360,18 @@ export default {
       </div>
     </form>
   </Modal>
-  <Modal
+  <!-- features -->
+  <IconPicker
       v-model="showIconPicker"
-      modal-id="iconPickerModal"
-      title="Выбор иконки"
-      default-width="640px"
-      default-height="560px"
-      class="icon-picker-modal"
-      @close="closeIconPicker"
-  >
-    <template #icon>
-      <span class="modal-title-icon"><i class="fas fa-icons"></i></span>
-    </template>
-    <input type="text" v-model="iconSearchQuery" placeholder="Поиск..." class="icon-search-input" style="width:100%;margin-bottom:12px">
-    <div class="icon-categories" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-      <button v-for="cat in iconCategories" :key="cat.name" @click="selectedIconCategory=cat.name" class="category-btn" :class="{ active: selectedIconCategory===cat.name }">
-        <i :class="cat.icon"></i> {{ cat.label }}
-      </button>
-    </div>
-    <div class="icons-grid">
-      <div v-for="icon in filteredIcons" :key="icon.class" @click="selectIcon(icon)" class="icon-item" :class="{ selected: selectedIconClass===icon.class }">
-        <i :class="icon.class"></i><span class="icon-name">{{ icon.name }}</span>
-      </div>
-      <div v-if="!filteredIcons.length" style="grid-column:1/-1;text-align:center;padding:40px;color:#888">Иконки не найдены</div>
-    </div>
-    <div class="icon-picker-actions" style="display:flex;gap:10px;margin-top:16px">
-      <button type="button" @click="confirmIconSelection" class="btn btn-primary" :disabled="!selectedIconClass">Выбрать</button>
-      <button type="button" @click="closeIconPicker" class="btn btn-secondary">Отмена</button>
-    </div>
-  </Modal>
+      :initial-icon="currentIconTarget?.target?.[currentIconTarget?.property] || ''"
+      @select="confirmIconSelection"
+  />
+  <!-- projects -->
+  <IconPicker
+      v-model="showProjectIconPicker"
+      :initial-icon="getProjectIconInitial(currentProjectIconIndex)"
+      @select="onProjectIconSelected"
+  />
 </template>
 
 <style scoped>
@@ -1137,166 +1479,30 @@ export default {
   padding: 15px;
   border: 1px solid var(--border-light);
 }
-.icon-picker-field {
+.proj-icon-toggle {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
-.icon-preview {
-  width: 40px;
-  height: 40px;
+.proj-icon-btn {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 11px;
   background: var(--background-secondary);
   border: 1px solid var(--border-medium);
-  border-radius: 6px;
+  border-radius: 4px;
+  color: var(--text-additional);
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  gap: 4px;
 }
-.icon-preview:hover {
-  background: var(--background-additional);
-  border-color: var(--primary);
-}
-.icon-preview i {
-  font-size: 18px;
-  color: var(--primary);
-}
-.icon-picker-field input {
-  flex: 1;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-medium);
-  color: var(--text-additional-light);
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.icon-picker-field input:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: var(--background-secondary);
-}
-.icon-picker-overlay {
-  z-index: 1200;
-}
-.icon-picker-modal {
-  max-width: 900px;
-  max-height: 90vh;
-  overflow-y: auto;
-  z-index: 1201;
-  position: relative;
-}
-.icon-search {
-  margin-bottom: 20px;
-}
-.icon-search-input {
-  width: 100%;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-medium);
-  color: var(--text-additional-light);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 16px;
-}
-.icon-search-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: var(--background-secondary);
-}
-.icon-search-input::placeholder {
-  color: var(--text-additional);
-}
-.icon-categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-light);
-}
-.category-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  color: var(--text-additional-light);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.category-btn:hover {
-  background: var(--background-secondary);
-  border-color: var(--border-medium);
-}
-.category-btn.active {
+.proj-icon-btn.active {
   background: var(--primary);
-  color: var(--text-dark);
   border-color: var(--primary);
-}
-.category-btn i {
-  font-size: 14px;
-}
-.icons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 10px;
-  background: var(--background-additional);
-  border-radius: 8px;
-}
-.icon-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 15px 10px;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-.icon-item:hover {
-  background: var(--hover-primary);
-  border-color: var(--border-medium);
-  transform: translateY(-2px);
-}
-.icon-item.selected {
-  background: var(--background-additional);
-  border-color: var(--border-strong);
-  transform: translateY(-2px);
-}
-.icon-item i {
-  font-size: 24px;
-  color: var(--primary);
-}
-.icon-item.selected i {
-  color: var(--primary);
-  transform: scale(1.1);
-}
-.icon-name {
-  font-size: 12px;
-  color: var(--text-additional-light);
-  line-height: 1.2;
-  word-break: break-word;
-}
-.icon-item.selected .icon-name {
-  color: var(--primary);
-  font-weight: 500;
-}
-.icon-picker-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-light);
+  color: var(--text-dark);
 }
 .image-upload-field {
   border: 2px dashed rgba(255, 255, 255, 0.3);
@@ -1393,10 +1599,21 @@ export default {
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.custom-page-element:hover { border-color: var(--border-medium); }
-.custom-page-element.selected { border-color: var(--primary); background: var(--hover-secondary); }
-.custom-page-element.drag-over-top { border-top-color: var(--primary); border-top-width: 3px; }
-.custom-page-element.drag-over-bottom { border-bottom-color: var(--primary); border-bottom-width: 3px; }
+.custom-page-element:hover {
+  border-color: var(--border-medium);
+}
+.custom-page-element.selected {
+  border-color: var(--primary);
+  background: var(--hover-secondary);
+}
+.custom-page-element.drag-over-top {
+  border-top-color: var(--primary);
+  border-top-width: 3px;
+}
+.custom-page-element.drag-over-bottom {
+  border-bottom-color: var(--primary);
+  border-bottom-width: 3px;
+}
 .custom-element-panel {
   width: 260px;
   background: var(--background-secondary);
@@ -1406,29 +1623,6 @@ export default {
   flex-shrink: 0;
 }
 @media (max-width: 768px) {
-  .icon-picker-modal {
-    max-width: 95vw;
-    margin: 10px;
-  }
-  .icons-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
-  }
-  .icon-item {
-    padding: 12px 8px;
-  }
-  .icon-item i {
-    font-size: 20px;
-  }
-  .icon-name {
-    font-size: 11px;
-  }
-  .icon-categories {
-    flex-direction: column;
-  }
-  .category-btn {
-    justify-content: center;
-  }
   .block-header {
     flex-direction: column;
     gap: 10px;

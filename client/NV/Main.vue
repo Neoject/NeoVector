@@ -6,7 +6,6 @@ import Cart from "./components/Cart.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../../server/src/utils";
 import {api} from "../../server/api";
-import blocks from "./admin/Blocks.vue";
 
 const blockModules = import.meta.glob('./blocks/*.vue', { eager: true });
 const blockComponents = {};
@@ -32,10 +31,6 @@ Object.entries(customModules).forEach(([path, module]) => {
   customRegistry[fileName] = component;
 });
 
-console.log(customRegistry);
-console.log(customComponents);
-console.log(customModules)
-
 const components = {
   NavBar,
   Cart,
@@ -57,11 +52,6 @@ const readStorageArray = (key) => {
 
 export default {
   name: "App",
-  computed: {
-    blocks() {
-      return blocks
-    }
-  },
   mixins: [Props],
   components,
   inject: ['params'],
@@ -72,7 +62,7 @@ export default {
 
     const loadedComponents = markRaw(Object.fromEntries(
         Object.entries(customComponents).filter(([, component]) => !!component)
-    ))
+    ));
 
     return {
       active: false,
@@ -178,7 +168,6 @@ export default {
         } else {
           this.products = [];
         }
-
       } catch (error) {
         console.error('Error loading products:', error);
         this.products = [];
