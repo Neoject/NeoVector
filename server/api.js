@@ -51,7 +51,7 @@ export const api = {
     addPage: (body) => post('/pages', body),
     updatePage: (id, body) => put(`/pages/${id}`, body),
     deletePage: (id) => del(`/pages/${id}`),
-    getPageBlocks: () => get('/page-blocks'),
+    getPageBlocks: (pageId) => get(`/page-blocks${pageId === null ? '?page_id=null' : pageId ? `?page_id=${pageId}` : ''}`),
     addPageBlock: (body) => post('/page-blocks', body),
     updatePageBlock: (id, body) => put(`/page-blocks/${id}`, body),
     deletePageBlock: (id) => del(`/page-blocks/${id}`),

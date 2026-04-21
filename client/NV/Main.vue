@@ -82,6 +82,7 @@ export default {
       currentOrderProduct: null,
       pageBlocks: [],
       pageBlocksSorted: [],
+      managedCustomComponents: new Set(),
       content: {
         features: [],
         history: []
@@ -189,6 +190,12 @@ export default {
         });
       });
     },
+    resolveBlockComponent(block) {
+      if (block.type === 'custom_component') {
+        return this.components[block.title.toLowerCase()] || null;
+      }
+      return this.blocks[block.type] || null;
+    },
     getBlockProps(block) {
       const base = {
         block,
@@ -267,6 +274,12 @@ export default {
       const rest = active.filter(b => !['info_buttons', 'footer'].includes(b.type)).sort(byOrder);
 
       this.pageBlocksSorted = [...rest, ...footerBlock];
+
+      this.managedCustomComponents = new Set(
+          this.pageBlocks
+              .filter(b => b.type === 'custom_component')
+              .map(b => b.title.toLowerCase())
+      );
     },
     async loadContent() {
       try {
@@ -353,16 +366,16 @@ export default {
       @update:cart-items="handleCartUpdated"
       @nav-click="navClick"
   />
-  <component
+  <template
       v-for="(block, blockIndex) in pageBlocksSorted"
       :key="(block && block.id) ? block.id : 'block-' + blockIndex"
-      :is="blocks[block.type]"
-      v-bind="getBlockProps(block)"
-  ></component>
-  <component
-      v-for="(component) in components"
-      :is="component"
-  ></component>
+  >
+    <component
+        v-if="resolveBlockComponent(block)"
+        :is="resolveBlockComponent(block)"
+        v-bind="block.type !== 'custom_component' ? getBlockProps(block) : {}"
+    />
+  </template>
   <teleport to="body">
     <div class="neoject">
       Сайт разработан
