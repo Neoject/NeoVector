@@ -418,7 +418,8 @@ export default {
             github2: '',
             github2_title: '',
             demo: '',
-            site: ''
+            site: '',
+            screenshots: []
           }]
         },
         custom: {
@@ -754,7 +755,8 @@ export default {
         github2: '',
         github2_title: '',
         demo: '',
-        site: ''
+        site: '',
+        screenshots: []
       });
     },
     removeProject(i) {
@@ -785,6 +787,32 @@ export default {
       }
 
       e.target.value = '';
+    },
+    async handleProjectScreenshotsUpload(e, pi) {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      const proj = this.blockForm.settings.projects?.[pi];
+      if (!proj) return;
+      if (!Array.isArray(proj.screenshots)) proj.screenshots = [];
+
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const r = await api.uploadMedia(fd);
+        if (r.ok) {
+          const res = await r.json();
+          proj.screenshots.push('/' + res.url);
+        } else {
+          this.blockError = await this.serverError(r);
+          break;
+        }
+      }
+
+      e.target.value = '';
+    },
+    removeProjectScreenshot(pi, si) {
+      const proj = this.blockForm.settings.projects?.[pi];
+      if (proj?.screenshots) proj.screenshots.splice(si, 1);
     },
     getProjectIconInitial(pi) {
       const proj = this.blockForm.settings.projects?.[pi];
@@ -1499,6 +1527,21 @@ export default {
             <div v-if="proj.github2" class="form-group" style="margin-top:8px">
               <label style="font-size:11px">Название GitHub 2</label>
               <input type="text" v-model="proj.github2_title" placeholder="Репозиторий desktop">
+            </div>
+            <div class="form-group" style="margin-top:8px">
+              <label style="font-size:11px">Скриншоты</label>
+              <div v-if="proj.screenshots && proj.screenshots.length" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                <div v-for="(src, si) in proj.screenshots" :key="si" style="position:relative;width:80px;height:60px">
+                  <img :src="src" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,.1)">
+                  <button type="button" @click="removeProjectScreenshot(pi, si)" style="position:absolute;top:2px;right:2px;background:rgba(220,50,50,.85);border:none;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0">
+                    <i class="fas fa-times" style="font-size:9px;color:#fff"></i>
+                  </button>
+                </div>
+              </div>
+              <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:6px 12px">
+                <input type="file" accept="image/*" multiple style="display:none" @change="handleProjectScreenshotsUpload($event, pi)">
+                <i class="fas fa-images"></i> Добавить скриншоты
+              </label>
             </div>
           </div>
           <button type="button" @click="addProject" class="btn btn-secondary">
