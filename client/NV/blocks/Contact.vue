@@ -72,13 +72,7 @@ export default {
       this.contactLoading = true;
 
       try {
-        const payload = new FormData();
-        payload.append('action', 'contact_form');
-        payload.append('name', name);
-        payload.append('email', email);
-        payload.append('message', message);
-
-        const response = await api.sendReply(payload);
+        const response = await api.sendContact(name, email, message);
         const result = await response.json();
 
         if (!response.ok || !result.success) {
@@ -261,6 +255,7 @@ export default {
 .contact-form-status .success-message {
   display: inline-block;
   font-size: 0.95rem;
+  color: var(--success-text);
 }
 .contact-form-card .btn {
   width: -webkit-fill-available;

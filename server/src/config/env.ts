@@ -16,11 +16,11 @@ export const env = {
     sessionSecret: process.env.SESSION_SECRET || 'default_session_secret',
     jwtSecret: process.env.JWT_SECRET || 'default_jwt_secret',
     email: {
-        host: process.env.EMAIL_HOST || 'smtp.yandex.ru',
+        host: process.env.EMAIL_HOST,
         port: parseNumber(process.env.EMAIL_PORT, 465),
-        user: process.env.EMAIL_USER || '',
-        pass: process.env.EMAIL_PASS || '',
-        from: process.env.EMAIL_FROM || 'noreply@yourdomain.com',
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+        from: process.env.EMAIL_FROM,
     },
     payment: {
         shopId: process.env.SHOP_ID || '',
