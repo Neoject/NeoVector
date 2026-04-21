@@ -1,8 +1,24 @@
 <script>
+import { markRaw } from 'vue';
 import { isMobileDevice } from './service'
 import Modal from "../components/Modal.vue";
 import IconPicker from "./IconPicker.vue";
 import {api} from "../../../server/api";
+
+const blockModules = import.meta.glob('../blocks/*.vue', { eager: true });
+const blockComponents = {};
+
+Object.entries(blockModules).forEach(([path, mod]) => {
+  const name = path.split('/').pop().replace('.vue', '').toLowerCase();
+  blockComponents[name] = markRaw(mod.default || mod);
+});
+
+const customModules = import.meta.glob('../../*.vue', { eager: true });
+const customComponents = [];
+Object.entries(customModules).forEach(([path, mod]) => {
+  const name = path.split('/').pop().replace('.vue', '');
+  customComponents.push({ name, component: markRaw(mod.default || mod) });
+});
 
 export default {
   name: 'Blocks',
@@ -23,6 +39,10 @@ export default {
       hasUnsavedChanges: false,
       originalBlocksOrder: [],
       pages: [],
+      selectedPageId: null,
+      previewMode: false,
+      blockComponents,
+      customComponents,
       productsCatalog: [],
       showIconPicker: false,
       currentIconTarget: null,
@@ -76,6 +96,19 @@ export default {
       if (el?.type === 'list') this.parseCustomListItems(el.content);
     },
   },
+  computed: {
+    selectedPage() {
+      return this.pages.find(p => p.id === this.selectedPageId) || null;
+    },
+    isMainPage() {
+      return this.selectedPageId === null;
+    },
+    previewBlocks() {
+      return this.pageBlocks
+          .filter(b => b.is_active && this.blockComponents[b.type])
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    },
+  },
   mounted() {
     this.loadPageBlocks()
     this.loadPages()
@@ -115,7 +148,7 @@ export default {
     },
     async loadPageBlocks() {
       try {
-        const r = await api.getPageBlocks();
+        const r = await api.getPageBlocks(this.selectedPageId);
 
         if (!r.ok) {
           this.pageBlocks = [];
@@ -123,54 +156,92 @@ export default {
         }
 
         const blocks = await r.json();
-        const regular = blocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons').sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-        const infoBtn = blocks.filter(b => b.type === 'info_buttons');
-        const footer = blocks.filter(b => b.type === 'footer');
 
-        this.pageBlocks = [
-          ...regular,
-          ...(infoBtn.length ? [{ ...infoBtn[0], sort_order: regular.length }] : []),
-          ...(footer.length ? [{ ...footer[0], sort_order: regular.length + (infoBtn.length ? 1 : 0) }] : []),
-        ];
+        if (this.isMainPage) {
+          const regular = blocks.filter(b => b.type !== 'footer' && b.type !== 'info_buttons')
+              .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          const infoBtn = blocks.filter(b => b.type === 'info_buttons');
+          const footer = blocks.filter(b => b.type === 'footer');
 
-        await this.ensureInfoButtonsBlock();
-        await this.ensureFooterBlock();
+          this.pageBlocks = [
+            ...regular,
+            ...(infoBtn.length ? [{ ...infoBtn[0], sort_order: regular.length }] : []),
+            ...(footer.length ? [{ ...footer[0], sort_order: regular.length + (infoBtn.length ? 1 : 0) }] : []),
+          ];
 
-        this.originalBlocksOrder = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b)).map(b => b.id);
+          await this.ensureCustomComponentBlocks();
+          await this.ensureInfoButtonsBlock();
+          await this.ensureFooterBlock();
+        } else {
+          this.pageBlocks = blocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        }
+
+        this.originalBlocksOrder = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b))
+            .map(b => b.id);
         this.hasUnsavedChanges = false;
       } catch {
         this.pageBlocks = [];
       }
     },
+    async switchPage(pageId) {
+      this.selectedPageId = pageId;
+      this.pageBlocks = [];
+      this.hasUnsavedChanges = false;
+      await this.loadPageBlocks();
+    },
+    async ensureCustomComponentBlocks() {
+      if (!this.isMainPage) return;
+      for (const cc of this.customComponents) {
+        const exists = this.pageBlocks.find(b => this.isCustomComponentBlock(b) && b.title === cc.name);
+        if (exists) continue;
+
+        const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
+        const r = await api.addPageBlock({
+          page_id: null, type: 'custom_component', title: cc.name,
+          content: '', settings: {}, sort_order: regular.length, is_active: true,
+        });
+
+        if (r.ok) {
+          const res = await r.json();
+          const ii = this.pageBlocks.findIndex(b => this.isInfoButtonsBlock(b));
+          const fi = this.pageBlocks.findIndex(b => this.isFooterBlock(b));
+          const insertAt = ii !== -1 ? ii : (fi !== -1 ? fi : this.pageBlocks.length);
+          this.pageBlocks.splice(insertAt, 0, {
+            id: res.id, page_id: null, type: 'custom_component', title: cc.name,
+            content: '', settings: {}, sort_order: regular.length, is_active: true,
+          });
+        }
+      }
+    },
     async ensureFooterBlock() {
-      if (this.pageBlocks.find(b => b.type === 'footer')) return;
+      if (!this.isMainPage || this.pageBlocks.find(b => b.type === 'footer')) return;
 
       const r = await api.addPageBlock({
-        type: 'footer', title: 'Футер', content: '',
+        page_id: null, type: 'footer', title: 'Футер', content: '',
         settings: {}, sort_order: this.pageBlocks.length, is_active: true,
       });
 
       if (r.ok) {
         const res = await r.json();
         this.pageBlocks.push({
-          id: res.id,
-          type: 'footer',
-          title: 'Футер',
-          content: '',
-          settings: {},
-          sort_order: this.pageBlocks.length,
-          is_active: true
+          id: res.id, page_id: null, type: 'footer', title: 'Футер', content: '',
+          settings: {}, sort_order: this.pageBlocks.length, is_active: true,
         });
       }
     },
     async ensureInfoButtonsBlock() {
-      if (this.pageBlocks.find(b => b.type === 'info_buttons')) return;
+      if (!this.isMainPage || this.pageBlocks.find(b => b.type === 'info_buttons')) return;
 
       const def = { sectionTitle: '', buttons: [{ text: '', linkType: 'page', link: '', style: 'primary' }] };
 
       const r = await api.addPageBlock({
-        type: 'info_buttons', title: 'Информационные кнопки', content: '',
-        settings: def, sort_order: this.pageBlocks.length, is_active: true,
+        page_id: null,
+        type: 'info_buttons',
+        title: 'Информационные кнопки',
+        content: '',
+        settings: def,
+        sort_order: this.pageBlocks.length,
+        is_active: true,
       });
 
       if (r.ok) {
@@ -179,12 +250,13 @@ export default {
 
         const nb = {
           id: res.id,
+          page_id: null,
           type: 'info_buttons',
           title: 'Информационные кнопки',
           content: '',
           settings: def,
           sort_order: this.pageBlocks.length,
-          is_active: true
+          is_active: true,
         };
 
         footerIdx !== -1 ? this.pageBlocks.splice(footerIdx, 0, nb) : this.pageBlocks.push(nb);
@@ -192,10 +264,13 @@ export default {
     },
     isFooterBlock(b) {
       return b.type === 'footer';
-      },
+    },
     isInfoButtonsBlock(b) {
       return b.type === 'info_buttons';
-      },
+    },
+    isCustomComponentBlock(b) {
+      return b.type === 'custom_component';
+    },
     openAddBlockModal() {
       const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
 
@@ -426,8 +501,12 @@ export default {
       const keepDesc = link?.description || '';
 
       this.blockForm.settings.promotions[pi].links[li] = p
-        ? { name: p.name, link: window.location.origin + '/product/?id=' + p.id, title: keepTitle, description: keepDesc, data: p }
-        : { name: '', link: '', title: keepTitle, description: keepDesc };
+        ? { name: p.name,
+            link: window.location.origin + '/product/?id=' + p.id,
+            title: keepTitle,
+            description: keepDesc,
+            data: p
+      } : { name: '', link: '', title: keepTitle, description: keepDesc };
     },
     async handleBackgroundImageUpload(e) {
       const file = e.target.files[0];
@@ -488,6 +567,7 @@ export default {
         }
 
         const body = {
+          page_id: this.selectedPageId,
           type: this.blockForm.type,
           title: this.blockForm.title,
           content: this.blockForm.content,
@@ -526,7 +606,7 @@ export default {
     },
     async deleteBlock(id) {
       const b = this.pageBlocks.find(b2 => b2.id === id);
-      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b))) {
+      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b) || this.isCustomComponentBlock(b))) {
         alert('Этот блок нельзя удалить');
         return;
       }
@@ -609,7 +689,8 @@ export default {
         contact: 'Контакты',
         text: 'Текстовый блок',
         buttons: 'Кнопки',
-        custom: 'Пользовательский HTML'
+        custom: 'Пользовательский HTML',
+        custom_component: 'Компонент',
       } [type] || type
     },
     getBlockPreview(block) {
@@ -629,6 +710,7 @@ export default {
         text: `<div><h4>Текст</h4><p>${(block.content || '').substring(0, 80)}</p></div>`,
         projects: `<div><h4>${s.sectionTitle || 'Проекты'}</h4><p>${(s.projects || []).length} проектов</p></div>`,
         custom: `<div><h4>HTML</h4><p>${(block.content || '').replace(/<[^>]+>/g, '').substring(0, 80) || '—'}</p></div>`,
+        custom_component: `<div><h4><i class="fas fa-puzzle-piece"></i> ${block.title}</h4><p>Пользовательский Vue-компонент</p></div>`,
       };
 
       return map[block.type] || `<div><h4>${this.getBlockTypeName(block.type)}</h4><p>${block.title || '—'}</p></div>`;
@@ -896,11 +978,15 @@ export default {
     },
     parseHTMLToCustomElements(html) {
       if (!html?.trim()) return [];
-      const els = []; const div = document.createElement('div'); div.innerHTML = html.trim(); let eid = Date.now();
+      const els = [];
+      const div = document.createElement('div');
+      div.innerHTML = html.trim();
+      let eid = Date.now();
 
       const process = (node) => {
         if (node.nodeType === Node.TEXT_NODE) {
           const t = node.textContent.trim();
+
           if (t) els.push({
             id: eid++,
             type: 'paragraph',
@@ -968,31 +1054,109 @@ export default {
 <template>
   <section class="page-builder" style="margin-top:40px">
     <div class="page-builder-content">
-      <div style="flex:1"><h2>Конструктор главной страницы</h2></div>
-      <button class="btn btn-primary" @click="openAddBlockModal"><i class="fas fa-plus"></i><span> Добавить блок</span></button>
+      <div style="flex:1">
+        <h2>Конструктор страниц</h2>
+      </div>
+      <button class="btn btn-secondary" @click="previewMode = !previewMode">
+        <i :class="previewMode ? 'fas fa-list' : 'fas fa-eye'"></i>
+        <span> {{ previewMode ? 'Список' : 'Предпросмотр' }}</span>
+      </button>
+      <button v-if="!previewMode" class="btn btn-primary" @click="openAddBlockModal">
+        <i class="fas fa-plus"></i>
+        <span> Добавить блок</span>
+      </button>
     </div>
-    <div v-if="blockSuccess" class="alert alert-success" style="margin-top:15px"><i class="fas fa-check-circle"></i> {{ blockSuccess }}</div>
-    <div v-if="blockError"   class="alert alert-error"   style="margin-top:15px"><i class="fas fa-exclamation-circle"></i> {{ blockError }}</div>
-    <div class="page-blocks-container">
+    <div class="page-tabs">
+      <button :class="['page-tab', { active: selectedPageId === null }]" @click="switchPage(null)">
+        <i class="fas fa-home"></i> Главная
+      </button>
+      <button
+          v-for="pg in pages" :key="pg.id"
+          :class="['page-tab', { active: selectedPageId === pg.id }]"
+          @click="switchPage(pg.id)">
+        <i class="fas fa-file"></i> {{ pg.title }}
+      </button>
+    </div>
+    <div v-if="blockSuccess" class="alert alert-success" style="margin-top:15px">
+      <i class="fas fa-check-circle"></i>
+      {{ blockSuccess }}
+    </div>
+    <div v-if="blockError" class="alert alert-error" style="margin-top:15px"
+    ><i class="fas fa-exclamation-circle"></i>
+      {{ blockError }}
+    </div>
+    <div v-if="previewMode" class="blocks-preview-frame">
+      <div class="blocks-preview-toolbar">
+        <span><i class="fas fa-eye"></i> Предпросмотр страницы</span>
+        <small v-if="!previewBlocks.length" style="color:var(--text-additional)"> — нет активных блоков с компонентами</small>
+      </div>
+      <div class="blocks-preview-content">
+        <component
+            v-for="block in previewBlocks"
+            :key="block.id"
+            :is="blockComponents[block.type]"
+            :block="block"
+            :is-in-view="() => true"
+        />
+        <component
+            v-if="isMainPage"
+            v-for="cc in customComponents"
+            :key="cc.name"
+            :is="cc.component"
+        />
+        <div v-if="!previewBlocks.length && !customComponents.length" style="padding:60px;text-align:center;color:var(--text-additional)">
+          <i class="fas fa-eye-slash" style="font-size:48px;display:block;margin-bottom:16px;opacity:.4"></i>
+          <p>Нет активных блоков для отображения</p>
+        </div>
+      </div>
+    </div>
+    <div v-else class="page-blocks-container">
       <div class="blocks-list">
         <div v-for="block in pageBlocks" :key="block.id" class="block-item"
-             :class="{ inactive:!block.is_active, dragging:block.id===draggingBlockId, 'footer-block': isFooterBlock(block)||isInfoButtonsBlock(block) }"
+                 :class="{ inactive:!block.is_active,
+                 dragging:block.id===draggingBlockId,
+                 'footer-block': isFooterBlock(block)||isInfoButtonsBlock(block),
+                 'custom-component-item': isCustomComponentBlock(block)
+            }"
              :draggable="!isFooterBlock(block) && !isInfoButtonsBlock(block)"
              @dragstart="startDrag(block,$event)" @dragend="endDrag"
              @dragover.prevent @drop="dropBlock(block,$event)">
           <div class="block-header">
             <div class="block-info">
-              <span class="block-type">{{ getBlockTypeName(block.type) }}</span>
+              <span
+                  class="block-type"
+                  :style="isCustomComponentBlock(block) ? 'background:rgba(99,102,241,.15);color:#8b7cf8' : ''"
+              >
+                {{ getBlockTypeName(block.type) }}
+              </span>
               <span class="block-title">{{ block.title || 'Без названия' }}</span>
               <span class="block-order">#{{ block.sort_order }}</span>
             </div>
             <div class="block-actions">
-              <button @click="toggleBlockActive(block)" class="btn btn-sm" :class="block.is_active?'':'btn-block-hidden'">
+              <button
+                  v-if="!isCustomComponentBlock(block)"
+                  @click="toggleBlockActive(block)"
+                  class="btn btn-sm"
+                  :class="block.is_active?'':'btn-block-hidden'"
+              >
                 <i :class="block.is_active?'fas fa-eye-slash':'fas fa-eye'"></i>
               </button>
-              <button @click="editBlock(block)" class="btn btn-sm btn-edit"><i class="fas fa-edit"></i></button>
-              <button v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block)" @click="deleteBlock(block.id)" class="btn btn-sm btn-delete"><i class="fas fa-trash"></i></button>
-              <div v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block)" class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+              <button
+                  v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block) && !isCustomComponentBlock(block)"
+                  @click="editBlock(block)"
+                  class="btn btn-sm btn-edit"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              <button
+                  v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block) && !isCustomComponentBlock(block)"
+                  @click="deleteBlock(block.id)"
+                  class="btn btn-sm btn-delete">
+                <i class="fas fa-trash"></i>
+              </button>
+              <div v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block)" class="drag-handle">
+                <i class="fas fa-grip-vertical"></i>
+              </div>
             </div>
           </div>
           <div class="block-preview"><div class="preview-content" v-html="getBlockPreview(block)"></div></div>
@@ -1037,63 +1201,133 @@ export default {
           <option value="actual">Акции</option>
           <option value="projects">Проекты</option>
           <option value="custom">Пользовательский HTML</option>
-          <option value="info_buttons" disabled>Инфо-кнопки (авто)</option>
-          <option value="footer" disabled>Футер (авто)</option>
+          <option v-if="isMainPage" value="info_buttons" disabled>Инфо-кнопки (авто)</option>
+          <option v-if="isMainPage" value="footer" disabled>Футер (авто)</option>
         </select>
       </div>
-      <div class="form-group"><label>Название блока</label><input type="text" v-model="blockForm.title" placeholder="Для идентификации в админке"></div>
-      <div v-if="blockForm.settings && 'sectionTitle' in blockForm.settings" class="form-group"><label>Заголовок секции</label><input type="text" v-model="blockForm.settings.sectionTitle"></div>
+      <div class="form-group">
+        <label>Название блока</label>
+        <input type="text" v-model="blockForm.title" placeholder="Для идентификации в админке">
+      </div>
+      <div v-if="blockForm.settings && 'sectionTitle' in blockForm.settings" class="form-group">
+        <label>Заголовок секции</label>
+        <input type="text" v-model="blockForm.settings.sectionTitle">
+      </div>
       <!-- hero -->
       <template v-if="blockForm.type==='hero'">
-        <div class="form-group"><label>Основной заголовок</label><input type="text" v-model="blockForm.settings.mainTitle"></div>
-        <div class="form-group"><label>Подзаголовок</label><textarea v-model="blockForm.settings.subtitle" rows="2"></textarea></div>
-        <div class="form-group"><label>Описание</label><textarea v-model="blockForm.settings.description" rows="3"></textarea></div>
-        <div class="form-group"><label>Текст кнопки 1</label><input type="text" v-model="blockForm.settings.buttonA"></div>
-        <div class="form-group"><label>Текст кнопки 2</label><input type="text" v-model="blockForm.settings.buttonB"></div>
+        <div class="form-group">
+          <label>Основной заголовок</label>
+          <input type="text" v-model="blockForm.settings.mainTitle">
+        </div>
+        <div class="form-group">
+          <label>Подзаголовок</label>
+          <textarea v-model="blockForm.settings.subtitle" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea v-model="blockForm.settings.description" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Текст кнопки 1</label><input type="text" v-model="blockForm.settings.buttonA"></div>
+        <div class="form-group">
+          <label>Текст кнопки 2</label><input type="text" v-model="blockForm.settings.buttonB"></div>
         <div class="form-group">
           <label>Фоновое изображение</label>
           <div class="image-upload-field">
             <div v-if="blockForm.settings.backgroundImage" class="image-preview">
               <img :src="blockForm.settings.backgroundImage" alt="bg">
-              <button type="button" @click="removeBackgroundImage" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button>
+              <button type="button" @click="removeBackgroundImage" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
             <input type="file" @change="handleBackgroundImageUpload" accept="image/*" ref="bgInput" style="display:none">
-            <button type="button" @click="$refs.bgInput.click()" class="btn btn-secondary"><i class="fas fa-upload"></i> {{ blockForm.settings.backgroundImage ? 'Изменить' : 'Загрузить' }}</button>
+            <button type="button" @click="$refs.bgInput.click()" class="btn btn-secondary">
+              <i class="fas fa-upload"></i>
+              {{ blockForm.settings.backgroundImage ? 'Изменить' : 'Загрузить' }}
+            </button>
           </div>
         </div>
-        <div class="form-group"><label>Позиция фона</label><select v-model="blockForm.settings.backgroundPosition"><option value="center">По центру</option><option value="top">Сверху</option><option value="bottom">Снизу</option></select></div>
+        <div class="form-group">
+          <label>Позиция фона</label>
+          <select v-model="blockForm.settings.backgroundPosition">
+            <option value="center">По центру</option>
+            <option value="top">Сверху</option>
+            <option value="bottom">Снизу</option>
+          </select>
+        </div>
       </template>
       <!-- features -->
       <template v-if="blockForm.type==='features'">
         <div class="form-group">
           <label>Преимущества</label>
-          <div v-for="(f,i) in blockForm.settings.features" :key="i" class="feature-item" style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between"><span>{{ i+1 }}</span><button type="button" @click="removeFeature(i)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
+          <div
+              v-for="(f,i) in blockForm.settings.features"
+              :key="i"
+              class="feature-item"
+              style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px"
+          >
+            <div style="display: flex; justify-content: space-between">
+              <span>{{ i+1 }}</span>
+              <button type="button" @click="removeFeature(i)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
             <div class="form-group">
               <label>Иконка</label>
               <div style="display:flex;gap:8px;align-items:center">
-                <i :class="f.icon||'fas fa-question'" style="font-size:20px"></i>
-                <input type="text" v-model="f.icon" placeholder="fas fa-gem" style="flex:1">
-                <button type="button" @click="openIconPicker(f,'icon')" class="btn btn-sm btn-secondary"><i class="fas fa-search"></i></button>
+                <i :class="f.icon||'fas fa-question'" style="font-size: 20px"></i>
+                <input type="text" v-model="f.icon" placeholder="fas fa-gem" style="flex: 1">
+                <button type="button" @click="openIconPicker(f,'icon')" class="btn btn-sm btn-secondary">
+                  <i class="fas fa-search"></i>
+                </button>
               </div>
             </div>
-            <div class="form-group"><label>Заголовок</label><input type="text" v-model="f.title"></div>
-            <div class="form-group"><label>Описание</label><textarea v-model="f.description" rows="2"></textarea></div>
+            <div class="form-group">
+              <label>Заголовок</label>
+              <input type="text" v-model="f.title">
+            </div>
+            <div class="form-group">
+              <label>Описание</label>
+              <textarea v-model="f.description" rows="2"></textarea>
+            </div>
           </div>
-          <button type="button" @click="addFeature" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
+          <button type="button" @click="addFeature" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить
+          </button>
         </div>
       </template>
       <!-- history -->
       <template v-if="blockForm.type==='history'">
         <div class="form-group">
           <label>События</label>
-          <div v-for="(ev,i) in blockForm.settings.events" :key="i" style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between"><span>{{ i+1 }}</span><button type="button" @click="removeHistoryEvent(i)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
-            <div class="form-group"><label>Год</label><input type="text" v-model="ev.year"></div>
-            <div class="form-group"><label>Заголовок</label><input type="text" v-model="ev.title"></div>
-            <div class="form-group"><label>Описание</label><textarea v-model="ev.description" rows="2"></textarea></div>
+          <div v-for="(ev,i) in blockForm.settings.events"
+               :key="i"
+               style="background: rgba(255,255,255,.05); padding: 12px; border-radius: 8px; margin-bottom: 10px"
+          >
+            <div style="display:flex;justify-content:space-between">
+              <span>{{ i+1 }}</span>
+              <button type="button" @click="removeHistoryEvent(i)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="form-group">
+              <label>Год</label>
+              <input type="text" v-model="ev.year">
+            </div>
+            <div class="form-group">
+              <label>Заголовок</label>
+              <input type="text" v-model="ev.title">
+            </div>
+            <div class="form-group">
+              <label>Описание</label>
+              <textarea v-model="ev.description" rows="2"></textarea>
+            </div>
           </div>
-          <button type="button" @click="addHistoryEvent" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
+          <button type="button" @click="addHistoryEvent" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить
+          </button>
         </div>
       </template>
       <!-- stats -->
@@ -1101,11 +1335,25 @@ export default {
         <div class="form-group">
           <label>Статистика</label>
           <div v-for="(s,i) in blockForm.settings.stats" :key="i" style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between"><span>{{ i+1 }}</span><button type="button" @click="removeStat(i)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
-            <div class="form-group"><label>Число</label><input type="text" v-model="s.number"></div>
-            <div class="form-group"><label>Подпись</label><input type="text" v-model="s.label"></div>
+            <div style="display:flex;justify-content:space-between">
+              <span>{{ i+1 }}</span>
+              <button type="button" @click="removeStat(i)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="form-group">
+              <label>Число</label>
+              <input type="text" v-model="s.number">
+            </div>
+            <div class="form-group">
+              <label>Подпись</label>
+              <input type="text" v-model="s.label">
+            </div>
           </div>
-          <button type="button" @click="addStat" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить</button>
+          <button type="button" @click="addStat" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить
+          </button>
         </div>
       </template>
       <!-- text / footer -->
@@ -1130,37 +1378,73 @@ export default {
                style="background:rgba(255,255,255,.05);padding:14px;border-radius:8px;margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px">
               <strong style="color:var(--primary)">Проект {{ pi + 1 }}</strong>
-              <button type="button" @click="removeProject(pi)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button>
+              <button type="button" @click="removeProject(pi)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;align-items:start">
               <div class="form-group" style="margin:0">
                 <label style="font-size:11px">Иконка</label>
                 <div class="proj-icon-toggle">
-                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'text' }]" @click="proj.iconType = 'text'">
+                  <button type="button"
+                          :class="['proj-icon-btn', { active: proj.iconType === 'text' }]"
+                          @click="proj.iconType = 'text'"
+                  >
                     <i class="fas fa-font"></i> Текст
                   </button>
-                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'fa' }]" @click="proj.iconType = 'fa'">
+                  <button type="button"
+                          :class="['proj-icon-btn', { active: proj.iconType === 'fa' }]"
+                          @click="proj.iconType = 'fa'"
+                  >
                     <i class="fas fa-icons"></i> FA
                   </button>
-                  <button type="button" :class="['proj-icon-btn', { active: proj.iconType === 'image' }]" @click="proj.iconType = 'image'">
+                  <button type="button"
+                          :class="['proj-icon-btn', { active: proj.iconType === 'image' }]"
+                          @click="proj.iconType = 'image'"
+                  >
                     <i class="fas fa-image"></i> Фото
                   </button>
                 </div>
                 <template v-if="proj.iconType === 'text' || !proj.iconType">
-                  <input type="text" v-model="proj.icon" placeholder="🚀" style="text-align:center;font-size:20px;margin-top:6px">
+                  <input type="text"
+                         v-model="proj.icon"
+                         placeholder="🚀"
+                         style="text-align: center; font-size: 20px; margin-top: 6px"
+                  >
                 </template>
                 <template v-else-if="proj.iconType === 'fa'">
-                  <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
-                    <span style="font-size:22px;width:36px;text-align:center"><i v-if="proj.icon" :class="proj.icon"></i><span v-else style="color:#888;font-size:13px">—</span></span>
-                    <button type="button" @click="openProjectIconPicker(pi)" class="btn btn-secondary btn-sm" style="flex:1"><i class="fas fa-search"></i> Выбрать</button>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-top: 6px">
+                    <span style="font-size: 22px; width: 36px; text-align: center">
+                      <i v-if="proj.icon" :class="proj.icon"></i>
+                      <span v-else style="color: #888; font-size: 13px">—</span>
+                    </span>
+                    <button type="button"
+                            @click="openProjectIconPicker(pi)"
+                            class="btn btn-secondary btn-sm"
+                            style="flex: 1">
+                      <i class="fas fa-search"></i>
+                      Выбрать
+                    </button>
                   </div>
                 </template>
                 <template v-else-if="proj.iconType === 'image'">
                   <div style="margin-top:6px">
-                    <img v-if="proj.icon" :src="proj.icon" style="height:36px;border-radius:4px;display:block;margin-bottom:4px">
-                    <input type="file" :id="'proj-icon-'+pi" @change="handleProjectIconUpload($event, pi)" accept="image/*" style="display:none">
-                    <label :for="'proj-icon-'+pi" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center">
-                      <i class="fas fa-upload"></i> {{ proj.icon ? 'Изменить' : 'Загрузить' }}
+                    <img v-if="proj.icon"
+                         :src="proj.icon"
+                         style="height: 36px; border-radius: 4px; display: block; margin-bottom: 4px"
+                    >
+                    <input type="file"
+                           :id="'proj-icon-'+pi"
+                           @change="handleProjectIconUpload($event, pi)"
+                           accept="image/*"
+                           style="display: none"
+                    >
+                    <label :for="'proj-icon-'+pi"
+                           class="btn btn-secondary btn-sm"
+                           style="cursor: pointer; display: inline-flex; gap:6px; align-items: center"
+                    >
+                      <i class="fas fa-upload"></i>
+                      {{ proj.icon ? 'Изменить' : 'Загрузить' }}
                     </label>
                   </div>
                 </template>
@@ -1170,45 +1454,127 @@ export default {
                 <input type="text" v-model="proj.title" placeholder="Название проекта">
               </div>
             </div>
-            <div class="form-group"><label style="font-size:11px">Описание</label><textarea v-model="proj.description" rows="2" placeholder="Краткое описание"></textarea></div>
-            <div class="form-group"><label style="font-size:11px">Технологии <span style="color:#888">(через запятую)</span></label><input type="text" v-model="proj.tech" placeholder="Vue.js, Node.js, TypeScript"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <div class="form-group" style="margin:0"><label style="font-size:11px">GitHub</label><input type="url" v-model="proj.github" placeholder="https://github.com/..."></div>
-              <div class="form-group" style="margin:0"><label style="font-size:11px">Demo</label><input type="url" v-model="proj.demo" placeholder="https://..."></div>
-              <div class="form-group" style="margin:0"><label style="font-size:11px">Сайт</label><input type="url" v-model="proj.site" placeholder="https://..."></div>
-              <div class="form-group" style="margin:0"><label style="font-size:11px">GitHub 2 (доп.)</label><input type="url" v-model="proj.github2" placeholder="https://github.com/..."></div>
+            <div class="form-group">
+              <label style="font-size:11px">Описание</label>
+              <textarea v-model="proj.description" rows="2" placeholder="Краткое описание"></textarea>
             </div>
-            <div v-if="proj.github2" class="form-group" style="margin-top:8px"><label style="font-size:11px">Название GitHub 2</label><input type="text" v-model="proj.github2_title" placeholder="Репозиторий desktop"></div>
+            <div class="form-group">
+              <label style="font-size:11px">Технологии <span style="color:#888">(через запятую)</span></label>
+              <input type="text" v-model="proj.tech" placeholder="Vue.js, Node.js, TypeScript">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">GitHub</label>
+                <input type="url" v-model="proj.github" placeholder="https://github.com/...">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">Demo</label>
+                <input type="url" v-model="proj.demo" placeholder="https://...">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">Сайт</label>
+                <input type="url" v-model="proj.site" placeholder="https://...">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:11px">GitHub 2 (доп.)</label>
+                <input type="url" v-model="proj.github2" placeholder="https://github.com/...">
+              </div>
+            </div>
+            <div v-if="proj.github2" class="form-group" style="margin-top:8px">
+              <label style="font-size:11px">Название GitHub 2</label>
+              <input type="text" v-model="proj.github2_title" placeholder="Репозиторий desktop">
+            </div>
           </div>
-          <button type="button" @click="addProject" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить проект</button>
+          <button type="button" @click="addProject" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить проект
+          </button>
         </div>
       </template>
       <!-- buttons / info_buttons -->
       <template v-if="blockForm.type==='buttons' || blockForm.type==='info_buttons'">
         <div class="form-group">
           <label>Кнопки</label>
-          <div v-for="(btn,i) in blockForm.settings.buttons" :key="i" style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between"><span>{{ i+1 }}</span><button type="button" @click="removeButton(i)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
-            <div class="form-group"><label>Текст</label><input type="text" v-model="btn.text"></div>
-            <div class="form-group"><label>Тип</label><select v-model="btn.linkType" @change="btn.link=''"><option value="page">Страница</option><option value="section">Секция</option><option value="url">URL</option></select></div>
-            <div v-if="btn.linkType==='page'" class="form-group"><label>Страница</label><select v-model="btn.link"><option value="">Выберите</option><option v-for="pg in pages" :key="pg.id" :value="pg.slug">{{ pg.title }}</option></select></div>
-            <div v-if="btn.linkType==='section'" class="form-group"><label>ID секции</label><input type="text" v-model="btn.link" placeholder="products, features..."></div>
-            <div v-if="btn.linkType==='url'" class="form-group"><label>URL</label><input type="url" v-model="btn.link"></div>
-            <div v-if="blockForm.type==='buttons'" class="form-group"><label>Стиль</label><select v-model="btn.style"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="outline">Outline</option></select></div>
+          <div v-for="(btn,i) in blockForm.settings.buttons"
+               :key="i"
+               style="background: rgba(255,255,255,.05); padding: 12px; border-radius: 8px; margin-bottom: 10px"
+          >
+            <div style="display: flex; justify-content: space-between">
+              <span>{{ i+1 }}</span>
+              <button type="button" @click="removeButton(i)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="form-group">
+              <label>Текст</label>
+              <input type="text" v-model="btn.text">
+            </div>
+            <div class="form-group">
+              <label>Тип</label>
+              <select v-model="btn.linkType" @change="btn.link=''">
+                <option value="page">Страница</option>
+                <option value="section">Секция</option>
+                <option value="url">URL</option>
+              </select>
+            </div>
+            <div v-if="btn.linkType==='page'" class="form-group">
+              <label>Страница</label>
+              <select v-model="btn.link">
+                <option value="">Выберите</option>
+                <option v-for="pg in pages" :key="pg.id" :value="pg.slug">{{ pg.title }}</option>
+              </select>
+            </div>
+            <div v-if="btn.linkType==='section'" class="form-group">
+              <label>ID секции</label>
+              <input type="text" v-model="btn.link" placeholder="products, features...">
+            </div>
+            <div v-if="btn.linkType==='url'" class="form-group">
+              <label>URL</label>
+              <input type="url" v-model="btn.link">
+            </div>
+            <div v-if="blockForm.type==='buttons'" class="form-group">
+              <label>Стиль</label>
+              <select v-model="btn.style">
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="outline">Outline</option>
+              </select>
+            </div>
           </div>
-          <button type="button" @click="addButton" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить кнопку</button>
+          <button type="button" @click="addButton" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить кнопку
+          </button>
         </div>
       </template>
       <!-- contact -->
       <template v-if="blockForm.type==='contact'">
-        <div class="form-group"><label>Email</label><input type="email" v-model="blockForm.settings.email"></div>
-        <div class="form-group"><label>Телефон</label><input type="tel" v-model="blockForm.settings.phone"></div>
-        <div class="form-group"><label>Адрес</label><textarea v-model="blockForm.settings.address" rows="2"></textarea></div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" v-model="blockForm.settings.email">
+        </div>
+        <div class="form-group">
+          <label>Телефон</label>
+          <input type="tel" v-model="blockForm.settings.phone">
+        </div>
+        <div class="form-group">
+          <label>Адрес</label>
+          <textarea v-model="blockForm.settings.address" rows="2"></textarea>
+        </div>
         <div v-if="blockForm.settings.socialLinks" class="form-group">
           <label>Соцсети</label>
-          <div class="form-group"><label>Instagram</label><input type="url" v-model="blockForm.settings.socialLinks.instagram"></div>
-          <div class="form-group"><label>TikTok</label><input type="url" v-model="blockForm.settings.socialLinks.tiktok"></div>
-          <div class="form-group"><label>Telegram</label><input type="url" v-model="blockForm.settings.socialLinks.telegram"></div>
+          <div class="form-group">
+            <label>Instagram</label>
+            <input type="url" v-model="blockForm.settings.socialLinks.instagram">
+          </div>
+          <div class="form-group">
+            <label>TikTok</label>
+            <input type="url" v-model="blockForm.settings.socialLinks.tiktok">
+          </div>
+          <div class="form-group">
+            <label>Telegram</label>
+            <input type="url" v-model="blockForm.settings.socialLinks.telegram">
+          </div>
         </div>
       </template>
       <!-- actual -->
@@ -1216,30 +1582,82 @@ export default {
         <div class="form-group">
           <label>Акции</label>
           <div v-for="(promo,pi) in blockForm.settings.promotions" :key="pi" style="background:rgba(255,255,255,.05);padding:12px;border-radius:8px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between"><span>{{ pi+1 }}</span><button type="button" @click="removePromotion(pi)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
+            <div style="display:flex;justify-content:space-between">
+              <span>{{ pi+1 }}</span>
+              <button type="button" @click="removePromotion(pi)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
             <div class="form-group">
               <label>Изображение</label>
-              <div v-if="promo.image"><img :src="promo.image" style="max-height:80px;border-radius:4px"><button type="button" @click="removePromotionImage(pi)" class="btn btn-sm btn-delete" style="margin-left:8px"><i class="fas fa-times"></i></button></div>
-              <input type="file" :id="'promo-img-'+pi" @change="handlePromotionImageUpload($event,pi)" accept="image/*" style="display:none">
-              <label :for="'promo-img-'+pi" class="btn btn-secondary" style="cursor:pointer"><i class="fas fa-upload"></i> {{ promo.image?'Изменить':'Загрузить' }}</label>
+              <div v-if="promo.image">
+                <img :src="promo.image" style="max-height: 80px; border-radius: 4px">
+                <button type="button"
+                        @click="removePromotionImage(pi)"
+                        class="btn btn-sm btn-delete"
+                        style="margin-left: 8px"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <input type="file"
+                     :id="'promo-img-'+pi"
+                     @change="handlePromotionImageUpload($event,pi)"
+                     accept="image/*"
+                     style="display: none"
+              >
+              <label :for="'promo-img-'+pi" class="btn btn-secondary" style="cursor: pointer">
+                <i class="fas fa-upload"></i>
+                {{ promo.image?'Изменить':'Загрузить' }}
+              </label>
             </div>
-            <div class="form-group"><label>Заголовок</label><input type="text" v-model="promo.title"></div>
-            <div class="form-group"><label>Описание</label><textarea v-model="promo.description" rows="2"></textarea></div>
+            <div class="form-group">
+              <label>Заголовок</label>
+              <input type="text" v-model="promo.title">
+            </div>
+            <div class="form-group">
+              <label>Описание</label>
+              <textarea v-model="promo.description" rows="2"></textarea>
+            </div>
             <div class="form-group">
               <label>Товары</label>
               <div v-for="(link,li) in (promo.links||[])" :key="li" style="background:rgba(255,255,255,.05);padding:8px;border-radius:6px;margin-bottom:8px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Товар {{ li+1 }}</span><button type="button" @click="removeLink(pi,li)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button></div>
-                <select :value="getPromoLinkProductId(link)" @change="onPromoLinkProductChange($event,pi,li)" style="width:100%;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span>Товар {{ li+1 }}</span>
+                  <button type="button" @click="removeLink(pi,li)" class="btn btn-sm btn-delete">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <select :value="getPromoLinkProductId(link)"
+                        @change="onPromoLinkProductChange($event,pi,li)"
+                        style="width: 100%; margin-bottom: 6px"
+                >
                   <option value="">Выберите товар</option>
-                  <option v-for="p in Object.values(getProductsObject())" :key="p.id" :value="p.id">{{ p.name }}</option>
+                  <option v-for="p in Object.values(getProductsObject())" :key="p.id" :value="p.id">
+                    {{ p.name }}
+                  </option>
                 </select>
-                <input type="text" v-model="promo.links[li].title" placeholder="Заголовок ссылки" style="width:100%;margin-bottom:4px">
-                <input type="text" v-model="promo.links[li].description" placeholder="Описание" style="width:100%">
+                <input type="text"
+                       v-model="promo.links[li].title"
+                       placeholder="Заголовок ссылки"
+                       style="width:100%;margin-bottom:4px"
+                >
+                <input type="text"
+                       v-model="promo.links[li].description"
+                       placeholder="Описание"
+                       style="width:100%"
+                >
               </div>
-              <button type="button" @click="addLink(pi)" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> Добавить товар</button>
+              <button type="button" @click="addLink(pi)" class="btn btn-secondary btn-sm">
+                <i class="fas fa-plus"></i>
+                Добавить товар
+              </button>
             </div>
           </div>
-          <button type="button" @click="addPromotion" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить акцию</button>
+          <button type="button" @click="addPromotion" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Добавить акцию
+          </button>
         </div>
       </template>
       <!-- custom -->
@@ -1259,14 +1677,28 @@ export default {
           <div v-if="customViewMode==='visual'" class="custom-visual-editor">
             <div class="custom-elements-sidebar">
               <h4>Элементы</h4>
-              <div v-for="el in availableElements" :key="el.type" class="element-item" draggable="true" @dragstart="startDragCustomAvail(el,$event)">
+              <div v-for="el in availableElements"
+                   :key="el.type"
+                   class="element-item"
+                   draggable="true"
+                   @dragstart="startDragCustomAvail(el,$event)"
+              >
                 <i :class="el.icon"></i>
-                <span style="flex:1">{{ el.label }}</span>
-                <button type="button" @click.stop="addCustomElement(el)" class="btn-icon" title="Добавить"><i class="fas fa-plus"></i></button>
+                <span style="flex: 1">{{ el.label }}</span>
+                <button type="button" @click.stop="addCustomElement(el)" class="btn-icon" title="Добавить">
+                  <i class="fas fa-plus"></i>
+                </button>
               </div>
             </div>
-            <div class="custom-preview-area" @dragover.prevent @drop.prevent="onCustomPreviewDrop" @dragleave.prevent="customDraggingElement=null">
-              <div class="preview-header"><span>Предпросмотр</span><small v-if="!customElements.length" style="color:#888"> — перетащите элементы</small></div>
+            <div class="custom-preview-area"
+                 @dragover.prevent
+                 @drop.prevent="onCustomPreviewDrop"
+                 @dragleave.prevent="customDraggingElement=null"
+            >
+              <div class="preview-header">
+                <span>Предпросмотр</span>
+                <small v-if="!customElements.length" style="color:#888"> — перетащите элементы</small>
+              </div>
               <div class="custom-elements-container">
                 <div v-for="(el,i) in customElements" :key="el.id" class="custom-page-element"
                      :class="{ selected: customSelectedElement?.id===el.id }"
@@ -1275,15 +1707,34 @@ export default {
                      @dragover.prevent="onCustomElDragOver(i,$event)"
                      @drop.prevent="onCustomElDrop(i,$event)">
                   <div class="element-controls">
-                    <button @click.stop="moveCustomElementUp(i)" class="btn-icon" :disabled="i===0"><i class="fas fa-arrow-up"></i></button>
-                    <button @click.stop="moveCustomElementDown(i)" class="btn-icon" :disabled="i===customElements.length-1"><i class="fas fa-arrow-down"></i></button>
-                    <button @click.stop="duplicateCustomElement(i)" class="btn-icon" title="Дублировать"><i class="fas fa-copy"></i></button>
-                    <button @click.stop="removeCustomElement(i)" class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
+                    <button @click.stop="moveCustomElementUp(i)"
+                            class="btn-icon"
+                            :disabled="i===0"
+                    >
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button @click.stop="moveCustomElementDown(i)"
+                            class="btn-icon"
+                            :disabled="i===customElements.length-1"
+                    >
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <button @click.stop="duplicateCustomElement(i)"
+                            class="btn-icon"
+                            title="Дублировать"
+                    >
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button @click.stop="removeCustomElement(i)"
+                            class="btn-icon btn-delete"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
                   </div>
                   <div class="element-content" v-html="renderCustomElement(el)"></div>
                 </div>
                 <div v-if="!customElements.length" class="empty-preview">
-                  <i class="fas fa-mouse-pointer" style="font-size:48px;opacity:.5;margin-bottom:15px"></i>
+                  <i class="fas fa-mouse-pointer" style="font-size: 48px; opacity: 0.5; margin-bottom: 15px"></i>
                   <p>Перетащите элементы</p>
                 </div>
               </div>
@@ -1291,40 +1742,83 @@ export default {
             <div v-if="customSelectedElement" class="custom-element-panel">
               <div class="panel-header">
                 <h4>{{ getCustomElementLabel(customSelectedElement.type) }}</h4>
-                <button @click="customSelectedElement=null" class="btn-icon"><i class="fas fa-times"></i></button>
+                <button @click="customSelectedElement=null" class="btn-icon">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
               <div class="panel-content">
                 <div v-if="customSelectedElement.type==='heading'" class="form-group">
                   <label>Уровень</label>
                   <select v-model="customSelectedElement.level" @change="updateCustomElementContent">
-                    <option :value="1">H1</option><option :value="2">H2</option>
-                    <option :value="3">H3</option><option :value="4">H4</option>
+                    <option :value="1">H1</option>
+                    <option :value="2">H2</option>
+                    <option :value="3">H3</option>
+                    <option :value="4">H4</option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>Содержимое</label>
                   <textarea v-if="customSelectedElement.type!=='image' && customSelectedElement.type!=='list'"
-                            v-model="customSelectedElement.content" @input="updateCustomElementContent" rows="5"></textarea>
+                            v-model="customSelectedElement.content"
+                            @input="updateCustomElementContent"
+                            rows="5"
+                  ></textarea>
                   <div v-else-if="customSelectedElement.type==='list'">
                     <select v-model="customListIsOrdered" @change="rebuildCustomListHtml" style="width:100%;margin-bottom:8px">
                       <option :value="false">Маркированный (ul)</option>
                       <option :value="true">Нумерованный (ol)</option>
                     </select>
-                    <div v-for="(item,idx) in customListItems" :key="idx" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
-                      <input type="text" :value="item" @input="customListItems[idx]=$event.target.value; rebuildCustomListHtml()" placeholder="Элемент" style="flex:1">
-                      <button type="button" @click="removeCustomListItem(idx)" class="btn-icon btn-delete" :disabled="customListItems.length<=1"><i class="fas fa-times"></i></button>
+                    <div v-for="(item,idx) in customListItems"
+                         :key="idx"
+                         style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center"
+                    >
+                      <input type="text"
+                             :value="item"
+                             @input="customListItems[idx]=$event.target.value; rebuildCustomListHtml()"
+                             placeholder="Элемент"
+                             style="flex: 1"
+                      >
+                      <button type="button"
+                              @click="removeCustomListItem(idx)"
+                              class="btn-icon btn-delete"
+                              :disabled="customListItems.length<=1">
+                        <i class="fas fa-times"></i>
+                      </button>
                     </div>
-                    <button type="button" @click="addCustomListItem" class="btn btn-secondary" style="width:100%;margin-top:4px"><i class="fas fa-plus"></i> Добавить</button>
+                    <button type="button" @click="addCustomListItem" class="btn btn-secondary" style="width:100%;margin-top:4px">
+                      <i class="fas fa-plus"></i>
+                      Добавить
+                    </button>
                   </div>
                   <div v-else>
-                    <input type="text" v-model="customSelectedElement.content" @input="updateCustomElementContent" placeholder="URL">
-                    <input type="file" @change="handleCustomImageUpload" accept="image/*" ref="customImgInput" style="display:none">
-                    <button type="button" @click="$refs.customImgInput.click()" class="btn btn-secondary" style="margin-top:6px"><i class="fas fa-upload"></i> Загрузить</button>
+                    <input type="text"
+                           v-model="customSelectedElement.content"
+                           @input="updateCustomElementContent"
+                           placeholder="URL"
+                    >
+                    <input type="file"
+                           @change="handleCustomImageUpload"
+                           accept="image/*"
+                           ref="customImgInput"
+                           style="display: none"
+                    >
+                    <button type="button"
+                            @click="$refs.customImgInput.click()"
+                            class="btn btn-secondary"
+                            style="margin-top: 6px"
+                    >
+                      <i class="fas fa-upload"></i>
+                      Загрузить
+                    </button>
                   </div>
                 </div>
                 <div v-if="customSelectedElement.type==='button'" class="form-group">
                   <label>Ссылка</label>
-                  <input type="text" v-model="customSelectedElement.link" @input="updateCustomElementContent" placeholder="/page или #section">
+                  <input type="text"
+                         v-model="customSelectedElement.link"
+                         @input="updateCustomElementContent"
+                         placeholder="/page или #section"
+                  >
                 </div>
                 <div v-if="customSelectedElement.type==='button'" class="form-group">
                   <label>Стиль</label>
@@ -1355,8 +1849,12 @@ export default {
       <div v-if="blockError" class="error-message">{{ blockError }}</div>
       <div v-if="blockSuccess" class="success-message">{{ blockSuccess }}</div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" :disabled="blockLoading">{{ editingBlock ? 'Сохранить' : 'Добавить' }}</button>
-        <button type="button" @click="closeBlockModal" class="btn btn-secondary">Отмена</button>
+        <button type="submit" class="btn btn-primary" :disabled="blockLoading">
+          {{ editingBlock ? 'Сохранить' : 'Добавить' }}
+        </button>
+        <button type="button" @click="closeBlockModal" class="btn btn-secondary">
+          Отмена
+        </button>
       </div>
     </form>
   </Modal>
@@ -1375,6 +1873,80 @@ export default {
 </template>
 
 <style scoped>
+.custom-components-section {
+  margin-top: 20px;
+  border-top: 1px dashed var(--border-medium);
+  padding-top: 15px;
+}
+.custom-components-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-additional);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.custom-component-item {
+  border-left: 3px solid rgba(99, 102, 241, 0.4);
+}
+.blocks-preview-frame {
+  margin-top: 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--background);
+}
+.blocks-preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 600;
+}
+.blocks-preview-content {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+.page-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid var(--border-light);
+  padding-bottom: 0;
+}
+.page-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 8px 16px;
+  color: var(--text-additional);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-tab:hover {
+  color: var(--text-primary);
+  background: var(--background-secondary);
+}
+.page-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
 .blocks-list {
   display: flex;
   flex-direction: column;

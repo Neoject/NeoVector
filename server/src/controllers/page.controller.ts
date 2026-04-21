@@ -107,7 +107,17 @@ export class PageController {
     }
 
     static async getBlocks(req: Request, res: Response): Promise<void> {
-        const blocks = await PageBlockModel.getAll();
+        const pageIdParam = req.query.page_id;
+        let pageId: number | null | undefined;
+
+        if (pageIdParam === 'null' || pageIdParam === '') {
+            pageId = null;
+        } else if (pageIdParam !== undefined) {
+            const parsed = parseInt(pageIdParam as string);
+            pageId = isNaN(parsed) ? undefined : parsed;
+        }
+
+        const blocks = await PageBlockModel.getAll(false, pageId);
         res.json(blocks);
     }
 
@@ -117,14 +127,19 @@ export class PageController {
     }
 
     static async createBlock(req: Request, res: Response): Promise<void> {
-        const { type, title, content, settings, sort_order, is_active } = req.body;
+        const { type, title, content, settings, sort_order, is_active, page_id } = req.body;
 
         if (!type || typeof type !== 'string' || !title || typeof title !== 'string') {
             res.status(400).json({ error: 'Type and title are required' });
             return;
         }
 
+        const resolvedPageId = page_id === null || page_id === undefined || page_id === ''
+            ? null
+            : (typeof page_id === 'number' ? page_id : parseInt(page_id) || null);
+
         const id = await PageBlockModel.create({
+            page_id: resolvedPageId,
             type,
             title,
             content: typeof content === 'string' ? content : '',

@@ -2,6 +2,7 @@ import { db } from '../config/database';
 
 export interface PageBlock {
     id: number;
+    page_id: number | null;
     type: string;
     title: string;
     content: string;
@@ -17,6 +18,7 @@ export class PageBlockModel {
         await db.query(`
             CREATE TABLE IF NOT EXISTS page_blocks (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                page_id INT NULL DEFAULT NULL,
                 type VARCHAR(50) NOT NULL,
                 title VARCHAR(255) NOT NULL,
                 content TEXT NOT NULL,
@@ -25,25 +27,46 @@ export class PageBlockModel {
                 is_active TINYINT DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_page_sort (page_id, sort_order),
                 INDEX idx_type_sort (type, sort_order),
                 INDEX idx_active_sort (is_active, sort_order)
                 )
         `);
+
+        try {
+            await db.query(`ALTER TABLE page_blocks ADD COLUMN page_id INT NULL DEFAULT NULL AFTER id`);
+            await db.query(`ALTER TABLE page_blocks ADD INDEX idx_page_sort (page_id, sort_order)`);
+        } catch {
+            console.error('column already exists');
+        }
     }
 
-    static async getAll(activeOnly: boolean = false): Promise<PageBlock[]> {
-        let query = 'SELECT * FROM page_blocks';
+    static async getAll(activeOnly: boolean = false, pageId?: number | null): Promise<PageBlock[]> {
+        const conditions: string[] = [];
+        const values: any[] = [];
 
         if (activeOnly) {
-            query += ' WHERE is_active = 1';
+            conditions.push('is_active = 1');
         }
 
+        if (pageId !== undefined) {
+            if (pageId === null) {
+                conditions.push('page_id IS NULL');
+            } else {
+                conditions.push('page_id = ?');
+                values.push(pageId);
+            }
+        }
+
+        let query = 'SELECT * FROM page_blocks';
+        if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
         query += ' ORDER BY sort_order ASC';
 
-        const blocks = await db.query<any[]>(query);
+        const blocks = await db.query<any[]>(query, values.length ? values : undefined);
 
         return blocks.map(block => ({
             id: block.id,
+            page_id: block.page_id ?? null,
             type: block.type,
             title: block.title,
             content: block.content,
@@ -66,6 +89,7 @@ export class PageBlockModel {
 
         return {
             id: block.id,
+            page_id: block.page_id ?? null,
             type: block.type,
             title: block.title,
             content: block.content,
@@ -91,6 +115,7 @@ export class PageBlockModel {
     }
 
     static async create(data: {
+        page_id?: number | null;
         type: string;
         title: string;
         content: string;
@@ -103,8 +128,9 @@ export class PageBlockModel {
             : (data.settings ? JSON.stringify(data.settings) : '{}');
 
         const result = await db.query(
-            'INSERT INTO page_blocks (type, title, content, settings, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO page_blocks (page_id, type, title, content, settings, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
+                data.page_id ?? null,
                 data.type,
                 data.title,
                 data.content,
@@ -183,6 +209,7 @@ export class PageBlockModel {
         const blocks = await db.query<any[]>(query, [type]);
         return blocks.map(block => ({
             id: block.id,
+            page_id: block.page_id ?? null,
             type: block.type,
             title: block.title,
             content: block.content,
