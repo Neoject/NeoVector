@@ -518,6 +518,8 @@ export default {
       if (r.ok) {
         const res = await r.json();
         this.blockForm.settings.backgroundImage = res.url;
+      } else {
+        this.blockError = await this.serverError(r);
       }
     },
     removeBackgroundImage() {
@@ -533,6 +535,8 @@ export default {
       if (r.ok) {
         const res = await r.json();
         if (this.blockForm.settings.promotions?.[idx]) this.blockForm.settings.promotions[idx].image = res.url;
+      } else {
+        this.blockError = await this.serverError(r);
       }
 
       e.target.value = '';
@@ -580,7 +584,7 @@ export default {
             ? await api.updatePageBlock(this.editingBlock.id, body)
             : await api.addPageBlock(body);
 
-        if (!r.ok) throw new Error('HTTP error');
+        if (!r.ok) throw new Error(await this.serverError(r));
 
         if (this.editingBlock) {
           const idx = this.pageBlocks.findIndex(b => b.id === this.editingBlock.id)
@@ -715,6 +719,14 @@ export default {
 
       return map[block.type] || `<div><h4>${this.getBlockTypeName(block.type)}</h4><p>${block.title || '—'}</p></div>`;
     },
+    async serverError(r) {
+      try {
+        const body = await r.json();
+        return body.message || body.error || `Ошибка ${r.status}`;
+      } catch {
+        return `Ошибка ${r.status}`;
+      }
+    },
     openIconPicker(target, prop) {
       this.currentIconTarget = { target, property: prop };
       this.selectedIconClass = target[prop] || '';
@@ -768,6 +780,8 @@ export default {
         const res = await r.json();
         const proj = this.blockForm.settings.projects?.[pi];
         if (proj) proj.icon = '/' + res.url;
+      } else {
+        alert(await this.serverError(r));
       }
 
       e.target.value = '';
@@ -886,6 +900,8 @@ export default {
         const res = await r.json();
         this.customSelectedElement.content = res.url;
         this.updateCustomElementContent();
+      } else {
+        this.blockError = await this.serverError(r);
       }
     },
     startDragCustomAvail(el, e) {
