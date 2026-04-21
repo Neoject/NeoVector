@@ -66,6 +66,7 @@ export const api = {
     getThemeColors: () => get('/theme-colors'),
     saveColors: (colors) => post('/save-colors', { colors }),
     resetColors: () => post('/reset-colors'),
+    sendContact: (name, email, message) => post('/contact', { name, email, message }),
     getMessages: () => get('/messages'),
     deleteMessage: (id) => del(`/messages/${id}`),
     getReplies: (message_id) => get(`/message-replies?message_id=${message_id}`),

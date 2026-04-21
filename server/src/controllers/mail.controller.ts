@@ -11,7 +11,7 @@ export class MailController {
             return;
         }
 
-        if (!this.isValidEmail(email)) {
+        if (!MailController.isValidEmail(email)) {
             res.status(400).json({ error: 'Invalid email address' });
             return;
         }
@@ -53,7 +53,7 @@ export class MailController {
             return;
         }
 
-        if (!this.isValidEmail(to)) {
+        if (!MailController.isValidEmail(to)) {
             res.status(400).json({ error: 'Invalid email address' });
             return;
         }
