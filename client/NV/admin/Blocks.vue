@@ -4,6 +4,7 @@ import { isMobileDevice } from './service'
 import Modal from "../components/Modal.vue";
 import IconPicker from "./IconPicker.vue";
 import {api} from "../../../server/api";
+import ColorPicker from "./ColorPicker.vue";
 
 const blockModules = import.meta.glob('../blocks/*.vue', { eager: true });
 const blockComponents = {};
@@ -22,7 +23,7 @@ Object.entries(customModules).forEach(([path, mod]) => {
 
 export default {
   name: 'Blocks',
-  components: {Modal, IconPicker},
+  components: {ColorPicker, Modal, IconPicker},
   emits: ['update:page'],
   data() {
     return {
@@ -1502,9 +1503,13 @@ export default {
               <label style="font-size:11px">Описание</label>
               <textarea v-model="proj.description" rows="2" placeholder="Краткое описание"></textarea>
             </div>
+            <div class="form-group" style="display: flex; gap: 2rem">
+              <label>Цвет карточки проекта</label>
+              <color-picker :model-value="proj.color" @update:model-value="val => proj.color = val"/>
+            </div>
             <div class="form-group">
               <label style="font-size:11px">Технологии <span style="color:#888">(через запятую)</span></label>
-              <input type="text" v-model="proj.tech" placeholder="Vue.js, Node.js, TypeScript">
+              <input type="text" v-model="proj.tech">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div class="form-group" style="margin:0">

@@ -121,6 +121,7 @@ const COLOR_GROUPS = [
   }
 ];
 
+
 function cssVarToHex(val) {
   if (!val) return '#000000';
   val = val.trim();
@@ -145,7 +146,6 @@ function isGradient(val) {
   return typeof val === 'string' && val.trim().includes('gradient');
 }
 
-/** API хранит флаги как 'true' | 'false'; в форме — boolean. */
 function parseBoolParam(raw) {
   if (raw === true || raw === 1) return true;
   if (raw === false || raw === 0) return false;
@@ -164,7 +164,7 @@ export default {
   data() {
     return {
       colorGroups: COLOR_GROUPS,
-      colors: {},
+      colors: { light: {}, dark: {} },
       colorsLoaded: false,
       colorsSaving: false,
       activeColorGroup: 0,
@@ -185,7 +185,18 @@ export default {
       },
       isDragOver: false,
       previewUrl: null,
+      theme: 'light'
     };
+  },
+  computed: {
+    activeColors() {
+      return this.colors[this.theme] || {};
+    },
+  },
+  watch: {
+    theme() {
+      this.applyColors();
+    },
   },
   mounted() {
     setPageTitle(this.params.title, 'настройки');
@@ -288,7 +299,6 @@ export default {
     collectCurrentColors() {
       const rootStyle = getComputedStyle(document.documentElement);
       const result = {};
-
       COLOR_GROUPS.forEach(group => {
         group.vars.forEach(({ key }) => {
           const computed = rootStyle.getPropertyValue(key).trim();
@@ -299,46 +309,52 @@ export default {
                   : '#000000';
         });
       });
-
       return result;
     },
     loadColors() {
       const fallback = this.collectCurrentColors();
 
-      api.getThemeColors()
-          .then(r => r.ok ? r.json() : null)
-          .then(saved => {
-            this.colors = { ...fallback, ...(saved || {}) };
-            this.applyColors();
-            this.colorsLoaded = true;
-          })
-          .catch(() => {
-            this.colors = { ...fallback };
-            this.applyColors();
-            this.colorsLoaded = true;
-          });
+      api.getThemeColors().then(r => r.ok ? r.json() : null).then(saved => {
+        if (saved && (saved.light || saved.dark)) {
+          this.colors = {
+            light: { ...fallback, ...(saved.light || {}) },
+            dark:  { ...fallback, ...(saved.dark  || {}) },
+          };
+        } else if (saved && Object.keys(saved).some(k => k.startsWith('--'))) {
+          this.colors = {
+            light: { ...fallback, ...saved },
+            dark:  { ...fallback },
+          };
+        } else {
+          this.colors = { light: { ...fallback }, dark: { ...fallback } };
+        }
+        this.applyColors();
+        this.colorsLoaded = true;
+      }).catch(() => {
+        this.colors = { light: { ...fallback }, dark: { ...fallback } };
+        this.applyColors();
+        this.colorsLoaded = true;
+      });
     },
     onColorChange(varName, value) {
-      this.colors[varName] = value;
+      this.colors[this.theme][varName] = value;
       document.documentElement.style.setProperty(varName, value);
     },
     applyColors() {
-      Object.entries(this.colors).forEach(([key, val]) => {
+      Object.entries(this.activeColors).forEach(([key, val]) => {
         document.documentElement.style.setProperty(key, val);
       });
     },
     async saveColors() {
       this.colorsSaving = true;
-
       try {
         const response = await api.saveColors(this.colors);
         const data = await response.json();
-
         if (response.ok && data.success) {
           alert('Цвета успешно сохранены');
+        } else {
+          alert('Ошибка: ' + (data.error || ''));
         }
-
-        else alert('Ошибка: ' + (data.error || ''));
       } catch (error) {
         alert('Ошибка: ' + error);
       } finally {
@@ -346,7 +362,7 @@ export default {
       }
     },
     resetColors() {
-      if (!confirm('Сбросить цвета к значениям по умолчанию?')) return;
+      if (!confirm(`Сбросить цвета ${this.theme === 'light' ? 'светлой' : 'тёмной'} темы к значениям по умолчанию?`)) return;
 
       api.resetColors()
           .then(r => r.ok ? r.json() : null)
@@ -508,6 +524,18 @@ export default {
         <div class="color-settings__header">
           <h2>Настройки цветов</h2>
           <div class="color-settings__actions">
+            <div class="theme-switcher">
+              <button
+                  class="theme-btn"
+                  :class="{ active: theme === 'light' }"
+                  @click="theme = 'light'"
+              >☀️ Светлая</button>
+              <button
+                  class="theme-btn"
+                  :class="{ active: theme === 'dark' }"
+                  @click="theme = 'dark'"
+              >🌙 Тёмная</button>
+            </div>
             <button class="btn btn-danger-outline" @click="resetColors">Сбросить</button>
             <button class="btn btn-primary" @click="saveColors" :disabled="colorsSaving">
               {{ colorsSaving ? 'Сохранение…' : 'Сохранить цвета' }}
@@ -531,9 +559,8 @@ export default {
               v-for="variable in colorGroups[activeColorGroup].vars"
               :key="variable.key"
           >
-            <!-- Big preview swatch (read-only) -->
             <ColorPicker
-                :model-value="colors[variable.key]"
+                :model-value="activeColors[variable.key]"
                 @update:model-value="onColorChange(variable.key, $event)"
             />
             <div class="color-row__info">
@@ -541,7 +568,7 @@ export default {
               <span class="color-row__var">{{ variable.key }}</span>
             </div>
             <div class="color-row__controls">
-              <input type="text" class="color-row__raw" v-model="colors[variable.key]">
+              <input type="text" class="color-row__raw" :value="activeColors[variable.key]" @input="onColorChange(variable.key, $event.target.value)">
             </div>
           </div>
         </div>
@@ -612,20 +639,47 @@ export default {
   gap: .75rem;
   margin-bottom: 1.25rem;
 }
-.color-settings__header h2 { margin: 0; }
-.color-settings__actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.color-settings__header h2 {
+  margin: 0;
+}
+.color-settings__actions {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.theme-switcher {
+  display: flex;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.theme-btn {
+  padding: .3rem .9rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: .85rem;
+  transition: background .15s, color .15s;
+}
+.theme-btn.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
 /* ── Tabs ──────────────────────────────────────────────── */
 .color-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: .4rem;
   margin-bottom: 1.25rem;
-  border-bottom: 2px solid var(--border-color, rgba(0,0,0,.1));
+  border-bottom: 2px solid var(--border-primary, rgba(0,0,0,.1));
   padding-bottom: .75rem;
 }
 .color-tab {
   background: none;
-  border: 1px solid var(--border-color, rgba(0,0,0,.12));
+  border: 1px solid var(--border-primary, rgba(0,0,0,.12));
   border-radius: 6px;
   padding: .3rem .75rem;
   font-size: .8rem;
@@ -635,7 +689,7 @@ export default {
   white-space: nowrap;
 }
 .color-tab:hover {
-  background: var(--surface-hover, rgba(99,102,241,.08));
+  background: var(--surface-color, rgba(99,102,241,.08));
   border-color: var(--primary, #6d7bba);
   color: var(--primary, #6d7bba);
 }
@@ -656,11 +710,11 @@ export default {
   padding: .5rem .75rem;
   border-radius: 8px;
   background: var(--surface-color, #fff);
-  border: 1px solid var(--border-color, rgba(0,0,0,.1));
+  border: 1px solid var(--border-primary, rgba(0,0,0,.1));
   transition: box-shadow .15s;
 }
 .color-row:hover {
-  box-shadow: 0 2px 8px var(--shadow-color, rgba(15,23,42,.08));
+  box-shadow: 0 2px 8px var(--shadow-primary, rgba(15,23,42,.08));
 }
 .color-row__preview {
   width: 32px;

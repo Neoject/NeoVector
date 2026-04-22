@@ -6,13 +6,25 @@ export default {
   name: "App",
   data() {
     return {
-      params: {}
+      params: {},
+      theme: 'light',
+      themeColors: { light: {}, dark: {} },
     }
   },
   provide() {
     return {
-      params: computed(() => this.params)
+      params: computed(() => this.params),
+      theme: computed(() => this.theme)
     }
+  },
+  created() {
+    const savedTheme = window.localStorage.getItem('theme');
+
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      this.theme = savedTheme;
+    }
+
+    document.documentElement.classList.toggle('dark-theme', this.theme === 'dark');
   },
   async mounted() {
     try {
@@ -27,35 +39,136 @@ export default {
 
       if (themeResponse.ok) {
         const colors = await themeResponse.json();
-        this.applyThemeColors(colors);
+        this.loadThemeColors(colors);
       }
     } catch (e) {
       console.error('Failed to load app settings:', e);
     }
   },
-  methods: {
-    applyThemeColors(colors) {
-      if (!colors || typeof colors !== 'object') return;
-      Object.entries(colors).forEach(([key, value]) => {
-        if (typeof key === 'string' && key.startsWith('--') && typeof value === 'string') {
-          document.documentElement.style.setProperty(key, value);
-        }
-      });
+  watch: {
+    theme() {
+      this.applyTheme()
     }
   },
+  methods: {
+    loadThemeColors(colors) {
+      if (!colors || typeof colors !== 'object') return;
+
+      if (colors.light || colors.dark) {
+        this.themeColors = { light: colors.light || {}, dark: colors.dark || {} };
+      } else if (Object.keys(colors).some(k => k.startsWith('--'))) {
+        this.themeColors = { light: colors, dark: {} };
+      }
+
+      this.applyTheme();
+    },
+    toggleTheme() {
+      this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    },
+    applyTheme() {
+      const root = document.documentElement;
+      root.classList.toggle('dark-theme', this.theme === 'dark');
+      window.localStorage.setItem('theme', this.theme);
+
+      const allKeys = new Set([
+        ...Object.keys(this.themeColors.light || {}),
+        ...Object.keys(this.themeColors.dark  || {}),
+      ]);
+      allKeys.forEach(key => root.style.removeProperty(key));
+
+      const palette = this.themeColors[this.theme] || {};
+      Object.entries(palette).forEach(([key, val]) => {
+        if (typeof key === 'string' && key.startsWith('--') && typeof val === 'string') {
+          root.style.setProperty(key, val);
+        }
+      });
+    },
+  }
 }
 </script>
 
 <template>
-  <RouterView />
-<!--  <div class="neoject">
-    Сайт разработан
-    <a class="btn btn-outline" style="border:none" href="https://neoject.by" target="_blank">neoject.by</a>
-  </div>-->
+  <RouterView @toggle-theme="toggleTheme"/>
 </template>
 
 <style>
 :root {
+  /* фон */
+  --background: #ffffff;
+  --background-secondary: #dcdcdc;;
+  --background-additional: #acacac;
+  --background-empty: #ffffff00;
+  --background-table-main: #ffffff;
+  --background-table-last: #ffffff;
+  /* основные цвета */
+  --primary: #000000;
+  --primary-alt: #545454;
+  --secondary: #b0b0b0;
+  /* шапка сайта*/
+  --background-header: #ffffff;
+  --header-main: #000000;
+  --header-secondary: #8c8c8c;
+  --header-additional: #d1d1d1;
+  /* surface */
+  --surface-color: #e0eaff;
+  --surface-muted: #dce8fe;
+  /* text colors */
+  --text-primary: #000000;
+  --text-secondary: #595959;
+  --text-additional: #828282;
+  --text-additional-light: #385559;
+  --text-additional-dark: #352a53;
+  --text-dark: #433a3a;
+  --text-btn: #5e4949;
+  --text-simple: #322323;
+  --text-hover: #151515;
+  /* успех/ок */
+  --success-bg: #28a745;
+  --success-alt: #2ecc71;
+  --success-border: #c3e6cb;
+  --success-text: #155724;
+  /* информация / статусы*/
+  --info-primary: #007bff;
+  --info-secondary: #0056b3;
+  --info-alt: #3498db;
+  --status-primary: #9b59b6;
+  /* ошибка/предупреждение */
+  --error-bg: #e74c3c;
+  --error-red-alt: #d13838;
+  --error-border: #f5c6cb;
+  --error-text: #721c24;
+  --warning: #cd1942;
+  --warning-dark: #8a0419;
+  /* границы */
+  --border-primary: #525252;
+  --border-secondary: #858585;
+  --border-alternative: #bdbdbd;
+  --border-light: #e3e3e3;
+  --border-medium: rgb(99, 112, 124, 0.5);
+  --border-strong: rgb(61, 82, 94);
+  /* buttons */
+  --btn-bg: #ffffff;
+  --btn-bg-secondary: #ffffff;
+  --btn-bg-alt: #ffffff;
+  --btn-bg-disabled: #ffffff;
+  /* hover */
+  --hover-primary: #39454c;
+  --hover-secondary: rgba(57, 80, 80, 0.56);
+  --hover-button: #475963;
+  --hover-table: #3f6e6e;
+  /* table colors */
+  --table-element: #5d5c56;
+  --table-element-hover: #97927c;
+  /* shadows */
+  --shadow-primary: #1a1a1a;
+  --shadow-secondary: 0 0 8px 2px #38384c;
+  --shadow-additional: #666666;
+  --shadow-header: #808080;
+  /* border radius */
+  --radius-primary: 15px;
+  --error-bg-alt: #000000;
+}
+.dark-theme {
   /* фон */
   --background: #ffffff;
   --background-secondary: #dcdcdc;;
