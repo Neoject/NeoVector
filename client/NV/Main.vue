@@ -6,6 +6,8 @@ import Cart from "./components/Cart.vue";
 import {checkUserAuth, getAuth} from "./components/auth";
 import {setPageTitle} from "../../server/src/utils";
 import {api} from "../../server/api";
+import AOS from "aos";
+import 'aos/dist/aos.css';
 
 const blockModules = import.meta.glob('./blocks/*.vue', { eager: true });
 const blockComponents = {};
@@ -105,6 +107,8 @@ export default {
     await this.$nextTick(() => {
       this.loadProducts();
     });
+
+    AOS.init();
   },
   methods: {
     handleCartUpdated(items) {
