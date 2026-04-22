@@ -29,13 +29,15 @@ export default {
     return {
       projectModalOpen: false,
       project: {},
-      clickPoint: { x: 0, y: 0 }
+      clickPoint: { x: 0, y: 0 },
+      screenshotIndex: 0,
     };
   },
   methods: {
     openProject(e, i) {
       this.clickPoint = { x: e.clientX, y: e.clientY };
       this.project = this.projects[i];
+      this.screenshotIndex = 0;
       this.projectModalOpen = true;
 
       this.$nextTick(() => {
@@ -94,6 +96,16 @@ export default {
         }
       });
     },
+    prevScreenshot() {
+      const len = this.project.screenshots?.length || 0;
+      if (len < 2) return;
+      this.screenshotIndex = (this.screenshotIndex - 1 + len) % len;
+    },
+    nextScreenshot() {
+      const len = this.project.screenshots?.length || 0;
+      if (len < 2) return;
+      this.screenshotIndex = (this.screenshotIndex + 1) % len;
+    },
   }
 }
 </script>
@@ -132,13 +144,35 @@ export default {
           <button type="button" class="close-icon project-modal-close" aria-label="Закрыть" @click="closeProject">
             <i class="fas fa-times"></i>
           </button>
-          <div style="margin-bottom:12px">
+          <div class="project-modal-header" style="margin-bottom: 12px">
             <img v-if="project.iconType === 'image' && project.icon" :src="project.icon" style="height:60px;border-radius:8px">
             <i v-else-if="project.iconType === 'fa' && project.icon" :class="project.icon" style="font-size:40px"></i>
-            <span v-else style="font-size:40px">{{ project.icon }}</span>
+            <span v-else style="font-size: 40px">{{ project.icon }}</span>
+            <h3>{{ project.title }}</h3>
           </div>
-          <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
+          <div v-if="project.screenshots && project.screenshots.length" class="carousel">
+            <div class="image-wrapper">
+              <img :src="project.screenshots[screenshotIndex]" :alt="project.title">
+            </div>
+            <template v-if="project.screenshots.length > 1">
+              <div class="screenshot-dots">
+                <span
+                    v-for="(_, i) in project.screenshots"
+                    :key="i"
+                    class="dot"
+                    :class="{ active: i === screenshotIndex }"
+                    @click.stop="screenshotIndex = i"
+                ></span>
+              </div>
+              <button class="back" @click.stop="prevScreenshot" aria-label="Назад">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="forward" @click.stop="nextScreenshot" aria-label="Вперёд">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </template>
+          </div>
           <div v-if="project.tech && project.tech.length" class="project-tech">
             <span v-for="t in project.tech" :key="t" class="tech-tag">{{ t }}</span>
           </div>
@@ -224,6 +258,12 @@ export default {
     grid-template-columns: 1fr;
   }
 }
+.project-modal-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
 .project-modal-root {
   position: fixed;
   inset: 0;
@@ -258,6 +298,7 @@ export default {
   right: 0.75rem;
 }
 .carousel {
+  position: relative;
   display: flex;
   flex-direction: row;
   max-width: 90vw;
@@ -274,7 +315,18 @@ export default {
   border-radius: 16px;
   box-shadow: 0 0 12px 2px #00000050;
 }
-.carousel-controls > button {
+.screenshots-block {
+  margin: 1rem 0;
+}
+.carousel-controls {
+  display: flex;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.carousel > button {
   position: absolute;
   width: 50px;
   height: 50px;
@@ -288,15 +340,45 @@ export default {
   box-shadow: 0 0 12px 1px #00000050;
   cursor: pointer;
   transition: all 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.carousel-controls > button:hover {
+.carousel > button:hover {
   background: #00000099;
   box-shadow: 0 0 12px 2px #00000090;
 }
-.carousel-controls > button:active {
+.carousel > button:active {
   background: #00000099;
   color: #919191;
   box-shadow: 0 0 12px 2px #000000, inset 0 0 12px 0 #000000;
+}
+.carousel > button.back {
+  top: 32vh;
+  left: 1rem;
+}
+.carousel > button.forward {
+  top: 32vh;
+  right: 1rem;
+}
+.screenshot-dots {
+  position: absolute;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  bottom: 0;
+  right: 40vw;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-primary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dot.active {
+  background: var(--primary);
 }
 .image-wrapper {
   width: 100%;
