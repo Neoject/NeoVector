@@ -130,10 +130,13 @@ export class SettingsController {
     }
 
     static async saveThemeColors(req: Request, res: Response): Promise<void> {
-        let colorsObj: Record<string, string> = {};
+        let colorsObj: Record<string, any> = {};
 
         if (typeof req.body.colors === 'string') {
-            colorsObj = JSON.parse(req.body.colors);
+            try { colorsObj = JSON.parse(req.body.colors); } catch {
+                res.status(400).json({ error: 'Invalid colors JSON' });
+                return;
+            }
         } else if (typeof req.body.colors === 'object' && req.body.colors !== null) {
             colorsObj = req.body.colors;
         }

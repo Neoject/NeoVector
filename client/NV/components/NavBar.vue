@@ -6,7 +6,7 @@ import {logout} from "./auth";
 export default {
   name: "NavBar",
   components: { Auth, WishList },
-  inject: ['params'],
+  inject: ['params', 'theme'],
   props: {
     auth: { type: Object, default: () => ({ authenticated: false, role: null, username: null }) },
     products: { type: Array, default: [] },
@@ -17,10 +17,8 @@ export default {
     currentVirtualPage: { type: Object, default: null }
   },
   emits: [
-    'toggle-cart', 'close-cart', 'toggle-favorites', 'nav-click', 'go-home',
-    'logout', 'auth-changed',
-    'update:cartItems', 'update:wishlist',
-    'add-to-cart', 'overlay'
+    'toggle-cart', 'close-cart', 'toggle-favorites', 'nav-click', 'go-home', 'logout', 'auth-changed',
+    'update:cartItems', 'update:wishlist', 'add-to-cart', 'overlay', 'toggle-theme'
   ],
   data() {
     return {
@@ -251,6 +249,14 @@ export default {
           <i class="fas fa-heart"></i>
           <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
+        <button
+            class="theme-toggle"
+            :aria-label="theme === 'dark' ? 'Включить светлую тему' : 'Включить темную тему'"
+            @click="$emit('toggle-theme')"
+        >
+          <span v-if="theme === 'dark'">🌙</span>
+          <span v-else>☀️</span>
+        </button>
         <div v-if="showUserMenuParam" class="user-menu" @click="toggleUserMenu">
           <div class="user-avatar"><i class="fas fa-user"></i></div>
           <span class="user-name">{{ auth.username || 'Профиль' }}</span>
@@ -467,5 +473,29 @@ header .nav-container {
 }
 .user-menu-mobile:hover {
   color: var(--header-secondary);
+}
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-primary);
+  background: var(--surface-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px var(--shadow-primary);
+}
+.theme-toggle:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+@media (max-width: 768px) {
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+  }
 }
 </style>

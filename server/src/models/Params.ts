@@ -84,7 +84,7 @@ export class ParamsModel {
         return path.join(stylesDir, 'theme-colors.json');
     }
 
-    static async getThemeColors(): Promise<Record<string, string>> {
+    static async getThemeColors(): Promise<Record<string, any>> {
         const filePath = await this.getThemeColorsFilePath();
         if (!fs.existsSync(filePath)) {
             return {};
@@ -98,16 +98,27 @@ export class ParamsModel {
                 return {};
             }
 
-            const colors: Record<string, string> = {};
-            for (const [name, value] of Object.entries(parsed)) {
-                if (!name.match(/^--[a-zA-Z0-9_-]+$/)) continue;
-                if (typeof value !== 'string' || value.trim() === '') continue;
-                colors[name] = value.trim();
+            if (parsed.light || parsed.dark) {
+                return {
+                    light: this.filterCssVars(parsed.light || {}),
+                    dark:  this.filterCssVars(parsed.dark  || {}),
+                };
             }
-            return colors;
+
+            return this.filterCssVars(parsed);
         } catch {
             return {};
         }
+    }
+
+    private static filterCssVars(obj: Record<string, any>): Record<string, string> {
+        const result: Record<string, string> = {};
+        for (const [name, value] of Object.entries(obj)) {
+            if (!name.match(/^--[a-zA-Z0-9_-]+$/)) continue;
+            if (typeof value !== 'string' || value.trim() === '') continue;
+            result[name] = value.trim();
+        }
+        return result;
     }
 
     static async saveThemeCss(css: string): Promise<void> {
@@ -115,17 +126,20 @@ export class ParamsModel {
         fs.writeFileSync(cssPath, css, 'utf-8');
     }
 
-    static async saveThemeColors(colors: Record<string, string>): Promise<void> {
+    static async saveThemeColors(colors: Record<string, any>): Promise<void> {
         const filePath = await this.getThemeColorsFilePath();
-        const normalized: Record<string, string> = {};
 
-        for (const [name, value] of Object.entries(colors)) {
-            if (!name.match(/^--[a-zA-Z0-9_-]+$/)) continue;
-            if (!value || value.trim() === '') continue;
-            normalized[name] = value.trim();
+        let toSave: Record<string, any>;
+        if (colors.light || colors.dark) {
+            toSave = {
+                light: this.filterCssVars(colors.light || {}),
+                dark:  this.filterCssVars(colors.dark  || {}),
+            };
+        } else {
+            toSave = this.filterCssVars(colors);
         }
 
-        fs.writeFileSync(filePath, JSON.stringify(normalized, null, 2), 'utf-8');
+        fs.writeFileSync(filePath, JSON.stringify(toSave, null, 2), 'utf-8');
     }
 
     static async resetThemeCss(): Promise<void> {

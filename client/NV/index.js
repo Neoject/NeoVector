@@ -1,12 +1,10 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-// import AOS from "aos";
-// import 'aos/dist/aos.css';
-// import { gsap } from "gsap";
 
-
-document.body.style.overflow = 'hidden';
+const savedTheme = window.localStorage.getItem('theme')
+const useDark = savedTheme ? savedTheme === 'dark' : true
+document.documentElement.classList.toggle('dark-theme', useDark)
 
 const ready = async (maxAttempts = 30, delayMs = 1000) => {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -31,10 +29,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     const app = createApp(App);
     app.use(router);
     app.mount('#app');
-
-    setTimeout(() => {
-        const loader = document.querySelector('#load_box');
-        document.body.style.overflow = 'auto';
-        if (loader) loader.style.display = 'none';
-    }, 500);
 });

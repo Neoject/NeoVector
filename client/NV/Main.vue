@@ -56,7 +56,8 @@ export default {
   name: "App",
   mixins: [Props],
   components,
-  inject: ['params'],
+  inject: ['params', 'theme'],
+  emits: ['toggle-theme'],
   data() {
     const loadedBlocks = markRaw(Object.fromEntries(
         Object.entries(blockComponents).filter(([, component]) => !!component)
@@ -343,7 +344,7 @@ export default {
     },
     isInView(id) {
       return this.elementStates[id] === 'animated';
-    },
+    }
   }
 }
 </script>
@@ -360,6 +361,7 @@ export default {
       @toggle-cart="cartOpen = !cartOpen"
       @close-cart="cartOpen = false"
       @add-to-cart="handleCartUpdated"
+      @toggle-theme="$emit('toggle-theme')"
       @update:wishlist="handleWishlistUpdated"
       @overlay="show"
   />
