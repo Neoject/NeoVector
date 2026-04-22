@@ -111,7 +111,7 @@ export default {
 </script>
 
 <template>
-  <section id="projects" class="projects">
+  <section id="projects" class="projects" data-aos="zoom-out-up">
     <div class="container">
       <h2 class="section-title">{{ sectionTitle }}</h2>
       <div class="projects-grid">
@@ -119,6 +119,7 @@ export default {
             v-for="(p, index) in projects"
             :key="p.id"
             class="project-card"
+            data-aos-delay="300"
             @click="openProject($event, index)"
         >
           <div class="project-image">
@@ -153,7 +154,7 @@ export default {
           <p>{{ project.description }}</p>
           <div v-if="project.screenshots && project.screenshots.length" class="carousel">
             <div class="image-wrapper">
-              <img :src="project.screenshots[screenshotIndex]" :alt="project.title">
+              <img :src="project.screenshots[screenshotIndex]" :alt="project.title" data-aos="zoom-in">
             </div>
             <template v-if="project.screenshots.length > 1">
               <div class="screenshot-dots">
