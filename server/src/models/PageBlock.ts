@@ -30,14 +30,20 @@ export class PageBlockModel {
                 INDEX idx_page_sort (page_id, sort_order),
                 INDEX idx_type_sort (type, sort_order),
                 INDEX idx_active_sort (is_active, sort_order)
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         `);
+
+        try {
+            await db.query(`ALTER TABLE page_blocks CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        } catch {
+            // already correct charset
+        }
 
         try {
             await db.query(`ALTER TABLE page_blocks ADD COLUMN page_id INT NULL DEFAULT NULL AFTER id`);
             await db.query(`ALTER TABLE page_blocks ADD INDEX idx_page_sort (page_id, sort_order)`);
         } catch {
-            console.error('column already exists');
+            // column already exists
         }
     }
 
