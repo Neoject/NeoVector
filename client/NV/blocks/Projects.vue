@@ -171,10 +171,13 @@ export default {
             class="project-card"
             data-aos-delay="300"
             @click="openProject($event, index)"
+            :style="{background: p.color}"
         >
           <div class="project-image">
             <div class="project-placeholder">
-              <img v-if="p.iconType === 'image' && p.icon" :src="p.icon" style="width:60px;height:60px;object-fit:cover;border-radius:8px">
+              <img v-if="p.iconType === 'image' && p.icon" :src="p.icon"
+                   style="height: 120px; object-fit: cover; border-radius: 8px"
+              >
               <i v-else-if="p.iconType === 'fa' && p.icon" :class="p.icon" style="font-size:40px"></i>
               <span v-else>{{ p.icon }}</span>
             </div>
