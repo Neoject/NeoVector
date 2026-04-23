@@ -37,7 +37,7 @@ const router = createRouter({
             component: () => import('../AdminLogin.vue'),
         },
         {
-            path: '/:slug',
+            path: '/:pathMatch(.*)*',
             component: () => import('../Page.vue'),
         },
     ],

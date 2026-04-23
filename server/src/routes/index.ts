@@ -48,7 +48,7 @@ router.get('/cleanup-orders', OrderController.cleanupOldOrders);
 router.post('/payment', PaymentController.getPaymentToken);
 router.post('/payment-notification', PaymentController.paymentNotification);
 router.get('/pages', PageController.getAll);
-router.get('/pages/:slug', PageController.getBySlug);
+router.get('/page-by-slug', PageController.getBySlug);
 router.post('/pages', authMiddleware, adminMiddleware, PageController.create);
 router.put('/pages/:id', authMiddleware, adminMiddleware, PageController.update);
 router.delete('/pages/:id', authMiddleware, adminMiddleware, PageController.delete);

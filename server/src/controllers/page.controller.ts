@@ -9,7 +9,7 @@ export class PageController {
     }
 
     static async getBySlug(req: Request, res: Response): Promise<void> {
-        const { slug } = req.params;
+        const slug = req.query.slug as string;
 
         if (!slug || typeof slug !== 'string') {
             res.status(400).json({ error: 'Slug is required' });

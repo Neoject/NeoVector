@@ -12,7 +12,8 @@ Object.entries(blockModules).forEach(([path, module]) => {
   blockComponents[name] = markRaw(module.default || module);
 });
 
-const allPageModules = import.meta.glob('../*/*.vue', { eager: true });
+const allPageModules = import.meta.glob(['../*/*.vue', '!../NV/**'], { eager: true });
+const allNestedPageModules = import.meta.glob(['../*/*/*.vue', '!../NV/**'], { eager: true });
 
 export default {
   name: "Page",
@@ -37,7 +38,7 @@ export default {
     },
   },
   watch: {
-    '$route.params.slug': {
+    '$route.params.pathMatch': {
       immediate: false,
       handler() {
         this.loadPage();
@@ -57,14 +58,18 @@ export default {
     },
     loadPageComponents(slug) {
       const components = {};
-      Object.entries(allPageModules).forEach(([path, module]) => {
+      const slugDepth = slug.split('/').length;
+      const modules = slugDepth === 1 ? allPageModules : allNestedPageModules;
+
+      Object.entries(modules).forEach(([path, module]) => {
         const parts = path.split('/');
-        const folder = parts[parts.length - 2];
-        if (folder === slug) {
+        const dirSegments = parts.slice(1, -1);
+        if (dirSegments.join('/') === slug) {
           const name = parts[parts.length - 1].replace('.vue', '').toLowerCase();
           components[name] = markRaw(module.default || module);
         }
       });
+
       this.pageComponents = markRaw(components);
     },
     async loadBlocks(pageId) {
@@ -83,6 +88,7 @@ export default {
         this.pageBlocksSorted = [];
         return;
       }
+
       const active = this.pageBlocks.filter(b => b.is_active);
       const byOrder = (a, b) => (a.sort_order || 0) - (b.sort_order || 0);
       const footerBlocks = active.filter(b => ['info_buttons', 'footer'].includes(b.type)).sort(byOrder);
@@ -93,6 +99,7 @@ export default {
       if (block.type === 'custom_component') {
         return this.pageComponents[block.title.toLowerCase()] || null;
       }
+
       return this.blockComponents[block.type] || null;
     },
     getBlockProps(block) {
@@ -105,12 +112,12 @@ export default {
       this.pageBlocks = [];
       this.pageBlocksSorted = [];
 
-      const slug = this.$route.params.slug;
+      const slug = [].concat(this.$route.params.pathMatch || []).join('/');
 
       try {
         const r = await api.getPageBySlug(slug);
         if (r.status === 404) { this.notFound = true; return; }
-        if (!r.ok)            { this.notFound = true; return; }
+        if (!r.ok) { this.notFound = true; return; }
 
         const page = await r.json();
         if (!page || page.error) { this.notFound = true; return; }
@@ -123,9 +130,9 @@ export default {
                   ? JSON.parse(page.navigation_buttons || '[]')
                   : []),
         };
+
         setPageTitle(page.meta_title || page.title, this.params?.main_title);
 
-        // загружаем компоненты и блоки параллельно
         this.loadPageComponents(slug);
         await this.loadBlocks(page.id);
       } catch (e) {
@@ -221,10 +228,28 @@ main {
   color: var(--primary);
   margin: 24px 0 12px;
 }
-.page-body p { margin: 12px 0; }
-.page-body img { max-width: 100%; border-radius: 8px; margin: 12px 0; }
-.page-body ul, .page-body ol { padding-left: 24px; margin: 12px 0; }
-.page-body li { margin: 6px 0; }
-.page-body hr { border: none; border-top: 1px solid var(--border-light); margin: 24px 0; }
-.page-body a { color: var(--primary); text-decoration: underline; }
+.page-body p {
+  margin: 12px 0;
+}
+.page-body img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.page-body ul, .page-body ol {
+  padding-left: 24px;
+  margin: 12px 0;
+}
+.page-body li {
+  margin: 6px 0;
+}
+.page-body hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 24px 0;
+}
+.page-body a {
+  color: var(--primary);
+  text-decoration: underline;
+}
 </style>
