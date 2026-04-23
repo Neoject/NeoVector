@@ -43,7 +43,7 @@ export default {
       editingBlock: null,
       editingPage: null,
       pageForm: {
-        title: '', slug: '', meta_title: '', meta_description: '', is_published: true,
+        title: '', slug: '', parent_slug: '', meta_title: '', meta_description: '', is_published: true,
       },
       pageFormLoading: false,
       pageFormError: '',
@@ -126,10 +126,15 @@ export default {
     isMainPage() {
       return this.selectedPageId === null;
     },
+    topLevelPages() {
+      return this.pages.filter(p => !p.slug.includes('/'));
+    },
     currentCustomComponents() {
       if (this.isMainPage) return customComponents;
       const slug = this.selectedPage?.slug;
-      return slug ? (pageCustomMap[slug] || []) : [];
+      if (!slug) return [];
+      const folderName = slug.split('/').pop();
+      return pageCustomMap[folderName] || [];
     },
     previewBlocks() {
       return this.pageBlocks
@@ -366,22 +371,25 @@ export default {
         this.$emit('update:page', 'block');
       }
     },
-    openAddPageModal(page = null) {
+    openAddPageModal(page = null, defaultParentSlug = '') {
       if (!page?.id) page = null;
 
       this.editingPage = page || null;
       this.pageFormError = '';
 
       if (page) {
+        const lastSlash = page.slug.lastIndexOf('/');
+
         this.pageForm = {
           title: page.title || '',
-          slug: page.slug || '',
+          slug: lastSlash >= 0 ? page.slug.substring(lastSlash + 1) : page.slug,
+          parent_slug: lastSlash >= 0 ? page.slug.substring(0, lastSlash) : '',
           meta_title: page.meta_title || '',
           meta_description: page.meta_description || '',
           is_published: page.is_published !== 0,
         };
       } else {
-        this.pageForm = { title: '', slug: '', meta_title: '', meta_description: '', is_published: true };
+        this.pageForm = { title: '', slug: '', parent_slug: defaultParentSlug, meta_title: '', meta_description: '', is_published: true };
       }
 
       this.showAddPageModal = true;
@@ -407,9 +415,12 @@ export default {
       this.pageFormLoading = true;
       this.pageFormError = '';
       try {
+        const childSlug = this.pageForm.slug || this.pageForm.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const fullSlug = this.pageForm.parent_slug ? `${this.pageForm.parent_slug}/${childSlug}` : childSlug;
+
         const body = {
           title: this.pageForm.title,
-          slug: this.pageForm.slug || this.pageForm.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          slug: fullSlug,
           meta_title: this.pageForm.meta_title,
           meta_description: this.pageForm.meta_description,
           is_published: this.pageForm.is_published ? 1 : 0,
@@ -943,6 +954,10 @@ export default {
       const proj = this.blockForm.settings.projects?.[pi];
       return (proj?.iconType === 'fa' ? proj.icon : '') || '';
     },
+    childPages(parentSlug) {
+      const prefix = parentSlug + '/';
+      return this.pages.filter(p => p.slug.startsWith(prefix) && !p.slug.slice(prefix.length).includes('/'));
+    },
     showControlMenu(e, pg) {
       if (this._cmTimeout) { clearTimeout(this._cmTimeout); this._cmTimeout = null; }
       this.controlMenuX = e.clientX;
@@ -1255,16 +1270,28 @@ export default {
       <button :class="['page-tab', { active: selectedPageId === null }]" @click="switchPage(null)">
         <i class="fas fa-home"></i> Главная
       </button>
-      <button
-          v-for="pg in pages" :key="pg.id"
-          :class="['page-tab', { active: selectedPageId === pg.id }]"
-          @click="switchPage(pg.id)">
-        <i class="fas fa-file"></i>
-        {{ pg.title }}
-        <span class="edit-btn" @click.stop="showControlMenu($event, pg)">
-          <i class="fa-solid fa-bars"></i>
-        </span>
-      </button>
+      <template v-for="pg in topLevelPages" :key="pg.id">
+        <button
+            :class="['page-tab', { active: selectedPageId === pg.id }]"
+            @click="switchPage(pg.id)">
+          <i class="fas fa-file"></i>
+          {{ pg.title }}
+          <span class="edit-btn" @click.stop="showControlMenu($event, pg)">
+            <i class="fa-solid fa-bars"></i>
+          </span>
+        </button>
+        <button
+            v-for="child in childPages(pg.slug)"
+            :key="child.id"
+            :class="['page-tab', 'page-tab-child', { active: selectedPageId === child.id }]"
+            @click="switchPage(child.id)">
+          <i class="fas fa-turn-down" style="font-size:10px;opacity:.6"></i>
+          {{ child.title }}
+          <span class="edit-btn" @click.stop="showControlMenu($event, child)">
+            <i class="fa-solid fa-bars"></i>
+          </span>
+        </button>
+      </template>
     </div>
     <div v-if="blockSuccess" class="alert alert-success" style="margin-top:15px">
       <i class="fas fa-check-circle"></i>
@@ -2042,9 +2069,9 @@ export default {
           </div>
           <textarea v-else
                     v-model="blockForm.content"
+                    class="block-form-content"
                     rows="12"
                     placeholder="HTML код..."
-                    style="font-family:monospace;font-size:13px;width:100%;padding:12px;background:var(--background-secondary);border:none;color:var(--text-primary);min-height:200px;resize:vertical"
           ></textarea>
         </div>
       </template>
@@ -2100,9 +2127,20 @@ export default {
         />
       </div>
       <div class="form-group">
+        <label class="form-label">Родительская страница</label>
+        <select v-model="pageForm.parent_slug" class="form-control">
+          <option value="">— Корневая страница</option>
+          <option
+              v-for="pg in topLevelPages.filter(p => p.id !== editingPage?.id)"
+              :key="pg.id"
+              :value="pg.slug"
+          >{{ pg.title }} (/{{ pg.slug }})</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Slug (URL)</label>
         <div class="input-with-prefix">
-          <span class="input-prefix">/</span>
+          <span class="input-prefix">/{{ pageForm.parent_slug ? pageForm.parent_slug + '/' : '' }}</span>
           <input
               v-model="pageForm.slug"
               class="form-control"
@@ -2117,7 +2155,12 @@ export default {
       </div>
       <div class="form-group">
         <label class="form-label">Meta описание</label>
-        <textarea v-model="pageForm.meta_description" class="form-control" rows="3" placeholder="Описание для поисковиков" />
+        <textarea
+            v-model="pageForm.meta_description"
+            class="form-control"
+            rows="3"
+            placeholder="Описание для поисковиков"
+        />
       </div>
       <div class="form-group form-group-inline">
         <label class="form-label">Опубликована</label>
@@ -2162,6 +2205,9 @@ export default {
         </a>
         <button class="control-menu-item" @click="openAddPageModal(controlMenuPage); controlMenu = false">
           <i class="fa-solid fa-pen"></i> Редактировать
+        </button>
+        <button class="control-menu-item" @click="openAddPageModal(null, controlMenuPage.slug); controlMenu = false">
+          <i class="fas fa-plus"></i> Вложенная страница
         </button>
         <button class="control-menu-item control-menu-item--danger" @click="deletePageFromMenu">
           <i class="fas fa-trash"></i> Удалить
@@ -2336,6 +2382,15 @@ export default {
   border-bottom-color: var(--primary);
   font-weight: 600;
 }
+.page-tab-child {
+  padding-left: 24px;
+  font-size: 12px;
+  border-left: 2px solid var(--border-light);
+  margin-left: 4px;
+}
+.page-tab-child.active {
+  border-left-color: var(--primary);
+}
 .edit-btn {
   background: none;
   border: none;
@@ -2414,6 +2469,17 @@ export default {
   padding: 15px 20px;
   background: var(--background-secondary);
   user-select: none;
+}
+.block-form-content {
+  font-family: monospace;
+  font-size: 13px;
+  width: 100%;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: none;
+  color: var(--text-primary);
+  min-height: 200px;
+  resize: vertical
 }
 .preview-content {
   color: var(--text-additional-light);
