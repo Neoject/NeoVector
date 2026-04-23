@@ -17,6 +17,7 @@ const allPageModules = import.meta.glob('../*/*.vue', { eager: true });
 export default {
   name: "Page",
   components: { NavBar },
+  emits: ['toggle-theme'],
   inject: ['params'],
   data() {
     return {
@@ -144,6 +145,7 @@ export default {
       :is-main-page="false"
       :navigation-buttons="page?.navigation_buttons || []"
       :current-virtual-page="page"
+      @toggle-theme="$emit('toggle-theme')"
   />
   <main>
     <div v-if="loading" class="page-loading">
