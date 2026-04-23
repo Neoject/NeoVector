@@ -273,6 +273,8 @@ export default {
         return;
       }
 
+      this.pageBlocks = this.pageBlocks.filter(b => !b.page_id);
+
       const active = this.pageBlocks.filter(b => b.is_active);
       const byOrder = (a, b) => (a.sort_order || 0) - (b.sort_order || 0);
       const footerBlock = active.filter(b => ['info_buttons', 'footer'].includes(b.type)).sort(byOrder);
