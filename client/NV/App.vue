@@ -74,6 +74,7 @@ export default {
         ...Object.keys(this.themeColors.light || {}),
         ...Object.keys(this.themeColors.dark  || {}),
       ]);
+
       allKeys.forEach(key => root.style.removeProperty(key));
 
       const palette = this.themeColors[this.theme] || {};

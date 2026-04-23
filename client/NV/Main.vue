@@ -283,9 +283,7 @@ export default {
       this.pageBlocksSorted = [...rest, ...footerBlock];
 
       this.managedCustomComponents = new Set(
-          this.pageBlocks
-              .filter(b => b.type === 'custom_component')
-              .map(b => b.title.toLowerCase())
+          this.pageBlocks.filter(b => b.type === 'custom_component').map(b => b.title.toLowerCase())
       );
     },
     async loadContent() {
@@ -295,24 +293,20 @@ export default {
         if (response.ok) {
           const content = await response.json();
 
-          this.content.features = content
-              .filter(item => item.section === 'features')
-              .map(item => ({
-                icon: '',
-                title: item.title,
-                description: item.content
-              }));
+          this.content.features = content.filter(item => item.section === 'features').map(item => ({
+            icon: '',
+            title: item.title,
+            description: item.content
+          }));
 
-          this.content.history = content
-              .filter(item => item.section === 'history')
-              .map(item => {
-                const parts = item.content.split('\n');
-                return {
-                  year: item.title,
-                  title: parts[0] || '',
-                  description: parts.slice(1).join('\n') || item.content
-                };
-              });
+          this.content.history = content.filter(item => item.section === 'history').map(item => {
+            const parts = item.content.split('\n');
+            return {
+              year: item.title,
+              title: parts[0] || '',
+              description: parts.slice(1).join('\n') || item.content
+            };
+          });
 
           if (this.content.features.length === 0) this.content.features = this.features;
           if (this.content.history.length === 0) this.content.history = [];
