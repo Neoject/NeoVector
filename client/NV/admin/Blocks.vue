@@ -1,10 +1,11 @@
 <script>
 import { markRaw } from 'vue';
-import { isMobileDevice } from './service'
+import { isMobileDevice } from './service';
+import {api} from "../../../server/api";
 import Modal from "../components/Modal.vue";
 import IconPicker from "./IconPicker.vue";
-import {api} from "../../../server/api";
 import ColorPicker from "./ColorPicker.vue";
+import Pages from "./Pages.vue";
 
 const blockModules = import.meta.glob('../blocks/*.vue', { eager: true });
 const blockComponents = {};
@@ -21,14 +22,31 @@ Object.entries(customModules).forEach(([path, mod]) => {
   customComponents.push({ name, component: markRaw(mod.default || mod) });
 });
 
+const pageCustomModules = import.meta.glob('../../*/*.vue', { eager: true });
+const pageCustomMap = {};
+Object.entries(pageCustomModules).forEach(([path, mod]) => {
+  const parts = path.split('/');
+  const folder = parts[parts.length - 2];
+  const name = parts[parts.length - 1].replace('.vue', '');
+  if (!pageCustomMap[folder]) pageCustomMap[folder] = [];
+  pageCustomMap[folder].push({ name, component: markRaw(mod.default || mod) });
+});
+
 export default {
   name: 'Blocks',
-  components: {ColorPicker, Modal, IconPicker},
+  components: {Pages, ColorPicker, Modal, IconPicker},
   emits: ['update:page'],
   data() {
     return {
       showAddBlockModal: false,
+      showAddPageModal: false,
       editingBlock: null,
+      editingPage: null,
+      pageForm: {
+        title: '', slug: '', meta_title: '', meta_description: '', is_published: true,
+      },
+      pageFormLoading: false,
+      pageFormError: '',
       pageBlocks: [],
       blockForm: {
         type: '', title: '', content: '', settings: {}, sort_order: 0, is_active: true,
@@ -90,6 +108,10 @@ export default {
           defaultContent: '<hr>'
         },
       ],
+      controlMenu: false,
+      controlMenuX: 0,
+      controlMenuY: 0,
+      controlMenuPage: null,
     }
   },
   watch: {
@@ -103,6 +125,11 @@ export default {
     },
     isMainPage() {
       return this.selectedPageId === null;
+    },
+    currentCustomComponents() {
+      if (this.isMainPage) return customComponents;
+      const slug = this.selectedPage?.slug;
+      return slug ? (pageCustomMap[slug] || []) : [];
     },
     previewBlocks() {
       return this.pageBlocks
@@ -175,6 +202,7 @@ export default {
           await this.ensureFooterBlock();
         } else {
           this.pageBlocks = blocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          await this.ensureCustomComponentBlocks();
         }
 
         this.originalBlocksOrder = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b))
@@ -191,14 +219,16 @@ export default {
       await this.loadPageBlocks();
     },
     async ensureCustomComponentBlocks() {
-      if (!this.isMainPage) return;
-      for (const cc of this.customComponents) {
+      const components = this.currentCustomComponents;
+      if (!components.length) return;
+      for (const cc of components) {
         const exists = this.pageBlocks.find(b => this.isCustomComponentBlock(b) && b.title === cc.name);
         if (exists) continue;
 
         const regular = this.pageBlocks.filter(b => !this.isFooterBlock(b) && !this.isInfoButtonsBlock(b));
         const r = await api.addPageBlock({
-          page_id: null, type: 'custom_component', title: cc.name,
+          page_id: this.selectedPageId,
+          type: 'custom_component', title: cc.name,
           content: '', settings: {}, sort_order: regular.length, is_active: true,
         });
 
@@ -208,7 +238,7 @@ export default {
           const fi = this.pageBlocks.findIndex(b => this.isFooterBlock(b));
           const insertAt = ii !== -1 ? ii : (fi !== -1 ? fi : this.pageBlocks.length);
           this.pageBlocks.splice(insertAt, 0, {
-            id: res.id, page_id: null, type: 'custom_component', title: cc.name,
+            id: res.id, page_id: this.selectedPageId, type: 'custom_component', title: cc.name,
             content: '', settings: {}, sort_order: regular.length, is_active: true,
           });
         }
@@ -334,6 +364,97 @@ export default {
         this.showAddBlockModal = true;
       } else {
         this.$emit('update:page', 'block');
+      }
+    },
+    openAddPageModal(page = null) {
+      if (!page?.id) page = null;
+
+      this.editingPage = page || null;
+      this.pageFormError = '';
+
+      if (page) {
+        this.pageForm = {
+          title: page.title || '',
+          slug: page.slug || '',
+          meta_title: page.meta_title || '',
+          meta_description: page.meta_description || '',
+          is_published: page.is_published !== 0,
+        };
+      } else {
+        this.pageForm = { title: '', slug: '', meta_title: '', meta_description: '', is_published: true };
+      }
+
+      this.showAddPageModal = true;
+    },
+    closePageModal() {
+      this.showAddPageModal = false;
+      this.editingPage = null;
+      this.pageFormError = '';
+    },
+    autoSlug() {
+      if (!this.editingPage && !this.pageForm.slug) {
+        this.pageForm.slug = this.pageForm.title
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
+      }
+    },
+    async savePage() {
+      if (!this.pageForm.title.trim()) {
+        this.pageFormError = 'Название обязательно';
+        return;
+      }
+      this.pageFormLoading = true;
+      this.pageFormError = '';
+      try {
+        const body = {
+          title: this.pageForm.title,
+          slug: this.pageForm.slug || this.pageForm.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          meta_title: this.pageForm.meta_title,
+          meta_description: this.pageForm.meta_description,
+          is_published: this.pageForm.is_published ? 1 : 0,
+        };
+        let r;
+        if (this.editingPage) {
+          r = await api.updatePage(this.editingPage.id, body);
+        } else {
+          r = await api.addPage(body);
+        }
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          this.pageFormError = err.error || 'Ошибка сохранения';
+          return;
+        }
+        const res = await r.json();
+        await this.loadPages();
+        if (!this.editingPage && res.id) {
+          await this.switchPage(res.id);
+        }
+        this.closePageModal();
+      } catch (e) {
+        this.pageFormError = e.message || 'Ошибка';
+      } finally {
+        this.pageFormLoading = false;
+      }
+    },
+    async deletePage() {
+      if (!this.editingPage) return;
+      if (!confirm(`Удалить страницу «${this.editingPage.title}»? Все её блоки тоже будут удалены.`)) return;
+      this.pageFormLoading = true;
+      try {
+        const r = await api.deletePage(this.editingPage.id);
+        if (r.ok) {
+          if (this.selectedPageId === this.editingPage.id) await this.switchPage(null);
+          await this.loadPages();
+          this.closePageModal();
+        } else {
+          const err = await r.json().catch(() => ({}));
+          this.pageFormError = err.error || 'Ошибка удаления';
+        }
+      } catch (e) {
+        this.pageFormError = e.message || 'Ошибка';
+      } finally {
+        this.pageFormLoading = false;
       }
     },
     closeBlockModal() {
@@ -612,12 +733,15 @@ export default {
     },
     async deleteBlock(id) {
       const b = this.pageBlocks.find(b2 => b2.id === id);
-      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b) || this.isCustomComponentBlock(b))) {
+      if (b && (this.isFooterBlock(b) || this.isInfoButtonsBlock(b))) {
         alert('Этот блок нельзя удалить');
         return;
       }
 
-      if (!confirm('Удалить блок?')) return;
+      const msg = this.isCustomComponentBlock(b)
+          ? `Удалить компонент «${b.title}» из базы данных? Если файл компонента ещё существует на диске, он будет восстановлен при следующей загрузке.`
+          : 'Удалить блок?';
+      if (!confirm(msg)) return;
 
       const r = await api.deletePageBlock(id);
 
@@ -818,6 +942,18 @@ export default {
     getProjectIconInitial(pi) {
       const proj = this.blockForm.settings.projects?.[pi];
       return (proj?.iconType === 'fa' ? proj.icon : '') || '';
+    },
+    showControlMenu(e, pg) {
+      if (this._cmTimeout) { clearTimeout(this._cmTimeout); this._cmTimeout = null; }
+      this.controlMenuX = e.clientX;
+      this.controlMenuY = e.clientY;
+      this.controlMenuPage = pg;
+      this.controlMenu = true;
+    },
+    deletePageFromMenu() {
+      this.editingPage = this.controlMenuPage;
+      this.controlMenu = false;
+      this.deletePage();
     },
     escapeHtml(t) {
       const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
@@ -1110,6 +1246,10 @@ export default {
         <i class="fas fa-plus"></i>
         <span> Добавить блок</span>
       </button>
+      <button v-if="!previewMode" class="btn btn-primary" @click="openAddPageModal">
+        <i class="fas fa-plus"></i>
+        <span> Добавить страницу</span>
+      </button>
     </div>
     <div class="page-tabs">
       <button :class="['page-tab', { active: selectedPageId === null }]" @click="switchPage(null)">
@@ -1119,7 +1259,11 @@ export default {
           v-for="pg in pages" :key="pg.id"
           :class="['page-tab', { active: selectedPageId === pg.id }]"
           @click="switchPage(pg.id)">
-        <i class="fas fa-file"></i> {{ pg.title }}
+        <i class="fas fa-file"></i>
+        {{ pg.title }}
+        <span class="edit-btn" @click.stop="showControlMenu($event, pg)">
+          <i class="fa-solid fa-bars"></i>
+        </span>
       </button>
     </div>
     <div v-if="blockSuccess" class="alert alert-success" style="margin-top:15px">
@@ -1144,8 +1288,7 @@ export default {
             :is-in-view="() => true"
         />
         <component
-            v-if="isMainPage"
-            v-for="cc in customComponents"
+            v-for="cc in currentCustomComponents"
             :key="cc.name"
             :is="cc.component"
         />
@@ -1194,7 +1337,7 @@ export default {
                 <i class="fas fa-edit"></i>
               </button>
               <button
-                  v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block) && !isCustomComponentBlock(block)"
+                  v-if="!isFooterBlock(block) && !isInfoButtonsBlock(block)"
                   @click="deleteBlock(block.id)"
                   class="btn btn-sm btn-delete">
                 <i class="fas fa-trash"></i>
@@ -1218,6 +1361,7 @@ export default {
       </button>
     </div>
   </section>
+  <!-- block -->
   <Modal
       v-model="showAddBlockModal"
       modal-id="blockModal"
@@ -1477,6 +1621,7 @@ export default {
                     <img v-if="proj.icon"
                          :src="proj.icon"
                          style="height: 36px; border-radius: 4px; display: block; margin-bottom: 4px"
+                         alt=""
                     >
                     <input type="file"
                            :id="'proj-icon-'+pi"
@@ -1934,9 +2079,189 @@ export default {
       :initial-icon="getProjectIconInitial(currentProjectIconIndex)"
       @select="onProjectIconSelected"
   />
+  <!-- page -->
+  <Modal
+      v-model="showAddPageModal"
+      modal-id="pageModal"
+      :title="editingPage ? 'Редактировать страницу' : 'Новая страница'"
+      default-width="600px"
+      default-height="auto"
+      class="page-modal"
+      @close="closePageModal"
+  >
+    <div class="page-form">
+      <div class="form-group">
+        <label class="form-label">Название <span class="required">*</span></label>
+        <input
+            v-model="pageForm.title"
+            class="form-control"
+            placeholder="Название страницы"
+            @blur="autoSlug"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Slug (URL)</label>
+        <div class="input-with-prefix">
+          <span class="input-prefix">/</span>
+          <input
+              v-model="pageForm.slug"
+              class="form-control"
+              placeholder="my-page"
+          />
+        </div>
+        <span class="form-hint">Латинские буквы, цифры и дефисы</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meta заголовок</label>
+        <input v-model="pageForm.meta_title" class="form-control" placeholder="Заголовок для поисковиков" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meta описание</label>
+        <textarea v-model="pageForm.meta_description" class="form-control" rows="3" placeholder="Описание для поисковиков" />
+      </div>
+      <div class="form-group form-group-inline">
+        <label class="form-label">Опубликована</label>
+        <label class="toggle-switch">
+          <input type="checkbox" v-model="pageForm.is_published" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div v-if="pageFormError" class="alert alert-danger" style="margin-top:12px">
+        {{ pageFormError }}
+      </div>
+      <div class="page-form-actions">
+        <button
+            v-if="editingPage"
+            class="btn btn-danger"
+            :disabled="pageFormLoading"
+            @click="deletePage"
+        >
+          <i class="fas fa-trash"></i> Удалить
+        </button>
+        <button class="btn btn-secondary" :disabled="pageFormLoading" @click="closePageModal">
+          Отмена
+        </button>
+        <button class="btn btn-primary" :disabled="pageFormLoading" @click="savePage">
+          <i v-if="pageFormLoading" class="fas fa-spinner fa-spin"></i>
+          <i v-else class="fas fa-save"></i>
+          {{ editingPage ? 'Сохранить' : 'Создать' }}
+        </button>
+      </div>
+    </div>
+  </Modal>
+  <!-- menu -->
+  <Teleport to="body">
+    <template v-if="controlMenu">
+      <div class="control-menu-backdrop" @click="controlMenu = false"></div>
+      <div
+          class="control-menu"
+          :style="{ left: controlMenuX + 'px', top: (controlMenuY - 6) + 'px' }"
+      >
+        <a class="control-menu-item" :href="'/' + controlMenuPage['slug']" target="_blank">
+          <i class="fas fa-eye"></i> Открыть страницу
+        </a>
+        <button class="control-menu-item" @click="openAddPageModal(controlMenuPage); controlMenu = false">
+          <i class="fa-solid fa-pen"></i> Редактировать
+        </button>
+        <button class="control-menu-item control-menu-item--danger" @click="deletePageFromMenu">
+          <i class="fas fa-trash"></i> Удалить
+        </button>
+      </div>
+    </template>
+  </Teleport>
 </template>
 
 <style scoped>
+.control-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+}
+.control-menu {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: var(--background-additional);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 160px;
+  padding: 4px;
+}
+.control-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.15s;
+}
+.control-menu-item:hover {
+  background: var(--background-secondary);
+}
+.control-menu-item--danger {
+  color: var(--warning, #e74c3c);
+}
+.control-menu-item--danger:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+.page-form {
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.form-group-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.input-with-prefix {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--background);
+}
+.input-prefix {
+  padding: 0 10px;
+  color: var(--text-additional);
+  font-size: 14px;
+  border-right: 1px solid var(--border-medium);
+  background: var(--background);
+  line-height: 36px;
+}
+.input-with-prefix .form-control {
+  border: none;
+  border-radius: 0;
+  flex: 1;
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--text-additional);
+  margin-top: 4px;
+  display: block;
+}
+.required { color: var(--warning, #e74c3c); }
+.page-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-light);
+}
+.page-form-actions .btn-danger {
+  margin-right: auto;
+}
 .custom-components-section {
   margin-top: 20px;
   border-top: 1px dashed var(--border-medium);
@@ -2010,6 +2335,17 @@ export default {
   color: var(--primary);
   border-bottom-color: var(--primary);
   font-weight: 600;
+}
+.edit-btn {
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  border-radius: 0.3rem;
+  margin-left: 0.5rem;
+  transition: all 0.2s ease-in-out;
+}
+.edit-btn:hover {
+  background: #eee;
 }
 .blocks-list {
   display: flex;

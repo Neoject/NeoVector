@@ -25,7 +25,6 @@ export default {
       <div class="container">
         <Products @update:page="$emit('update:page', $event)" />
         <Blocks @update:page="$emit('update:page', $event)" />
-        <Pages @update:page="$emit('update:page', $event)" />
       </div>
     </main>
   </div>
