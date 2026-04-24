@@ -99,8 +99,15 @@ export default {
 
       const el = this._el();
       if (!el) return;
-      this.snapshot = this._captureRect(el);
 
+      if (this._isMobile()) {
+        this.snapshot = null;
+        Object.assign(el.style, { position: 'fixed', inset: '0', width: '', height: '', maxWidth: '', maxHeight: '' });
+        this.state = 'maximized';
+        return;
+      }
+
+      this.snapshot = this._captureRect(el);
       Object.assign(el.style, {
         position: 'fixed',
         left: PAD + 'px',
@@ -112,13 +119,19 @@ export default {
         maxWidth: 'none',
         maxHeight: 'none',
       });
-
       this.state = 'maximized';
     },
     restore() {
       unregisterMinimized(this.modalId);
       const el = this._el();
       if (!el) return;
+
+      if (this._isMobile()) {
+        this._clearMobileStyles(el);
+        this.snapshot = null;
+        this.state = 'normal';
+        return;
+      }
 
       if (this.state === 'maximized' && this.snapshot) {
         const s = this.snapshot;
@@ -133,7 +146,6 @@ export default {
           maxWidth: 'none',
           maxHeight: 'none',
         });
-
         this.snapshot = null;
       }
 
@@ -146,11 +158,22 @@ export default {
     },
     //endregion
     //region ── Open / Init ──
+    _isMobile() {
+      return window.innerWidth <= 768;
+    },
+    _clearMobileStyles(el) {
+      Object.assign(el.style, { position: '', inset: '', left: '', top: '', right: '', bottom: '', width: '', height: '', maxWidth: '', maxHeight: '' });
+    },
     _openModal() {
       this.state = 'normal';
       const el = this._el();
       if (!el) return;
       this.bringToFront();
+
+      if (this._isMobile()) {
+        this._clearMobileStyles(el);
+        return;
+      }
 
       if (this.resizable) {
         const saved = this.load();
@@ -192,7 +215,7 @@ export default {
     //endregion
     //region ── Drag ──
     startDrag(event) {
-      if (this.state === 'maximized') return;
+      if (this._isMobile() || this.state === 'maximized') return;
       if (event.target.closest('.modal-controls') || event.target.closest('.modal-resize-handle')) return;
       event.preventDefault();
       const el = this._el();
@@ -227,7 +250,7 @@ export default {
     //endregion
     //region ── Resize ──
     startResize(event, dir) {
-      if (this.state === 'maximized' || this.dragging) return;
+      if (this._isMobile() || this.state === 'maximized' || this.dragging) return;
       event.preventDefault();
       event.stopPropagation();
       const el = this._el();
@@ -296,6 +319,7 @@ export default {
     //endregion
     //region ── Persistence ──
     save() {
+      if (this._isMobile()) return;
       const el = this._el();
       if (!el) return;
       const r = el.getBoundingClientRect();
@@ -774,7 +798,36 @@ export default {
   transform: scale(0.97) translateY(-4px);
 }
 @media (max-width: 768px) {
-  .modal { width: 95%; max-width: none; margin: 20px auto; }
-  .modal-body { padding: 20px; }
+  .modal {
+    position: fixed;
+    inset: 10px;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 12px;
+  }
+  .modal.is-maximized {
+    inset: 0;
+    border-radius: 0;
+  }
+  .modal-header {
+    cursor: default;
+  }
+  .modal-toolbar {
+    height: auto;
+    padding: 4px 0;
+  }
+  .control-btns {
+    margin-right: 8px;
+  }
+  .modal-body {
+    padding: 16px 20px 12px;
+  }
+  .modal-resize-handle {
+    display: none;
+  }
 }
 </style>

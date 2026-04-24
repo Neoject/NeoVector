@@ -90,7 +90,61 @@ export default {
       <div class="loader"></div>
     </div>
   </header>
+  <Teleport to="body">
+    <div v-if="mobileMenuOpen" class="mobile-menu-backdrop" @click="closeMobileMenu"></div>
+    <div :class="['mobile-admin-menu', { active: mobileMenuOpen }]">
+      <button class="mobile-menu-close" @click="closeMobileMenu">
+        <i class="fas fa-times"></i>
+      </button>
+      <nav class="mobile-admin-nav">
+        <router-link to="/admin" class="mobile-admin-link" active-class="" exact-active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-house"></i> Главная
+        </router-link>
+        <router-link to="/admin/orders" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-indent"></i> Заказы
+        </router-link>
+        <router-link to="/admin/analytics" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fas fa-chart-line"></i> Аналитика
+        </router-link>
+        <router-link to="/admin/messages" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-envelope-open"></i> Сообщения
+        </router-link>
+        <router-link to="/admin/options" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-sliders"></i> Опции товаров
+        </router-link>
+        <router-link to="/admin/users" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-users"></i> Пользователи
+        </router-link>
+        <router-link to="/admin/settings" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fa-solid fa-cog"></i> Настройки
+        </router-link>
+        <router-link to="/admin/profile" class="mobile-admin-link" active-class="mobile-admin-link--active" @click="closeMobileMenu">
+          <i class="fas fa-user"></i> Профиль
+        </router-link>
+        <button type="button" class="mobile-admin-link mobile-admin-logout" @click="logout">
+          <i class="fas fa-sign-out-alt"></i> Выйти
+        </button>
+      </nav>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 8px;
+}
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 </style>
