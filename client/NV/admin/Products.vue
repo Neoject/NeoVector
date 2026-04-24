@@ -339,11 +339,7 @@ export default {
       this.categoryEdit = !this.categoryEdit;
     },
     openAddProductModal() {
-      if (!this.isMobileDevice()) {
-        this.showAddProduct = true;
-      } else {
-        this.$emit('update:page', 'product');
-      }
+      this.showAddProduct = true;
     },
     editProduct(product) {
       this.editingProduct = product;
@@ -357,21 +353,11 @@ export default {
         additionalImages: product.additional_images ? [...product.additional_images] : [],
         additionalVideos: product.additional_videos ? [...product.additional_videos] : [],
       }
-      if (!this.isMobileDevice()) {
-        this.showAddProduct = true;
-      } else {
-        this.$emit('update:page', 'product');
-        window.scrollTo(0, 0);
-      }
+
+      this.showAddProduct = true;
     },
     closeModal() {
-      if (!this.isMobileDevice()) {
-        this.showAddProduct = false;
-      } else {
-        this.$emit('update:page', '');
-        window.scrollTo(0, 0);
-      }
-
+      this.showAddProduct = false;
       this.editingProduct = null;
       this.selectedFile = null;
 
@@ -745,8 +731,9 @@ export default {
 
       const fd = new FormData();
       fd.append('product_id', this.editingProduct.id);
-      files.forEach(f => fd.append('additional_images[]', f));
+      files.forEach(f => fd.append('additional_images', f));
       const r = await api.addProductImages(fd);
+
       if (r.ok) {
         const res = await r.json();
         if (res.success) {
@@ -754,6 +741,7 @@ export default {
           if (res.uploaded_videos) this.productForm.additionalVideos.push(...res.uploaded_videos);
         }
       }
+
       if (this.$refs.additionalImagesInput) this.$refs.additionalImagesInput.value = '';
     },
     async removeAdditionalImage(idx) {
@@ -1071,7 +1059,7 @@ export default {
         <div class="additional-images-container">
           <div class="additional-images-list">
             <div v-for="(img,i) in productForm.additionalImages" :key="i" class="additional-image-item">
-              <img :src="'../'+img" class="additional-image-preview" alt="">
+              <img :src="img" class="additional-image-preview" alt="">
               <button type="button" @click="removeAdditionalImage(i)" class="remove-additional-image-btn"><i class="fas fa-times"></i></button>
             </div>
           </div>
@@ -1091,8 +1079,8 @@ export default {
         </div>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">{{ editingProduct ? 'Сохранить' : 'Добавить' }}</button>
         <button type="button" @click="closeModal" class="btn btn-secondary">Отмена</button>
+        <button type="submit" class="btn btn-primary">{{ editingProduct ? 'Сохранить' : 'Добавить' }}</button>
       </div>
     </form>
   </Modal>
@@ -1286,13 +1274,24 @@ export default {
   font-weight: 500;
   color: var(--text-primary);
 }
-.current-image {
+.current-image,
+.additional-image-preview {
   max-width: 100%;
   max-height: 150px;
   object-fit: contain;
   border-radius: 8px;
   border: 2px solid var(--border-medium);
   box-shadow: 0 4px 12px var(--shadow-primary);
+}
+.additional-image-item {
+  position: relative;
+  display: block;
+  width: fit-content;
+}
+.additional-images-list {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
 }
 .image-upload-group {
   margin-bottom: 20px;
@@ -1343,7 +1342,8 @@ export default {
   font-size: 14px;
   color: var(--text-additional-light);
 }
-.remove-image-btn {
+.remove-image-btn,
+.remove-additional-image-btn {
   position: absolute;
   top: -10px;
   right: -10px;
@@ -1623,6 +1623,65 @@ export default {
 .column-selector-list-sidebar .column-selector-item {
   padding: 10px 0;
 }
+.categories-layout {
+  position: relative;
+  border: 1px solid var(--primary);
+  border-radius: 1vw;
+  margin: 2vw 0;
+  padding: 1vw;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.context-menu {
+  position: fixed;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px var(--shadow-primary);
+  z-index: 850;
+  min-width: 200px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+.context-menu-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+.context-menu-item:hover {
+  background-color: var(--hover-table);
+}
+.context-menu-item i {
+  width: 16px;
+  text-align: center;
+  color: var(--text-additional-dark);
+}
+.context-menu-item-danger {
+  color: var(--warning);
+}
+.context-menu-item-danger:hover {
+  background-color: var(--warning-dark);
+}
+.context-menu-item-danger i {
+  color: var(--warning-dark);
+}
+.context-menu-divider {
+  height: 1px;
+  background-color: var(--background-additional);
+  margin: 4px 0;
+}
+.form-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 30px;
+}
 @media (max-width: 768px) {
   .products-actions-menu-btn {
     display: flex;
@@ -1708,58 +1767,11 @@ export default {
     width: 40px;
     height: 40px;
   }
-}
-.categories-layout {
-  position: relative;
-  border: 1px solid var(--primary);
-  border-radius: 1vw;
-  margin: 2vw 0;
-  padding: 1vw;
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-.context-menu {
-  position: fixed;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-medium);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px var(--shadow-primary);
-  z-index: 850;
-  min-width: 200px;
-  padding: 4px 0;
-  font-size: 14px;
-}
-.context-menu-item {
-  padding: 10px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-primary);
-  transition: background-color 0.2s;
-}
-.context-menu-item:hover {
-  background-color: var(--hover-table);
-}
-.context-menu-item i {
-  width: 16px;
-  text-align: center;
-  color: var(--text-additional-dark);
-}
-.context-menu-item-danger {
-  color: var(--warning);
-}
-.context-menu-item-danger:hover {
-  background-color: var(--warning-dark);
-}
-.context-menu-item-danger i {
-  color: var(--warning-dark);
-}
-.context-menu-divider {
-  height: 1px;
-  background-color: var(--background-additional);
-  margin: 4px 0;
+  .form-actions {
+    width: fit-content;
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
 }
 </style>
