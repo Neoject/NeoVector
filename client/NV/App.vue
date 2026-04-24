@@ -783,7 +783,7 @@ input[type=checkbox]:disabled {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 9999;
+  z-index: 1000;
   opacity: 0;
   visibility: hidden;
   -webkit-transition: all 0.3s ease;

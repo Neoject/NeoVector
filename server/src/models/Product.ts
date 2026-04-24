@@ -203,6 +203,17 @@ export class ProductModel {
         return imagePath;
     }
 
+    static async deleteImageByPath(productId: number, imagePath: string): Promise<string | null> {
+        const rows = await db.query<{ image_path: string }[]>(
+            'SELECT image_path FROM product_images WHERE product_id = ? AND image_path = ? LIMIT 1',
+            [productId, imagePath]
+        );
+        if (rows.length === 0) return null;
+
+        await db.query('DELETE FROM product_images WHERE product_id = ? AND image_path = ? LIMIT 1', [productId, imagePath]);
+        return rows[0].image_path;
+    }
+
     static async getOptions(typeId: number = 0): Promise<any[]> {
         let query = 'SELECT `group`, `value`, `sort_order` FROM `product_options`';
         const params: any[] = [];
@@ -265,7 +276,6 @@ export class ProductModel {
     }
 
     static async saveTypes(types: any[]): Promise<void> {
-        // Clear existing types
         await db.query('TRUNCATE TABLE product_types');
 
         if (!types || types.length === 0) return;
@@ -283,20 +293,22 @@ export class ProductModel {
 
     static async createTablesForOptions(): Promise<void> {
         await db.query(`
-    CREATE TABLE IF NOT EXISTS product_options (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      \`group\` VARCHAR(255) NOT NULL,
-      \`value\` VARCHAR(255) NOT NULL,
-      sort_order INT DEFAULT 0,
-      product_type_id INT DEFAULT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `);
+            CREATE TABLE IF NOT EXISTS product_options (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              \`group\` VARCHAR(255) NOT NULL,
+              \`value\` VARCHAR(255) NOT NULL,
+              sort_order INT DEFAULT 0,
+              product_type_id INT DEFAULT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+          `);
 
         try {
             await db.query(`ALTER TABLE product_options DROP INDEX group_value_unique`);
-        } catch {  }
+        } catch {
+            console.error('Failed to create options table');
+        }
 
         try {
             await db.query(`
@@ -304,7 +316,7 @@ export class ProductModel {
                 ADD UNIQUE KEY group_value_type_unique (\`group\`, \`value\`, \`product_type_id\`)
             `);
         } catch {
-            console.error('Failed to alter options')
+            console.error('Failed to alter options');
         }
 
         await db.query(`
