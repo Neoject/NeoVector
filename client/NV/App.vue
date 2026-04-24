@@ -398,7 +398,7 @@ img {
   justify-content: center;
   display: none;
   font-size: 20px;
-  padding: 10px;
+  padding: 6px;
   border-radius: 4px;
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
@@ -438,8 +438,8 @@ input[type=checkbox]:checked::after {
   position: absolute;
   border-width: 0 2px 2px 0;
   transition: all 0.2s ease;
-  top: -6px;
-  left: 4px;
+  top: -0.8rem;
+  left: 0.1rem;
 }
 input[type=checkbox]:disabled {
   opacity: 0.5;
@@ -629,26 +629,22 @@ input[type=checkbox]:disabled {
   transform: rotate(90deg);
 }
 .logo {
-  font-family: 'Main', serif;
-  font-size: 64px;
-  font-weight: 700;
   background: var(--text-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-decoration: none;
   padding: 0 20px;
   height: 64px;
-  color: var(--text-primary);
-  text-shadow: 0 0 90px var(--shadow-primary);
   user-select: none;
   transition: all 0.3s ease-in-out;
 }
 .logo:hover {
   text-shadow: 0 0 32px var(--shadow-primary);
 }
+.logo img {
+  max-width: 72vw;
+}
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 30px;
   position: relative;
   overflow: visible;
@@ -715,15 +711,6 @@ input[type=checkbox]:disabled {
   align-items: center;
   gap: 20px;
 }
-.mobile-menu-btn {
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  font-size: 24px;
-  cursor: pointer;
-  display: none;
-  padding: 5px;
-}
 .mobile-cart-icon {
   display: none;
   position: relative;
@@ -788,5 +775,27 @@ input[type=checkbox]:disabled {
 }
 .neoject a {
   color: var(--text-additional-dark);
+}
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+.overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
+  }
 }
 </style>

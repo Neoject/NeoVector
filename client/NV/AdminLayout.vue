@@ -189,7 +189,6 @@ export default {
 .admin-header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
 }
 .admin-actions .btn-text {
   margin-left: 0.5rem;

@@ -184,7 +184,7 @@ export default {
       }
     },
     openProductPage(id) {
-      window.location.href = window.location.origin + '/product/?id=' + id
+      window.open(window.location.origin + '/product/?id=' + id, '_blank');
     },
     startDragProduct(product, event) {
       this.draggingProductId = product.id
@@ -975,7 +975,9 @@ export default {
         </tr>
         </tbody>
       </table>
-      <div class="products-table-loader"><div class="products-loader"></div></div>
+      <div class="products-table-loader">
+        <div class="products-loader"></div>
+      </div>
     </div>
   </section>
   <Modal
@@ -1012,9 +1014,11 @@ export default {
         <label>Особенности</label>
         <div class="peculiarities-editor">
           <div class="peculiarities-list">
-            <div v-for="(i) in productForm.peculiarities" :key="i" class="peculiarity-item">
+            <div v-for="(val, i) in productForm.peculiarities" :key="i" class="peculiarity-item">
               <input type="text" v-model="productForm.peculiarities[i]" class="peculiarity-input">
-              <button type="button" @click="removePeculiarity(i)" class="btn btn-sm btn-delete"><i class="fas fa-times"></i></button>
+              <button type="button" @click="removePeculiarity(i)" class="btn btn-sm btn-delete">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
           </div>
           <div class="add-peculiarity">
@@ -1244,6 +1248,12 @@ export default {
   min-height: 120px;
   height: 100%;
   padding: 10px;
+}
+.peculiarity-input {
+  width: 24rem;
+}
+.btn-sm {
+  margin: 1rem;
 }
 .product-thumb {
   width: 60px;
@@ -1545,7 +1555,7 @@ export default {
   width: 280px;
   max-width: 85vw;
   height: 100vh;
-  background: var(--background);
+  background: var(--background-secondary);
   border-left: 1px solid var(--border-medium);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
   z-index: 1000;
@@ -1712,10 +1722,10 @@ export default {
 }
 .context-menu {
   position: fixed;
-  background: var(--text-primary);
+  background: var(--background-secondary);
   border: 1px solid var(--border-medium);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-primary);
   z-index: 850;
   min-width: 200px;
   padding: 4px 0;
@@ -1727,7 +1737,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--background);
+  color: var(--text-primary);
   transition: background-color 0.2s;
 }
 .context-menu-item:hover {

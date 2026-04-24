@@ -44,7 +44,7 @@ export default {
 
 <template>
   <header>
-    <div class="admin-header container">
+    <div class="admin-header nav-container">
       <div class="admin-header-content">
         <div class="admin-header-left">
           <button class="mobile-menu-btn" @click="toggleMobileMenu">

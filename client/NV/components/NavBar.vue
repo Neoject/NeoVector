@@ -210,7 +210,7 @@ export default {
 
 <template>
   <header ref="navBarHeader">
-    <div class="container nav-container">
+    <div class="nav-container">
       <div class="nav-left">
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
           <i class="fas fa-bars"></i>
@@ -318,7 +318,6 @@ header {
 }
 header .nav-container {
   flex-direction: row;
-  gap: 20vw;
 }
 .user-menu {
   display: flex;
