@@ -189,11 +189,16 @@ export default {
 .admin-header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
 }
 .admin-actions .btn-text {
   margin-left: 0.5rem;
   display: inline;
+}
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1999;
 }
 .mobile-admin-menu {
   position: fixed;
@@ -203,14 +208,77 @@ export default {
   height: 100vh;
   background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-additional) 100%);
   backdrop-filter: blur(10px);
-  box-shadow: 5px 0 20px var(--shadow-primary);
   transition: left 0.4s ease;
   z-index: 2000;
   overflow-y: auto;
-  padding: 30px 20px;
+  padding: 20px 16px 30px;
 }
 .mobile-admin-menu.active {
   left: 0;
+  box-shadow: 5px 0 20px var(--shadow-primary);
+}
+.mobile-menu-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  margin-bottom: 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.mobile-menu-close:hover {
+  background: var(--surface-muted, rgba(0,0,0,0.08));
+}
+.mobile-admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mobile-admin-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.mobile-admin-link i {
+  width: 20px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.65;
+}
+.mobile-admin-link:hover {
+  background: var(--surface-muted, rgba(0,0,0,0.07));
+}
+.mobile-admin-link--active {
+  background: var(--surface-muted, rgba(0,0,0,0.07));
+  color: var(--primary);
+}
+.mobile-admin-link--active i {
+  opacity: 1;
+}
+.mobile-admin-logout {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+  color: var(--error-text, #e74c3c);
 }
 .admin-dashboard {
   min-height: 100vh;

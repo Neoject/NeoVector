@@ -309,46 +309,24 @@ export default {
           <h2>Опции товаров</h2>
           <p style="margin-bottom: 20px; color: #ccc;">Создавайте типы опций и управляйте ими</p>
           <div class="options-section">
-            <div class="option-item-title" style="grid-column: span 3">
+            <div class="option-item-title type-select-box">
               <label>Тип товара</label>
-              <select v-model="selectedProductTypeId"
-                      class="option-input option-type-input option-title"
-                      style="flex: 1; width: 100%">
-                <option v-for="type in productTypes"
-                        :key="type.id"
-                        :value="type.id">
+              <select v-model="selectedProductTypeId" class="option-input option-type-input option-title type-select">
+                <option v-for="type in productTypes" :key="type.id" :value="type.id">
                   {{ type.name }}
                 </option>
               </select>
             </div>
             <div class="options-group" v-for="(optionType, typeIndex) in productOptions"
                  :key="optionType.id ? 'type-' + optionType.id : 'type-' + typeIndex">
-              <div class="options-group-header">
-                <button @click="moveOptionTypeUp(typeIndex)" class="btn btn-secondary"
-                        style="margin-left: auto" :disabled="typeIndex === 0"
-                        title="Переместить вверх">
-                  <i class="fas fa-arrow-left"></i>
-                </button>
-                <button v-if="productOptions.length > 1"
-                        @click="removeOptionType(typeIndex)" class="btn btn-danger">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button @click="moveOptionTypeDown(typeIndex)"
-                        class="btn btn-secondary"
-                        style="margin-right: auto"
-                        :disabled="typeIndex === productOptions.length - 1"
-                        title="Переместить вниз">
-                  <i class="fas fa-arrow-right"></i>
-                </button>
-              </div>
               <div class="option-item-title">
                 <label>Название группы опций</label>
                 <input type="text" v-model="optionType.name"
                        class="option-input option-type-input option-title"
-                       placeholder="Название типа (например, Размеры)"
-                       style="flex: 1; width: 100%">
+                       placeholder="Название типа"
+                       style="flex: 1; width: 100%"
+                >
               </div>
-
               <div class="options-list">
                 <div v-for="(value, valueIndex) in optionType.values"
                      :key="'type-' + typeIndex + '-value-' + valueIndex" class="option-item">
@@ -361,8 +339,7 @@ export default {
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
-                <button @click="addOptionValue(typeIndex)" class="btn btn-primary"
-                        style="margin-top: 10px;">
+                <button @click="addOptionValue(typeIndex)" class="btn btn-primary" style="margin-top: 10px;">
                   <i class="fas fa-plus"></i> Добавить значение
                 </button>
               </div>
@@ -371,8 +348,7 @@ export default {
               <h3>Новый тип опций</h3>
               <div class="options-list">
                 <div class="option-item">
-                  <input type="text" v-model="newOptionName" class="option-input"
-                         placeholder="Например: Цвета">
+                  <input type="text" v-model="newOptionName" class="option-input" placeholder="Например: Цвета">
                   <button @click="addOptionType" class="btn btn-primary"
                           style="padding: 10px 16px;"
                           :disabled="!newOptionName || !newOptionName.trim()">
@@ -383,12 +359,10 @@ export default {
             </div>
           </div>
           <div class="options-actions" style="margin-top: 30px;">
-            <button @click="saveProductOptions" class="btn btn-primary"
-                    :disabled="optionsLoading">
+            <button @click="saveProductOptions" class="btn btn-primary" :disabled="optionsLoading">
               <i class="fas fa-save"></i> {{ optionsLoading ? 'Сохранение...' : 'Сохранить опции' }}
             </button>
-            <button @click="loadProductOptions" class="btn btn-secondary"
-                    :disabled="optionsLoading">
+            <button @click="loadProductOptions" class="btn btn-secondary" :disabled="optionsLoading">
               <i class="fas fa-sync"></i> Обновить
             </button>
           </div>
@@ -403,16 +377,11 @@ export default {
           <h2>Опции товаров</h2>
           <div class="options-section">
             <div class="options-group">
-              <div class="options-group-header"
-                   style="display: flex; align-items: center; gap: 10px;">
+              <div class="options-group-header" style="display: flex; align-items: center; gap: 10px;">
                 <div class="options-group-controls" style="width: 100%;">
                   <label>Тип товара</label>
-                  <select v-model="selectedProductTypeId"
-                          class="option-input option-type-input option-title"
-                          style="width: 100%;">
-                    <option v-for="type in productTypes"
-                            :key="type.id"
-                            :value="type.id">
+                  <select v-model="selectedProductTypeId" class="option-input option-type-input option-title">
+                    <option v-for="type in productTypes" :key="type.id" :value="type.id">
                       {{ type.name }}
                     </option>
                   </select>
@@ -423,20 +392,8 @@ export default {
           <div class="options-section">
             <div class="options-group" v-for="(optionType, typeIndex) in productOptions"
                  :key="optionType.id ? 'type-' + optionType.id : 'type-' + typeIndex">
-              <div class="options-group-header"
-                   style="display: flex; align-items: center; gap: 10px;">
+              <div class="options-group-header" style="display: flex; align-items: center; gap: 10px;">
                 <div class="options-group-controls">
-                  <button @click="moveOptionTypeUp(typeIndex)"
-                          class="btn btn-secondary" style="margin: 0"
-                          :disabled="typeIndex === 0" title="Переместить вверх">
-                    <i class="fas fa-arrow-left"></i>
-                  </button>
-                  <button @click="moveOptionTypeDown(typeIndex)"
-                          class="btn btn-secondary" style="margin: 0"
-                          :disabled="typeIndex === productOptions.length - 1"
-                          title="Переместить вниз">
-                    <i class="fas fa-arrow-right"></i>
-                  </button>
                   <button v-if="productOptions.length > 1"
                           @click="removeOptionType(typeIndex)" class="btn btn-danger"
                           style="margin: 0">
@@ -531,11 +488,18 @@ export default {
 .option-type-input {
   font-weight: 600;
 }
+.type-select-box {
+  display: flex;
+  flex-direction: column;
+  grid-column: span 6;
+}
+.type-select {
+  width: 12vw;
+}
 .option-title {
   padding: 12px !important;
   font-weight: 1100;
   border: 1px solid var(--primary) !important;
-  width: 1px;
 }
 .option-item-title {
   width: 100%;
