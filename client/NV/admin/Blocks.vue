@@ -22,8 +22,9 @@ Object.entries(customModules).forEach(([path, mod]) => {
   customComponents.push({ name, component: markRaw(mod.default || mod) });
 });
 
-const pageCustomModules = import.meta.glob('../../*/*.vue', { eager: true });
+const pageCustomModules = import.meta.glob(['../../*/*.vue', '!../../NV/**'], { eager: true });
 const pageCustomMap = {};
+
 Object.entries(pageCustomModules).forEach(([path, mod]) => {
   const parts = path.split('/');
   const folder = parts[parts.length - 2];
@@ -129,6 +130,22 @@ export default {
     topLevelPages() {
       return this.pages.filter(p => !p.slug.includes('/'));
     },
+    flatPageTabs() {
+      const flat = [];
+
+      for (const pg of this.topLevelPages) {
+        flat.push({ page: pg, isChild: false });
+        const prefix = pg.slug + '/';
+
+        for (const child of this.pages) {
+          if (child.slug.startsWith(prefix) && !child.slug.slice(prefix.length).includes('/')) {
+            flat.push({ page: child, isChild: true });
+          }
+        }
+      }
+
+      return flat;
+    },
     currentCustomComponents() {
       if (this.isMainPage) return customComponents;
       const slug = this.selectedPage?.slug;
@@ -142,10 +159,10 @@ export default {
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     },
   },
-  mounted() {
-    this.loadPageBlocks()
-    this.loadPages()
-    this.loadProductsCatalog()
+  async mounted() {
+    this.loadProductsCatalog();
+    await this.loadPages();
+    await this.loadPageBlocks();
   },
   methods: {
     isMobileDevice,
@@ -323,11 +340,7 @@ export default {
       this.customSelectedElement = null;
       this.customViewMode = 'visual';
       if (!this.pages.length) this.loadPages();
-      if (!this.isMobileDevice()) {
-        this.showAddBlockModal = true;
-      } else {
-        this.$emit('update:page', 'block');
-      }
+      this.showAddBlockModal = true;
     },
     editBlock(block) {
       this.editingBlock = block;
@@ -365,11 +378,7 @@ export default {
         this.customViewMode = 'visual';
       }
 
-      if (!this.isMobileDevice()) {
-        this.showAddBlockModal = true;
-      } else {
-        this.$emit('update:page', 'block');
-      }
+      this.showAddBlockModal = true;
     },
     openAddPageModal(page = null, defaultParentSlug = '') {
       if (!page?.id) page = null;
@@ -469,8 +478,7 @@ export default {
       }
     },
     closeBlockModal() {
-      if (!this.isMobileDevice()) this.showAddBlockModal = false;
-      else this.$emit('update:page', '');
+      this.showAddBlockModal = false;
       this.editingBlock = null;
       this.blockError = '';
       this.blockSuccess = '';
@@ -1270,28 +1278,18 @@ export default {
       <button :class="['page-tab', { active: selectedPageId === null }]" @click="switchPage(null)">
         <i class="fas fa-home"></i> Главная
       </button>
-      <template v-for="pg in topLevelPages" :key="pg.id">
-        <button
-            :class="['page-tab', { active: selectedPageId === pg.id }]"
-            @click="switchPage(pg.id)">
-          <i class="fas fa-file"></i>
-          {{ pg.title }}
-          <span class="edit-btn" @click.stop="showControlMenu($event, pg)">
-            <i class="fa-solid fa-bars"></i>
-          </span>
-        </button>
-        <button
-            v-for="child in childPages(pg.slug)"
-            :key="child.id"
-            :class="['page-tab', 'page-tab-child', { active: selectedPageId === child.id }]"
-            @click="switchPage(child.id)">
-          <i class="fas fa-turn-down" style="font-size:10px;opacity:.6"></i>
-          {{ child.title }}
-          <span class="edit-btn" @click.stop="showControlMenu($event, child)">
-            <i class="fa-solid fa-bars"></i>
-          </span>
-        </button>
-      </template>
+      <button
+          v-for="item in flatPageTabs"
+          :key="item.page.id"
+          :class="['page-tab', { active: selectedPageId === item.page.id, 'page-tab-child': item.isChild }]"
+          @click="switchPage(item.page.id)">
+        <i v-if="item.isChild" class="fas fa-turn-down" style="font-size:10px;opacity:.6"></i>
+        <i v-else class="fas fa-file"></i>
+        {{ item.page.title }}
+        <span class="edit-btn" @click.stop="showControlMenu($event, item.page)">
+          <i class="fa-solid fa-bars"></i>
+        </span>
+      </button>
     </div>
     <div v-if="blockSuccess" class="alert alert-success" style="margin-top:15px">
       <i class="fas fa-check-circle"></i>
@@ -1393,8 +1391,8 @@ export default {
       v-model="showAddBlockModal"
       modal-id="blockModal"
       :title="editingBlock ? 'Редактировать блок' : 'Добавить блок'"
-      default-width="700px"
-      default-height="640px"
+      default-width="600px"
+      default-height="auto"
       class="block-modal"
       @close="closeBlockModal"
   >
@@ -2085,11 +2083,11 @@ export default {
       <div v-if="blockError" class="error-message">{{ blockError }}</div>
       <div v-if="blockSuccess" class="success-message">{{ blockSuccess }}</div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" :disabled="blockLoading">
-          {{ editingBlock ? 'Сохранить' : 'Добавить' }}
-        </button>
         <button type="button" @click="closeBlockModal" class="btn btn-secondary">
           Отмена
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="blockLoading">
+          {{ editingBlock ? 'Сохранить' : 'Добавить' }}
         </button>
       </div>
     </form>
@@ -2172,7 +2170,7 @@ export default {
       <div v-if="pageFormError" class="alert alert-danger" style="margin-top:12px">
         {{ pageFormError }}
       </div>
-      <div class="page-form-actions">
+      <div class="form-actions">
         <button
             v-if="editingPage"
             class="btn btn-danger"
@@ -2296,17 +2294,8 @@ export default {
   margin-top: 4px;
   display: block;
 }
-.required { color: var(--warning, #e74c3c); }
-.page-form-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding-top: 4px;
-  margin-top: 4px;
-  border-top: 1px solid var(--border-light);
-}
-.page-form-actions .btn-danger {
-  margin-right: auto;
+.required {
+  color: var(--warning, #e74c3c);
 }
 .custom-components-section {
   margin-top: 20px;
@@ -2910,7 +2899,6 @@ export default {
     padding-top: 40px;
   }
   .form-actions {
-    flex-direction: column;
     width: fit-content;
   }
   .form-actions .btn {

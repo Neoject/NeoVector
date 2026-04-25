@@ -38,6 +38,7 @@ export default {
     Taskbar,
     NavBar,
   },
+  emits: ['toggle-theme'],
   inject: ['params'],
   async mounted() {
    setTimeout(() => {

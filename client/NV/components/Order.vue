@@ -116,8 +116,12 @@ export default {
     decreaseCurrentOrderQuantity() {
       if (this.localOrderProduct && this.localOrderProduct.quantity > 1) this.localOrderProduct.quantity--;
     },
-    increaseQuantity(item) { item.quantity++; },
-    decreaseQuantity(item) { if (item.quantity > 1) item.quantity--; },
+    increaseQuantity(item) {
+      item.quantity++;
+      },
+    decreaseQuantity(item) {
+      if (item.quantity > 1) item.quantity--;
+      },
     removeFromCart(item) {
       const idx = this.localCartItems.findIndex(
           i => i.id === item.id && (i.optionKey || '') === (item.optionKey || '')
@@ -144,22 +148,29 @@ export default {
       this.deliveryCityError = '';
       this.citySuggestions   = [];
       clearTimeout(this._cityTimer);
+
       if (q.length < 2) return;
       this.citySearchLoading = true;
+
       this._cityTimer = setTimeout(async () => {
         try {
           const r = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1`,
               { headers: { 'Accept-Language': 'ru' } }
           );
+
           const data = await r.json();
+
           this.citySuggestions = data.map(item => ({
             place_id: item.place_id,
             label:    item.display_name.split(',').slice(0, 2).join(', ').trim(),
             region:   item.address?.state || item.address?.country || '',
           }));
-        } catch { this.citySuggestions = []; }
-        finally   { this.citySearchLoading = false; }
+        } catch {
+          this.citySuggestions = [];
+        } finally {
+          this.citySearchLoading = false;
+        }
       }, 400);
     },
     onCityBlur() {
@@ -287,7 +298,12 @@ export default {
           <h4>Ваш заказ</h4>
           <div class="order-items">
             <div v-if="localOrderProduct" class="order-item">
-              <img :src="localOrderProduct.image" :alt="localOrderProduct.name" class="order-item-img" loading="lazy" decoding="async">
+              <img :src="'/' + localOrderProduct.image"
+                   :alt="localOrderProduct.name"
+                   class="order-item-img"
+                   loading="lazy"
+                   decoding="async"
+              >
               <div class="order-item-details">
                 <h5>{{ localOrderProduct.name }}</h5>
                 <template v-if="localOrderProduct.options && localOrderProduct.options.length">

@@ -224,7 +224,7 @@ export class ProductController {
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const url = `/assets/${file.filename}`;
+            const url = `assets/${file.filename}`;
             const fileType = file.mimetype.startsWith('video/') ? 'video' : 'image';
 
             await ProductModel.addImage(productId, url, fileType, req.userId, i);
@@ -249,17 +249,18 @@ export class ProductController {
             return;
         }
 
-        const imageIdParam = req.body.image_id;
-        const imageId = typeof imageIdParam === 'string' ? parseInt(imageIdParam) : (typeof imageIdParam === 'number' ? imageIdParam : NaN);
+        const productIdParam = req.body.product_id;
+        const productId = typeof productIdParam === 'string' ? parseInt(productIdParam) : (typeof productIdParam === 'number' ? productIdParam : NaN);
+        const imagePath = req.body.image_path as string;
 
-        if (isNaN(imageId) || imageId <= 0) {
-            res.status(400).json({ error: 'Invalid image id' });
+        if (isNaN(productId) || productId <= 0 || !imagePath) {
+            res.status(400).json({ error: 'Invalid product_id or image_path' });
             return;
         }
 
-        const imagePath = await ProductModel.deleteImage(imageId);
-        if (imagePath) {
-            const fullPath = path.join(process.cwd(), imagePath);
+        const deletedPath = await ProductModel.deleteImageByPath(productId, imagePath);
+        if (deletedPath) {
+            const fullPath = path.join(process.cwd(), deletedPath);
             if (fs.existsSync(fullPath)) {
                 fs.unlinkSync(fullPath);
             }

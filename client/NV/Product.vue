@@ -482,7 +482,7 @@ export default {
                     <video :src="item.url" class="thumbnail-img thumbnail-video" preload="metadata" muted playsinline></video>
                     <i class="fas fa-play thumbnail-play-icon"></i>
                   </div>
-                  <img v-else :src="item.url" :alt="product.name" class="thumbnail-img">
+                  <img v-else :src="'/' + item.url" :alt="product.name" class="thumbnail-img">
                 </div>
               </div>
               <div class="gallery-navigation">
@@ -703,7 +703,7 @@ export default {
         </button>
         <video v-if="allMedia[currentMediaIndex]?.type === 'video'"
                :key="'v-' + currentMediaIndex" class="content-view video"
-               :src="'/' + allMedia[currentMediaIndex].url" controls muted loop autoplay playsinline></video>
+               :src="allMedia[currentMediaIndex].url" controls muted loop autoplay playsinline></video>
         <img v-else-if="allMedia[currentMediaIndex]"
              :key="'i-' + currentMediaIndex" class="content-view image"
              :src="'/' + allMedia[currentMediaIndex].url" :alt="product?.name">
