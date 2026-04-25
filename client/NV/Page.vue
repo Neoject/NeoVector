@@ -4,6 +4,7 @@ import NavBar from "./components/NavBar.vue";
 import { api } from "../../server/api";
 import { setPageTitle } from "../../server/src/utils";
 import { checkUserAuth, getAuth } from "./components/auth";
+import AOS from "aos/src/js/aos";
 
 const blockModules = import.meta.glob('./blocks/*.vue', { eager: true });
 const blockComponents = {};
@@ -48,6 +49,7 @@ export default {
   async mounted() {
     await this.refreshAuth();
     await this.loadPage();
+    AOS.init();
   },
   methods: {
     async refreshAuth() {
