@@ -4,7 +4,7 @@ import NavBar from "./components/NavBar.vue";
 import { api } from "../../server/api";
 import { setPageTitle } from "../../server/src/utils";
 import { checkUserAuth, getAuth } from "./components/auth";
-import AOS from "aos/src/js/aos";
+import AOS from "aos";
 import 'aos/dist/aos.css';
 
 const blockModules = import.meta.glob('./blocks/*.vue', { eager: true });
