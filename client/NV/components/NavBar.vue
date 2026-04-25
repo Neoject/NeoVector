@@ -220,11 +220,11 @@ export default {
         </a>
         <div v-if="showCartParam" class="mobile-cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
-          <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
+          <span class="count-icon" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
         <div v-if="showWishListParam" class="mobile-favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
-          <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
+          <span class="count-icon" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
       </div>
       <nav class="nav-links" :key="'nav-' + (currentVirtualPage ? currentVirtualPage.slug : 'main')">
@@ -243,11 +243,11 @@ export default {
         </template>
         <div v-if="showCartParam" class="cart-icon" @click="onToggleCart">
           <i class="fas fa-shopping-cart"></i>
-          <span class="cart-count" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
+          <span class="count-icon" v-if="cartItems.length > 0">{{ cartItemsCount }}</span>
         </div>
         <div v-if="showWishListParam" class="favorites-icon" @click="onToggleFavorites">
           <i class="fas fa-heart"></i>
-          <span class="cart-count" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
+          <span class="count-icon" v-if="wishlist.length > 0">{{ wishlistCount }}</span>
         </div>
         <button
             class="theme-toggle"
@@ -326,7 +326,7 @@ header .logo {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.6rem;
   position: relative;
   overflow: visible;
 }
@@ -360,7 +360,7 @@ header .logo {
   cursor: pointer;
   margin-left: 1rem;
 }
-.cart-count {
+.count-icon {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -369,8 +369,8 @@ header .logo {
   border: 1px solid var(--border-secondary);
   box-shadow: 0 0 10px var(--shadow-primary);
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -393,7 +393,7 @@ header .logo {
   align-items: center;
   justify-content: center;
 }
-.mobile-cart-icon .cart-count {
+.mobile-cart-icon .count-icon {
   position: absolute;
   top: -2px;
   right: -2px;
@@ -420,23 +420,6 @@ header .logo {
   min-width: 36px;
   align-items: center;
   justify-content: center;
-}
-.mobile-favorites-icon .favorites-count {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: var(--background-additional);
-  color: var(--header-secondary);
-  border: 1px solid var(--border-secondary);
-  box-shadow: 0 0 8px var(--shadow-primary);
-  border-radius: 50%;
-  width: 14px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
 }
 .user-menu {
   display: flex;

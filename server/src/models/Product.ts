@@ -34,59 +34,61 @@ export interface ProductImage {
 export class ProductModel {
     static async createTables(): Promise<void> {
         await db.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        peculiarities TEXT,
-        material VARCHAR(255) NOT NULL,
-        price INT NOT NULL,
-        price_sale INT NULL,
-        category VARCHAR(64) NOT NULL,
-        product_type_id INT NULL,
-        image VARCHAR(255) NOT NULL,
-        image_description TEXT,
-        visibility INT NOT NULL DEFAULT 1,
-        sort_order INT DEFAULT 0,
-        created_by INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_changed_by INT NOT NULL,
-        last_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_category (category),
-        INDEX idx_visibility (visibility),
-        INDEX idx_sort (sort_order)
-      )
-    `);
+          CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            peculiarities TEXT,
+            material VARCHAR(255) NOT NULL,
+            price INT NOT NULL,
+            price_sale INT NULL,
+            category VARCHAR(64) NOT NULL,
+            product_type_id INT NULL,
+            image VARCHAR(255) NOT NULL,
+            image_description TEXT,
+            visibility INT NOT NULL DEFAULT 1,
+            sort_order INT DEFAULT 0,
+            created_by INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_changed_by INT NOT NULL,
+            last_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_category (category),
+            INDEX idx_visibility (visibility),
+            INDEX idx_sort (sort_order)
+          )
+        `);
 
         await db.query(`
-      CREATE TABLE IF NOT EXISTS product_images (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        product_id INT NOT NULL,
-        image_path VARCHAR(255) NOT NULL,
-        file_type ENUM('image','video') DEFAULT 'image',
-        sort_order INT DEFAULT 0,
-        uploaded_by INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        INDEX idx_product (product_id)
-      )
-    `);
+          CREATE TABLE IF NOT EXISTS product_images (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            product_id INT NOT NULL,
+            image_path VARCHAR(255) NOT NULL,
+            file_type ENUM('image','video') DEFAULT 'image',
+            sort_order INT DEFAULT 0,
+            uploaded_by INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            INDEX idx_product (product_id)
+          )
+        `);
 
         await this.createTablesForOptions();
     }
 
     static async getAll(): Promise<Product[]> {
         const products = await db.query<Product[]>(`
-      SELECT * FROM products ORDER BY sort_order, id
-    `);
+          SELECT * FROM products ORDER BY sort_order, id
+        `);
+
         return products;
     }
 
     static async getById(id: number): Promise<Product | null> {
         const rows = await db.query<Product[]>(
-            'SELECT * FROM products WHERE id = ?',
-            [id]
+                'SELECT * FROM products WHERE id = ?',
+                [id]
         );
+
         return rows[0] || null;
     }
 
@@ -115,8 +117,9 @@ export class ProductModel {
     static async create(data: any, userId: number): Promise<number> {
         const result = await db.query(
             `INSERT INTO products 
-       (name, description, peculiarities, material, price, price_sale, category, product_type_id, image, image_description, created_by, last_changed_by, sort_order) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                   (name, description, peculiarities, material, price, price_sale, category, product_type_id, image, 
+                    image_description, created_by, last_changed_by, sort_order) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.name,
                 data.description,
@@ -139,10 +142,10 @@ export class ProductModel {
     static async update(id: number, data: any, userId: number): Promise<boolean> {
         const result = await db.query(
             `UPDATE products SET 
-        name = ?, description = ?, peculiarities = ?, material = ?, 
-        price = ?, price_sale = ?, category = ?, product_type_id = ?, 
-        image = ?, image_description = ?, last_changed_by = ?
-       WHERE id = ?`,
+                    name = ?, description = ?, peculiarities = ?, material = ?, 
+                    price = ?, price_sale = ?, category = ?, product_type_id = ?, 
+                    image = ?, image_description = ?, last_changed_by = ?
+                   WHERE id = ?`,
             [
                 data.name,
                 data.description,
@@ -158,6 +161,7 @@ export class ProductModel {
                 id,
             ]
         );
+
         return (result as any).affectedRows > 0;
     }
 
@@ -180,6 +184,7 @@ export class ProductModel {
             'UPDATE products SET visibility = ?, last_changed_by = ? WHERE id = ?',
             [visibility, userId, id]
         );
+
         return (result as any).affectedRows > 0;
     }
 
@@ -188,6 +193,7 @@ export class ProductModel {
             'INSERT INTO product_images (product_id, image_path, file_type, sort_order, uploaded_by) VALUES (?, ?, ?, ?, ?)',
             [productId, imagePath, fileType, sortOrder, userId]
         );
+
         return (result as any).insertId;
     }
 
@@ -196,6 +202,7 @@ export class ProductModel {
             'SELECT image_path FROM product_images WHERE id = ?',
             [imageId]
         );
+
         if (rows.length === 0) return null;
 
         const imagePath = rows[0].image_path;
@@ -208,6 +215,7 @@ export class ProductModel {
             'SELECT image_path FROM product_images WHERE product_id = ? AND image_path = ? LIMIT 1',
             [productId, imagePath]
         );
+
         if (rows.length === 0) return null;
 
         await db.query('DELETE FROM product_images WHERE product_id = ? AND image_path = ? LIMIT 1', [productId, imagePath]);
@@ -241,7 +249,6 @@ export class ProductModel {
     }
 
     static async saveOptions(options: any[], typeId: number = 0): Promise<void> {
-        // Clear existing options for this type
         if (typeId > 0) {
             await db.query('DELETE FROM product_options WHERE product_type_id = ?', [typeId]);
         } else {
@@ -272,6 +279,7 @@ export class ProductModel {
         const rows = await db.query<any[]>(
             'SELECT `id`, `name` FROM `product_types` ORDER BY `sort_order`, `id`'
         );
+
         return rows;
     }
 
@@ -302,31 +310,16 @@ export class ProductModel {
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
-          `);
-
-        try {
-            await db.query(`ALTER TABLE product_options DROP INDEX group_value_unique`);
-        } catch {
-            console.error('Failed to create options table');
-        }
-
-        try {
-            await db.query(`
-                ALTER TABLE product_options
-                ADD UNIQUE KEY group_value_type_unique (\`group\`, \`value\`, \`product_type_id\`)
-            `);
-        } catch {
-            console.error('Failed to alter options');
-        }
+        `);
 
         await db.query(`
-    CREATE TABLE IF NOT EXISTS product_types (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL UNIQUE,
-      sort_order INT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `);
+            CREATE TABLE IF NOT EXISTS product_types (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              name VARCHAR(255) NOT NULL UNIQUE,
+              sort_order INT DEFAULT 0,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
     }
 }
