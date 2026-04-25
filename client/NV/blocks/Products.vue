@@ -148,6 +148,14 @@ export default {
     });
   },
   methods: {
+    normalizeMediaUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+        return url;
+      }
+      const basePath = this.getBasePath ? this.getBasePath() : '/';
+      return basePath + url;
+    },
     async startOptionSelection(product, action, point, event) {
       if (event) event.stopPropagation();
 
