@@ -580,6 +580,7 @@ header .logo {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  margin-right: 1rem;
   border: 1px solid var(--border-primary);
   background: var(--surface-color);
   color: var(--text-primary);
